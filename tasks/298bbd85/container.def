@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python, pip and pytest
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip install --no-cache-dir -q pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the integrity-alert exercise
+    # ------------------------------------------------------------------
+
+    # 1. Create required directories
+    mkdir -p /home/user/watched
+
+    # 2. Ensure the regular (non-root) container user can later create
+    #    /home/user/alerts and its log file.
+    chmod 0777 /home/user          # world-writable but still root-owned
+
+    # 3. Create the critical file with exact contents “hello”
+    #    (no trailing newline!) and correct permissions.
+    printf 'hello' > /home/user/watched/critical_report.txt
+    chmod 0755 /home/user/watched
+    chmod 0644 /home/user/watched/critical_report.txt
+
+%labels
+    chmod 755 /home/user
+
+    Author      "container-builder"
+    Description "Environment for simple integrity-alert monitoring task"

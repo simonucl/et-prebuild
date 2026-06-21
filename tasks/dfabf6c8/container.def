@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial project state
+    # ------------------------------------------------------------------
+    PROJECT_DIR="/home/user/observability-dashboard"
+    mkdir -p "${PROJECT_DIR}"
+
+    # VERSION file (single line + LF)
+    cat > "${PROJECT_DIR}/VERSION" <<'EOF'
+1.4.2
+EOF
+
+    # CHANGELOG.md with the initial 1.4.2 section
+    cat > "${PROJECT_DIR}/CHANGELOG.md" <<'EOF'
+## [1.4.2] - 2023-04-27
+### Fixed
+– Corrected alert rule syntax in latency dashboard
+
+EOF
+
+    # Make sure the agent (non-root at runtime) can modify everything
+    chmod 0777 "${PROJECT_DIR}"
+    chmod 0666 "${PROJECT_DIR}/VERSION" "${PROJECT_DIR}/CHANGELOG.md"
+
+%labels
+    chmod 755 /home/user
+
+    Author      observability-task-builder
+    Description Initial state for Grafana dashboard version-bump exercise.
+
+%help
+This container sets up the initial filesystem state for the
+observability-dashboard version-bump task and provides pytest for
+verification.

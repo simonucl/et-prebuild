@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the test-suite
+    # ------------------------------------------------------------------
+    # Create required directory hierarchy
+    mkdir -p /home/user/staging_rules
+    mkdir -p /home/user/monitoring/rules/enabled
+
+    # Populate the staging file with the exact, byte-perfect content
+    cat > /home/user/staging_rules/critical_load.rule <<'EOF'
+alert: cpu_load
+severity: critical
+threshold: 0.85
+EOF
+
+    # Ensure suitable permissions so the (non-root) runtime user can work
+    chmod 755 /home/user
+    chmod 755 /home/user/monitoring
+    chmod 755 /home/user/monitoring/rules
+    chmod 777 /home/user/monitoring/rules/enabled  # must be writable
+    chmod 755 /home/user/staging_rules
+    chmod 644 /home/user/staging_rules/critical_load.rule
+
+%environment
+    # No special environment variables required; keep defaults

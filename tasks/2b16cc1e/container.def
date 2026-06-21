@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ###############################
+    # Install Python 3 and pytest #
+    ###############################
+    apt-get update -y
+    # Python3 is pre-installed in the base image but we also need pip
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the autograder
+    pip3 install --no-cache-dir pytest
+
+    #########################################
+    # Create the project directory skeleton #
+    #########################################
+    mkdir -p /home/user/legacy-analytics
+
+    # Create tracker.py with the exact expected contents
+    cat >/home/user/legacy-analytics/tracker.py <<'PYEOF'
+#!/usr/bin/env python3
+print("legacy-analytics OK")
+PYEOF
+
+    # Ensure correct permissions
+    chmod 755 /home/user/legacy-analytics
+    chmod 755 /home/user/legacy-analytics/tracker.py
+
+    # Give read permissions widely; ownership stays whatever user builds
+    chown -R root:root /home/user 2>/dev/null || true
+
+%environment
+    # Ensure python and pip are in PATH (they already are, but be explicit)
+    export PATH="$PATH:/usr/bin"
+
+%labels
+    Author="Generated for legacy-analytics task"
+    Description="Container prepared for the legacy-analytics educational task (pytest included)"

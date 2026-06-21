@@ -1,0 +1,113 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+Author KubernetesInventoryTask
+Description "Environment for Kubernetes manifest inventory exercise"
+
+%post
+set -e
+
+# Update and install required packages
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install pytest for the autograder
+python3 -m pip install --no-cache-dir --upgrade pip setuptools
+python3 -m pip install --no-cache-dir pytest
+
+# ------------------------------------------------------------------ #
+# Create initial filesystem layout expected by the tests
+# ------------------------------------------------------------------ #
+# Base directory for the exercise
+mkdir -p /home/user/k8s/manifests
+
+# deployment-web.yaml
+cat >/home/user/k8s/manifests/deployment-web.yaml <<'EOF'
+# filename:deployment-web.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-frontend
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.21
+EOF
+
+# deployment-api.yaml
+cat >/home/user/k8s/manifests/deployment-api.yaml <<'EOF'
+# filename:deployment-api.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-server
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+      - name: server
+        image: my-api:2.0
+EOF
+
+# statefulset-db.yaml
+cat >/home/user/k8s/manifests/statefulset-db.yaml <<'EOF'
+# filename:statefulset-db.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db-storage
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:13
+EOF
+
+# Ensure every manifest ends with a single trailing newline
+for f in /home/user/k8s/manifests/*.yaml; do
+    sed -n '$p' "$f" | grep -q '^$' || echo >>"$f"
+done
+
+# Permissions: allow the (non-root) runner to read manifests and
+# create new directories/files under /home/user/k8s
+chmod -R a+rwX /home/user/k8s
+
+%environment
+    chmod 755 /home/user
+
+# Minimal environment setup
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+
+%runscript
+echo "Container for the Kubernetes inventory task."
+echo "Use this container to run the exercise tests or your own commands."
+
+%help
+This Apptainer image provides the initial state for the “Kubernetes manifest
+inventory” exercise.  The three required Kubernetes manifest files are placed
+under /home/user/k8s/manifests, and pytest is installed for the automated
+grader.  No summary or log artefacts are present; participants must create
+them according to the task specification.

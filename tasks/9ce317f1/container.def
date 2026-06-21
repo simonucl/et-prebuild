@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python with pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        coreutils
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Prepare the expected filesystem state for the exercise
+    # ---------------------------------------------------------------------
+    # Base directory for the exercise user
+    mkdir -p /home/user
+
+    # app_logs directory and files
+    mkdir -p /home/user/app_logs
+    truncate -s 123  /home/user/app_logs/api.log
+    truncate -s 2048 /home/user/app_logs/db.log
+
+    # cache directory and files
+    mkdir -p /home/user/cache
+    truncate -s 4096 /home/user/cache/temp1.bin
+    truncate -s 1024 /home/user/cache/temp2.bin
+
+    # Permissions as specified/expected
+    chmod 0755 /home/user
+    chmod 0755 /home/user/app_logs
+    chmod 0755 /home/user/cache
+
+    chmod 0644 /home/user/app_logs/api.log
+    chmod 0644 /home/user/app_logs/db.log
+    chmod 0644 /home/user/cache/temp1.bin
+    chmod 0644 /home/user/cache/temp2.bin
+
+    # Ensure obs_metrics is NOT present
+    rm -rf /home/user/obs_metrics || true
+
+%environment
+    chmod 755 /home/user
+
+    # Inherit standard environment; no overrides required
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for observability disk-usage task."
+    echo "Nothing to run by default."
+
+%labels
+    Author="Apptainer Task Generator"
+    Description="Environment with preset logs and cache directories for disk-usage observability exercise."

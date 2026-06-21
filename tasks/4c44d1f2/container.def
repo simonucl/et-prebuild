@@ -1,0 +1,77 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # --- Base tools ----------------------------------------------------------
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        locales \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # --- Python packages -----------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # --- Locale --------------------------------------------------------------
+    locale-gen en_US.UTF-8
+    update-locale LANG=en_US.UTF-8
+
+    # --- Directory layout ----------------------------------------------------
+    mkdir -p /home/user/configs /home/user/bin /home/user/reports
+
+    # Make sure the student (non-root) user can write everywhere under /home/user
+    chmod -R 777 /home/user
+
+    # --- Pre-supplied INI configuration files -------------------------------
+    cat > /home/user/configs/appA.ini <<'EOF'
+[meta]
+name = Application Alpha
+version = 1.2.3
+
+[cpu]
+threshold = 75
+limit = 90
+
+[memory]
+threshold = 1024
+limit = 2048
+
+[io]
+threshold = 120
+limit = 150
+EOF
+
+    cat > /home/user/configs/appB.ini <<'EOF'
+[meta]
+name = Beta Service
+version = 4.5.6
+
+[cpu]
+threshold = 85
+limit = 80
+
+[memory]
+threshold = 1500
+limit = 1400
+
+[io]
+threshold = 100
+limit = 200
+EOF
+
+    chmod 644 /home/user/configs/appA.ini /home/user/configs/appB.ini
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure the custom bin directory is on the PATH for the agent
+    export PATH="/home/user/bin:$PATH"
+    export LANG="en_US.UTF-8"
+    export LC_ALL="en_US.UTF-8"
+
+%labels
+    Author="Container preparer – tasks@platform"
+    Description="Initial state for INI audit scripting task"

@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Base utilities
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Python testing framework for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial workspace expected by the assignment & tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/certs
+
+    # Certificate: website_valid.pem
+    cat > /home/user/certs/website_valid.pem <<'EOF'
+-----BEGIN CERTIFICATE-----
+notAfter=Nov 12 12:00:00 2031 GMT
+EOF
+
+    # Certificate: old_service.pem  (note the double space before the day)
+    cat > /home/user/certs/old_service.pem <<'EOF'
+-----BEGIN CERTIFICATE-----
+notAfter=Jan  1 00:00:00 2021 GMT
+EOF
+
+    # Permissions
+    chmod 644 /home/user/certs/*.pem
+    chmod 777 /home/user /home/user/certs
+
+%environment
+    chmod 755 /home/user
+
+    # Keep standard PATH; add user-installed Python tools if any
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author compliance-task-prep
+    Description "Initial state container for certificate compliance audit exercise"

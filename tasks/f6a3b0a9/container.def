@@ -1,0 +1,30 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install required system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        curl \
+        python3-pip
+
+    # Install pytest for the grading test-suite
+    pip3 install --no-cache-dir pytest
+
+    # Create the /home/user directory expected by the tests
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure Python binaries installed via pip are in PATH
+    export PATH="$PATH:/usr/local/bin"
+
+%labels
+    Author="Your Name"
+    Description="Container for API-checking assignment. Includes curl and pytest; /home/user exists but the assignment directory is intentionally absent."

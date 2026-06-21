@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel
+
+    # Install pytest for the verification harness
+    pip3 install --no-cache-dir pytest
+
+    # Prepare an empty writable home for the exercise
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure the standard Python user-install path is available
+    export PATH="$PATH:/usr/local/bin"
+
+%labels
+    Author="Container Build Script"
+    Description="Apptainer image for the diagnostics bundle exercise"
+
+%runscript
+    echo "Diagnostics exercise container. Launching shell..."
+    exec /bin/bash "$@"

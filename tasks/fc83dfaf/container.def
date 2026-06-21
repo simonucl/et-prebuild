@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package lists and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        iputils-ping \
+        ca-certificates \
+        build-essential
+
+    # Install pytest for the exercise framework
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected /home/user directory (writable for any UID)
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up APT caches to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal PATH setup
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author="Exercise Preparation Script"
+    Description="Environment for the backup_checks ping exercise with pytest installed."
+
+%help
+    This container provides the clean starting environment for the
+    “backup_checks” ping exercise.  Only /home/user exists; the
+    backup_checks directory and loopback_ping.log are intentionally
+    absent so the learner can create them.  pytest is installed for the
+    verification suite.

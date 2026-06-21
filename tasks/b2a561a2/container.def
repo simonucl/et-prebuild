@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eu
+
+    # ------------------------------------------------------------------
+    # 1. System packages + pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Prepare directory structure and permissions
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/logs/webserver
+    mkdir -p /home/user/reports
+
+    # Ensure required permissions for initial state
+    chmod 755 /home
+    chmod 755 /home/user
+    chmod 755 /home/user/logs
+    chmod 755 /home/user/logs/webserver
+    chmod 777 /home/user/reports   # writable by the non-root agent; agent will later chmod 755
+
+    # ------------------------------------------------------------------
+    # 3. Seed the canonical access log (exactly 10 lines)
+    # ------------------------------------------------------------------
+    cat > /home/user/logs/webserver/access.log <<'EOF'
+192.168.0.10 - - [10/Jan/2023:08:15:01 +0000] "GET /index.html HTTP/1.1" 200 612
+54.23.12.1 - - [10/Jan/2023:08:15:05 +0000] "POST /api/login HTTP/1.1" 200 1420
+203.0.113.55 - - [10/Jan/2023:08:16:13 +0000] "GET /admin HTTP/1.1" 403 721
+198.51.100.23 - - [10/Jan/2023:08:17:42 +0000] "GET /images/logo.png HTTP/1.1" 200 2048
+192.0.2.44 - - [10/Jan/2023:08:18:09 +0000] "GET /admin/settings HTTP/1.1" 404 512
+203.0.113.55 - - [10/Jan/2023:08:18:57 +0000] "GET /dashboard HTTP/1.1" 500 890
+54.23.12.1 - - [10/Jan/2023:08:19:31 +0000] "GET /api/data HTTP/1.1" 503 112
+198.51.100.23 - - [10/Jan/2023:08:20:15 +0000] "GET /contact.html HTTP/1.1" 200 430
+192.0.2.44 - - [10/Jan/2023:08:20:45 +0000] "GET /admin HTTP/1.1" 401 512
+203.0.113.55 - - [10/Jan/2023:08:21:10 +0000] "POST /api/upload HTTP/1.1" 201 1340
+EOF
+    chmod 644 /home/user/logs/webserver/access.log
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author devsecops-preparer
+    Description "Initial state for policy-as-code assignment"

@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial repository structure expected by the grading tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/k8s-operator/deploy
+
+    # 1. VERSION
+    printf '1.2.3' > /home/user/k8s-operator/VERSION
+
+    # 2. Deployment manifest with EXACT indentation for the image line
+    cat <<'YAML' > /home/user/k8s-operator/deploy/operator-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-operator
+spec:
+  template:
+    spec:
+      containers:
+      - name: manager
+               image: myrepo/myoperator:1.2.3
+               imagePullPolicy: IfNotPresent
+YAML
+
+    # 3. CHANGELOG.md in its original state
+    cat <<'CHANGELOG' > /home/user/k8s-operator/CHANGELOG.md
+## [1.2.3] - 2023-05-11
+
+ - Fix CRD validation issue
+
+## [1.2.2] - 2023-03-02
+
+ - Improve reconcilers
+ - Bump controller-runtime
+CHANGELOG
+
+    # Make sure future non-root processes can modify these files
+    chmod -R a+rwx /home/user/k8s-operator
+    chmod a+rwx /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # No HOME override; Apptainer will handle binding as appropriate
+    export PYTHONUNBUFFERED=1

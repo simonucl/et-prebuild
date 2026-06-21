@@ -1,0 +1,36 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+Author="auto-generated"
+Description="Environment for checksum-creation task"
+
+%post
+set -e
+
+# Update APT index and install Python + required tools
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        coreutils
+pip3 install --no-cache-dir pytest
+
+# --------------------------------------------------------------------
+# Prepare the initial filesystem state expected by the tests
+# --------------------------------------------------------------------
+# Create the releases directory hierarchy and make it writable
+mkdir -p /home/user/builds/releases
+chmod 0777 /home/user /home/user/builds /home/user/builds/releases
+
+# Place the binary artifact (ASCII "hello", no newline, 5 bytes)
+printf 'hello' > /home/user/builds/releases/hello-1.0.0.bin
+chmod 0644 /home/user/builds/releases/hello-1.0.0.bin
+
+%environment
+    chmod 755 /home/user
+
+# Keep the standard PATH and make sure /usr/local/bin is in front for pip-installed tools
+export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"

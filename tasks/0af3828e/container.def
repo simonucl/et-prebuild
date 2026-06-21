@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update apt and install Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the automated tests
+    # ------------------------------------------------------------------
+
+    # Create required directory hierarchy
+    mkdir -p /home/user/images
+    mkdir -p /home/user/archive
+
+    # Create the exact .sif files that must exist before the task starts
+    touch /home/user/images/ubuntu_latest.sif
+    touch /home/user/images/debian_tools.sif
+    touch /home/user/images/archdev.sif
+    touch /home/user/archive/old_centos.sif
+
+    # Make /home/user and its sub-directories writable for the unprivileged
+    # user that will run inside the container.
+    chmod 1777 /home/user
+    chmod 0777 /home/user/images
+    chmod 0777 /home/user/archive
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure UTF-8 output for Python
+    export PYTHONIOENCODING=UTF-8

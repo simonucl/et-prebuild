@@ -1,0 +1,36 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Ensure package list is up-to-date and required tools are present
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-venv \
+        python3-pip \
+        ca-certificates \
+        build-essential
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # Create a writable home for the “user” account expected by the tests
+    mkdir -p /home/user
+    chmod 0777 /home/user   # world-writable so whichever UID runs the container can write here
+
+    # Convenience symlink so `python` resolves to `python3`
+    ln -sf /usr/bin/python3 /usr/local/bin/python || true
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal environment – do NOT override $HOME
+    export LC_ALL=C
+    export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+
+%runscript
+    echo "Container ready. Start solving the assignment inside /home/user."

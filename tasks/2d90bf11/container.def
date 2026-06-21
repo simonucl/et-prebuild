@@ -1,0 +1,25 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install essential tools
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        make \
+        python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for container-side testing
+    pip3 install --no-cache-dir pytest
+
+    # Provision the expected writable home directory for the student
+    mkdir -p /home/user
+    chmod 0777 /home/user   # ensure any non-root UID can write here
+
+%labels
+    chmod 755 /home/user
+
+    Author      "Task Preparation Bot"
+    Description "Ubuntu 22.04 base with GNU Make and pytest, prepared for the compliance_audit task."

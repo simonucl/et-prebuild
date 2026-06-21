@@ -1,0 +1,38 @@
+FROM ubuntu:22.04
+
+RUN set -eux && \
+    apt-get update -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /home/user/release-logs/raw
+
+# Create raw log for app1
+RUN cat >/home/user/release-logs/raw/app1.log <<'APP1'
+2023-12-01 08:15:42,123 INFO User 192.168.1.10 logged in
+2023-12-01 08:16:12,456 ERROR Failed to load resource /api/data
+2023-12-01 08:17:05,789 WARN Cache miss for user 42
+2023-12-01 09:03:22,105 ERROR Database timeout after 30s
+2023-12-01 09:05:01,333 INFO User 192.168.1.15 logged out
+APP1
+
+# Create raw log for app2
+RUN cat >/home/user/release-logs/raw/app2.log <<'APP2'
+2023-12-01 08:20:11,111 INFO Deployment started by user devops
+2023-12-01 08:21:45,222 ERROR Service xyz failed health-check
+2023-12-01 08:23:30,555 INFO Service xyz restarted successfully
+2023-12-01 08:24:18,777 ERROR Could not connect to redis at 10.0.0.5:6379
+2023-12-01 08:25:55,999 INFO Deployment finished in 344s
+APP2
+
+# Ensure the student (non-root at runtime) can modify everything under /home/user
+RUN chmod -R a+rwx /home/user
+
+WORKDIR /home/user
+
+CMD ["chmod", "755", "/home/user"]
+
+LABEL Author="Apptainer Task Setup"
+LABEL Description="Container providing the initial state and pytest for the log-processing task."

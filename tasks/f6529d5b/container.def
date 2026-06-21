@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python and pytest (plus gzip is in base, but ensure it's present)
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip gzip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ##############  Prepare initial data set ##############
+    # Create source directory tree
+    mkdir -p /home/user/source_files
+
+    # financials_Q4.csv  (exact bytes including trailing newline)
+cat > /home/user/source_files/financials_Q4.csv <<'EOF'
+Dept,Spend,Quarter
+IT,23500,Q4
+HR,8200,Q4
+Finance,12300,Q4
+EOF
+
+    # policy_doc.txt  (single line plus newline)
+cat > /home/user/source_files/policy_doc.txt <<'EOF'
+All employees must adhere to the security compliance guidelines set forth in section 9.2.
+EOF
+
+    # infra_snapshot.tar.gz – gzip stream containing the ASCII bytes "snapshot-2023Q4"
+    echo -n "snapshot-2023Q4" | gzip -c > /home/user/source_files/infra_snapshot.tar.gz
+
+    # Ensure owner-read permission at minimum
+    chmod 644 /home/user/source_files/financials_Q4.csv
+    chmod 644 /home/user/source_files/policy_doc.txt
+    chmod 644 /home/user/source_files/infra_snapshot.tar.gz
+
+%environment
+    chmod 755 /home/user
+
+    # No HOME override per instructions
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=UTF-8

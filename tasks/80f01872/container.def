@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install required packages and pytest
+    # ------------------------------------------------------------------
+    apt-get update \
+        && apt-get install -y --no-install-recommends \
+           python3 \
+           python3-pip \
+           sqlite3 \
+        && pip3 install --no-cache-dir pytest \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # 2. Prepare directory structure and ground-truth CSV files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data/raw
+
+    cat >/home/user/data/raw/customers.csv <<'EOF'
+id,name,email
+1,Alice Smith,alice@example.com
+2,Bob Jones,bob@example.com
+3,Charlie Chen,charlie@example.com
+4,Diana Prince,diana@example.com
+5,Evan Davis,evan@example.com
+EOF
+
+    cat >/home/user/data/raw/orders.csv <<'EOF'
+id,customer_id,product,quantity
+1001,1,Keyboard,2
+1002,1,Mouse,1
+1003,2,Laptop,1
+1004,3,Monitor,2
+1005,3,USB Cable,5
+1006,4,Headset,1
+1007,4,Mouse Pad,3
+1008,5,Webcam,1
+EOF
+
+    # ------------------------------------------------------------------
+    # 3. Provide a workspace directory the agent can write to
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/work
+
+    # Ensure permissive permissions so the non-root runtime user can read/write
+    chmod -R 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # No special environment variables needed. Ensure Python is on PATH.
+    export PYTHONIOENCODING="utf-8"
+
+%help
+    Container prepared for the SQLite/CSV migration exercise.
+    Preloaded with ground-truth CSV files in /home/user/data/raw
+    and pytest installed for automated pre-task checks.

@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ---------------------------------------------------------------------
+    # Install Python + pytest
+    # ---------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ---------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ---------------------------------------------------------------------
+
+    # Base directories
+    mkdir -p /home/user/backup/logs
+    mkdir -p /home/user/backup/verification
+
+    # Permissions (at least 755 as required by tests)
+    chmod 755 /home/user
+    chmod 755 /home/user/backup
+    chmod 755 /home/user/backup/logs
+    chmod 755 /home/user/backup/verification
+
+    # Pre-populated rsync verification log
+    cat > /home/user/backup/logs/rsync_2023-09-01.log <<'EOF'
+2023/09/01 03:15:12 [12345] sent 123456 bytes  received 78910 bytes  total size 987654321
+2023/09/01 03:15:12 [12345] verify /data/projects/app1/bin/run.sh OK
+2023/09/01 03:15:12 [12345] verify /data/projects/app1/config/settings.yml FAILED checksum
+2023/09/01 03:15:13 [12345] verify /data/images/logo.png OK
+2023/09/01 03:15:13 [12345] verify /data/db/dump.sql FAILED size
+2023/09/01 03:15:13 [12345] verify /data/docs/readme.md OK
+2023/09/01 03:15:13 [12345] verify /data/secrets/keys.txt FAILED checksum
+EOF
+    chmod 644 /home/user/backup/logs/rsync_2023-09-01.log
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PYTHONIOENCODING=utf-8

@@ -1,0 +1,26 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Prepare the writable home directory expected by the tests
+    mkdir -p /home/user
+    chmod 777 /home/user   # Writable by the unprivileged learner
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure pip-installed binaries are discoverable
+    export PATH="/usr/local/bin:${PATH}"

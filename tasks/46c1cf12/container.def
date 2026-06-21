@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory structure and dataset for the exercise
+    # ------------------------------------------------------------------
+    # Create /home/user and make sure any user can write inside it
+    mkdir -p /home/user/data
+    chmod 0777 /home/user
+
+    # Create the CSV file with the exact required contents (including
+    # trailing newline and no leading whitespace)
+cat >/home/user/data/transactions.csv <<'EOF'
+transaction_id,account_id,amount,currency,status
+T1001,AC245,250.00,USD,COMPLETED
+T1002,AC367,1450.50,USD,PENDING
+T1003,AC578,322.10,EUR,FAILED
+T1004,AC245,78.45,USD,COMPLETED
+T1005,AC367,2300.00,USD,FAILED
+EOF
+
+    # Ensure the dataset is world-readable
+    chmod 0644 /home/user/data/transactions.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Keep Python output unbuffered for easier debugging (optional)
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Maintainer compliance-container-builder

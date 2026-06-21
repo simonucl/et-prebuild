@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+Author FinOps-Container-Builder
+Description "Environment for FinOps cron-scheduling task (pytest included)."
+
+%environment
+# Keep user’s PATH intact but ensure /usr/local/bin (for pip installs) comes first.
+export PATH="/usr/local/bin:${PATH}"
+
+%post
+set -e
+
+#############################
+# 1. Install required tools #
+#############################
+apt-get update
+# cron provides the `crontab` utility; python3-pip is for installing pytest.
+DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    cron \
+    python3-pip \
+    python3-setuptools \
+    python3-wheel \
+    ca-certificates
+
+# Install pytest via pip so we always get a recent version.
+pip3 install --no-cache-dir pytest
+
+############################################
+# 2. Set up the directory and helper script #
+############################################
+# Create /home/user hierarchy expected by the tests and task.
+mkdir -p /home/user/finops
+
+# Give broad write permissions so the non-root runtime user can add files later
+# (e.g., cron_job_list.log). 777 is permissive but safe inside an isolated
+# container for this educational scenario.
+chmod 777 /home/user /home/user/finops
+
+# Create the helper script with the required stub content.
+cat >/home/user/finops/cleanup_stale_resources.sh <<'EOSCRIPT'
+#!/usr/bin/env bash
+echo "Cleaning up stale resources..."
+EOSCRIPT
+
+# Make the script executable.
+chmod 755 /home/user/finops/cleanup_stale_resources.sh
+
+# Ensure /var/spool/cron/crontabs exists and has correct permissions so the
+# `crontab` command can function for an unprivileged user at runtime.
+# These are the defaults on Ubuntu when the cron package is installed, but we
+# recreate them explicitly in case the base image differs.
+mkdir -p /var/spool/cron/crontabs
+chmod 1730 /var/spool/cron/crontabs
+chgrp crontab /var/spool/cron/crontabs
+
+# Clean up APT caches to keep the image small.
+apt-get clean
+rm -rf /var/lib/apt/lists/*

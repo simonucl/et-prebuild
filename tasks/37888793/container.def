@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install Python tooling and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Prepare the initial filesystem state expected by the grader
+    # ------------------------------------------------------------------
+    # Create the data directory tree
+    mkdir -p /home/user/data/subdir1
+    mkdir -p /home/user/data/subdir2
+
+    # fileA.txt  – 17 bytes
+    printf 'Hello compliance\n' > /home/user/data/fileA.txt
+
+    # fileB.log – 24 bytes (two lines, each ending in \n)
+    printf 'Log entry 1\nLog entry 2\n' > /home/user/data/fileB.log
+
+    # fileC.bin – 1 024 zero bytes
+    dd if=/dev/zero bs=1024 count=1 of=/home/user/data/subdir1/fileC.bin status=none
+
+    # nested.txt – 23 bytes
+    printf 'Nested compliance data\n' > /home/user/data/subdir2/nested.txt
+
+    # ------------------------------------------------------------------
+    # 3. Permissions: 0755 for dirs, 0644 for regular files
+    # ------------------------------------------------------------------
+    chmod 0755 /home/user
+    find /home/user/data -type d -exec chmod 0755 {} +
+    find /home/user/data -type f -exec chmod 0644 {} +
+
+%labels
+    chmod 755 /home/user
+
+    Author "Auto-generated for disk-usage audit task"
+
+%help
+    Container for the “disk-usage audit” task.
+    Includes:
+      • Python 3 + pytest for automated testing
+      • Pre-populated /home/user/data directory with required files
+    The /home/user/audit directory is intentionally NOT created.

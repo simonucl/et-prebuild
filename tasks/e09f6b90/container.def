@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author junior-security-auditor-task
+    Description "Base image with Python, pytest, and networking tools pre-installed."
+
+%post
+    # Update package lists and install required utilities
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        iproute2 \
+        --no-install-recommends
+
+    # Install pytest via pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected home directory for the non-root user that will run tests
+    mkdir -p /home/user
+    chmod 0755 /home/user || true
+    # Attempt to give it to the typical UID 1000; ignore failures if UID 1000
+    # does not exist during build time.
+    chown 1000:1000 /home/user || true
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Standard PATH setup
+    export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+
+%help
+    This container image supplies Python 3, pytest, and standard networking
+    tools (ip, ss) required for the “network exposure snapshot” task.
+    It intentionally does NOT create /home/user/audit nor the target log file
+    so that students can generate them during their exercise.

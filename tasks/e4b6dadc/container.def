@@ -1,0 +1,30 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required system packages
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        make \
+        tar \
+        gzip \
+        python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading infrastructure
+    pip3 install --no-cache-dir pytest
+
+    # Prepare the workspace directory expected by the assignment
+    mkdir -p /home/user/artifact-project
+
+    # Ensure the runtime (non-root) user can freely write to these paths
+    chmod 0777 /home/user
+    chmod 0777 /home/user/artifact-project
+
+%labels
+    chmod 755 /home/user
+
+    Author artifact-project-container

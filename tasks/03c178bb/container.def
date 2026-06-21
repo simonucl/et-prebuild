@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        build-essential
+
+    # Install pytest for the verification suite
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the grading tests
+    # -----------------------------------------------------------------------------
+
+    # Create required directory hierarchy
+    mkdir -p /home/user/deploy/app
+    mkdir -p /home/user/deploy/backups
+
+    # Populate live application directory with the two specified files
+    echo "Hello World v1" > /home/user/deploy/app/index.html
+    printf "version: 1.0\n" > /home/user/deploy/app/config.yaml
+
+    # Ensure the backups directory is empty (should already be)
+    find /home/user/deploy/backups -mindepth 1 -delete
+
+    # Give broad write permissions so the unprivileged runtime user
+    # (same UID inside and outside the container) can add new files.
+    chmod -R a+rwx /home/user
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author AI-Generated
+    Description "Environment for web-app backup exercise with pytest pre-installed."

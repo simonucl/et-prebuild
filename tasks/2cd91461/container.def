@@ -1,0 +1,28 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package index and install required software
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        cron \
+        python3-pip
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # Prepare the expected home directory
+    mkdir -p /home/user
+    # Ensure any non-root runtime user can write inside /home/user
+    chmod 0777 /home/user
+
+    # Clean up apt cache to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author "AI-generated compliance task base image"

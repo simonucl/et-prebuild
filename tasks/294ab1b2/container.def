@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    #!/bin/bash
+    set -e
+
+    # --------------------------------------------------------------------- #
+    # Install required packages                                             #
+    # --------------------------------------------------------------------- #
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        coreutils
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test-runner
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------- #
+    # Create the expected directory tree and files under /home/user/builds  #
+    # --------------------------------------------------------------------- #
+    mkdir -p /home/user/builds/projectA
+    mkdir -p /home/user/builds/projectB
+    mkdir -p /home/user/builds/projectC
+    mkdir -p /home/user/builds/old/projectX
+
+    # Helper: create a file of an exact byte size (sparse file is fine)
+    make_file() {
+        truncate -s "$1" "$2"
+    }
+
+    # Files for projectA
+    make_file 12582912 /home/user/builds/projectA/artifact-1.0.0.tar.gz
+    make_file 70        /home/user/builds/projectA/artifact-1.0.0.sha256
+
+    # Files for projectB
+    make_file 26214400 /home/user/builds/projectB/artifact-2.1.3.tar.gz
+    make_file 3145728  /home/user/builds/projectB/artifact-2.1.3.doc.pdf
+
+    # Files for projectC
+    make_file 8388608  /home/user/builds/projectC/artifact-3.4.5.tar.gz
+
+    # Files for old/projectX
+    make_file 41943040 /home/user/builds/old/projectX/artifact-0.9.9.tar.gz
+
+    # Top-level README
+    make_file 1536     /home/user/builds/README.txt
+
+    # Ensure everything is readable/executable by any unprivileged user
+    chmod -R a+rX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special to set; just ensure PATH contains pip installs
+    export PATH=/usr/local/bin:$PATH
+
+%help
+    Container prepared for the “build-report” assignment.
+    - Pre-populated /home/user/builds with exact files & sizes.
+    - pytest installed for automated grading.

@@ -1,0 +1,36 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grading suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create required directory structure and CSV seed files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data/raw
+
+    # Create the three expected CSV files with minimal dummy content
+    printf 'id,amount\n' > /home/user/data/raw/sales_north.csv
+    printf 'id,amount\n' > /home/user/data/raw/sales_south.csv
+    printf 'id,amount\n' > /home/user/data/raw/sales_west.csv
+
+    # Ensure the student can write into /home/user/data/
+    chmod -R 777 /home/user/data
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author          ChatGPT
+    Description     "Container for CSV counting task: sets up /home/user/data/raw with three CSV files and installs pytest."

@@ -1,0 +1,70 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install Python & Pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Create initial “widget-service” project structure and seed files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/projects/widget-service/config/deployments
+
+    # prod.yaml (initial state with image tag 1.4.2, no RELEASE_TAG yet)
+    cat > /home/user/projects/widget-service/config/deployments/prod.yaml <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: widget-service
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: widget
+    spec:
+      containers:
+        - name: widget
+          image: registry.example.com/widget-service:1.4.2
+          env:
+            - name: NODE_ENV
+              value: "production"
+          ports:
+            - containerPort: 8080
+EOF
+
+    # settings.toml (initial state version 1.4.2, logging.level info)
+    cat > /home/user/projects/widget-service/config/settings.toml <<'EOF'
+[service]
+name = "widget-service"
+version = "1.4.2"
+
+[logging]
+level = "info"
+file = "/var/log/widget-service.log"
+EOF
+
+    # ------------------------------------------------------------------
+    # Ensure non-root users can edit these files during the exercise
+    # ------------------------------------------------------------------
+    chmod -R 777 /home/user/projects/widget-service
+    chmod 777 /home/user /home/user/projects || true
+
+%environment
+    chmod 755 /home/user
+
+    export PATH="/usr/local/bin:${PATH}"
+
+%runscript
+    exec /bin/bash "$@"

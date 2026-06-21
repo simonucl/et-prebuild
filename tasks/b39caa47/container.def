@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing Python tooling..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    echo "Installing pytest..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating directory structure for the exercise..."
+    mkdir -p /home/user/logs
+
+    echo "Populating /home/user/logs/failed_logins.csv with canonical content..."
+    cat > /home/user/logs/failed_logins.csv << 'EOF'
+user,timestamp,ip,reason
+alice,2023-08-21T12:05:34Z,192.168.1.45,invalid_password
+bob,2023-08-21T12:06:02Z,192.168.1.45,invalid_password
+carol,2023-08-21T12:10:11Z,10.0.0.3,account_locked
+dan,2023-08-21T12:11:47Z,10.0.0.3,invalid_password
+erin,2023-08-21T12:12:33Z,192.168.1.100,invalid_password
+frank,2023-08-21T12:13:01Z,10.0.0.3,invalid_password
+EOF
+
+    # Ensure correct permissions so the unprivileged runtime user can read
+    # the log file and create new artefacts under /home/user/.
+    chmod 0777 /home/user
+    chmod 0755 /home/user/logs
+    chmod 0644 /home/user/logs/failed_logins.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is accessible via the `python` command for convenience.
+    export PATH="/usr/bin:$PATH"
+    if [ -x /usr/bin/python3 ] && ! command -v python >/dev/null 2>&1; then
+        alias python=python3
+    fi
+
+%labels
+    Author oncall-failed-auth-task
+    Description "Container for the failed authentication investigation exercise"
+
+%help
+    This container provides the initial filesystem state and required
+    dependencies (Python 3 and pytest) for the "failed authentication"
+    on-call incident response exercise.

@@ -1,0 +1,72 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the capacity-planner directory tree and seed the log files
+    # ------------------------------------------------------------------
+    BASE=/home/user/capacity_planner
+    LOGS=$BASE/logs
+
+    mkdir -p "$LOGS"
+
+    # ----- app1.log (112 bytes, 3 lines) -----
+    cat > "$LOGS/app1.log" <<'EOF'
+2023-10-01 10:00:00 INFO App1 started
+2023-10-01 10:05:00 WARN Low memory
+2023-10-01 10:10:00 INFO App1 stopped
+EOF
+
+    # ----- app2.log (45 bytes, 2 lines) -----
+    cat > "$LOGS/app2.log" <<'EOF'
+ERROR Something bad happened
+INFO Recovering
+EOF
+
+    # ----- app3.log (16 bytes, 1 line) -----
+    cat > "$LOGS/app3.log" <<'EOF'
+DEBUG Heartbeat
+EOF
+
+    # ----- app4.log (117 bytes, 4 lines) -----
+    cat > "$LOGS/app4.log" <<'EOF'
+INFO Service started successfully
+WARN CPU usage detectd
+WARN High Memory usage detected
+ERROR OutOfMemory exception
+EOF
+
+    # ----- app5.log (10 bytes, 5 lines) -----
+    cat > "$LOGS/app5.log" <<'EOF'
+x
+x
+x
+x
+x
+EOF
+
+    # ------------------------------------------------------------------
+    # Set the specific modification times required by the tests
+    # ------------------------------------------------------------------
+    touch -d @1680000000 "$LOGS/app1.log"
+    touch -d @1680003600 "$LOGS/app2.log"
+    touch -d @1680007200 "$LOGS/app3.log"
+    touch -d @1680010800 "$LOGS/app4.log"
+    touch -d @1680014400 "$LOGS/app5.log"
+
+    # Permissions: world-readable files; directory searchable
+    chmod 644 "$LOGS"/*.log
+    chmod 755 "$BASE" "$LOGS"
+
+%environment
+    chmod 755 /home/user
+
+    # No special environment variables required.

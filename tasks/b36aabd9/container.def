@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling required for the tests
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3-pip && \
+        pip3 install --no-cache-dir pytest && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Create a non-root user that the test harness can use
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 user
+    fi
+
+    # Prepare the deployment directory structure
+    DEPLOY_DIR="/home/user/deployment"
+    RELEASES_DIR="${DEPLOY_DIR}/releases"
+    mkdir -p "${RELEASES_DIR}/v1.0.0"
+    mkdir -p "${RELEASES_DIR}/v1.1.0"
+
+    # Ensure the current symlink points to v1.1.0
+    ln -sf "${RELEASES_DIR}/v1.1.0" "${DEPLOY_DIR}/current"
+
+    # Create an empty deploy.log (allowed by the tests) if not present
+    : > "${DEPLOY_DIR}/deploy.log"
+
+    # Make sure everything under /home/user is owned by the non-root user
+    chown -R 1000:1000 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure the user's local bin (where pip installs executables) is on PATH
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%labels
+    Author="chatGPT"
+    Description="Container providing the initial state for the release-manager deployment task"
