@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python tooling for the grader
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state required by the exercise
+    # ------------------------------------------------------------------
+
+    # 1. Ensure /home/user is writable by the unprivileged runtime user
+    mkdir -p /home/user
+    chmod 777 /home/user    # give write access so the student can create /home/user/backups
+
+    # 2. Create the source directory and populate the three files
+    mkdir -p /home/user/projects/test_env
+
+    cat > /home/user/projects/test_env/config.yaml <<'EOF'
+env: staging
+version: 1.0
+EOF
+
+    cat > /home/user/projects/test_env/test_data.csv <<'EOF'
+id,value
+1,foo
+2,bar
+EOF
+
+    cat > /home/user/projects/test_env/readme.md <<'EOF'
+# Test Environment
+This directory contains configuration and data for QA tests.
+EOF
+
+    # 3. Make sure the project directory tree is readable/writable
+    chmod -R a+rwX /home/user/projects
+
+%environment
+    chmod 755 /home/user
+
+    export PATH="$PATH:/usr/local/bin"
+
+%labels
+    Author QA-Apptainer-Setup
+    Description "Environment for backup/archiving exercise with pytest pre-installed"
+
+%help
+    This container provides the initial state for the backup task.
+    Source files live under /home/user/projects/test_env and pytest is available
+    for automated grading.

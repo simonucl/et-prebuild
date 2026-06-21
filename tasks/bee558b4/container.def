@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python/pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial on-disk state for the assignment
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/restore-tests
+
+    # step1.md  (line 1 ends with TWO spaces)
+    cat > /home/user/restore-tests/step1.md <<'EOF'
+Restore Step 1  
+Run backup command.
+EOF
+
+    # step2.md
+    cat > /home/user/restore-tests/step2.md <<'EOF'
+Restore Step 2
+Verify backup.
+EOF
+
+    # Ensure the files end with a newline (they already do because of HERE-DOC)
+    # Make everything user-writable so the agent (non-root) can modify/create files
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special required; keep default environment.
+
+%labels
+    Author backup-operator-task-preparer
+    Description Container for trailing whitespace detection task (Apptainer)
+
+%help
+    This container provides the initial state for the "trailing whitespace"
+    Markdown scanning assignment.  It contains two Markdown files under
+    /home/user/restore-tests/ exactly as described in the problem statement,
+    and pytest is installed for automated grading.

@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package lists and installing system packages..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-venv \
+        build-essential
+
+    echo "Installing Python packages (pytest and useful libs)..."
+    pip3 install --no-cache-dir pytest psutil
+
+    echo "Creating default home directory for the learner..."
+    mkdir -p /home/user
+    # Make it writable by any non-root UID that Apptainer might map to
+    chmod 0777 /home/user
+
+    # Clean up APT caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure the commonly used binary locations are in PATH
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%runscript
+    echo "Container for capacity-planning task. Open a shell with:"
+    echo "    apptainer exec <image>.sif /bin/bash"
+    echo "or run your commands directly with:"
+    echo "    apptainer exec <image>.sif <command>"

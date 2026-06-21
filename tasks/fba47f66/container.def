@@ -1,0 +1,82 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # ------------------------------------------------------------------
+    # Basic tooling
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tzdata
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Create non-root user that will own the working tree
+    # (UID 1000 is the conventional first user on Ubuntu)
+    # ------------------------------------------------------------------
+    if ! id -u 1000 >/dev/null 2>&1; then
+        useradd -m -u 1000 -s /bin/bash user
+    fi
+
+    # ------------------------------------------------------------------
+    # Build the initial directory layout and files expected by the tests
+    # ------------------------------------------------------------------
+    BASE=/home/user/workspace
+    BUILDS=${BASE}/builds
+    ARTIFACTS=${BUILDS}/artifacts
+    ARCHIVE=${BUILDS}/archive
+
+    mkdir -p "${ARTIFACTS}" "${ARCHIVE}"
+
+    # Create the three “old” JARs (≥ 10 days old)
+    printf 'dummy jar 1.0.0\n' > "${ARTIFACTS}/app-core-1.0.0.jar"
+    printf 'dummy jar 1.1.0\n' > "${ARTIFACTS}/app-core-1.1.0.jar"
+    printf 'dummy jar 2.0.0\n' > "${ARTIFACTS}/lib-util-2.0.0.jar"
+
+    # Set their mtime to 10 days ago
+    touch -d '10 days ago' \
+        "${ARTIFACTS}/app-core-1.0.0.jar" \
+        "${ARTIFACTS}/app-core-1.1.0.jar" \
+        "${ARTIFACTS}/lib-util-2.0.0.jar"
+
+    # Create the fresh JAR (≤ 1 day old) and README
+    printf 'dummy jar latest\n' > "${ARTIFACTS}/fresh-feature-9999.jar"
+
+    cat > "${ARTIFACTS}/README.txt" <<'EOF'
+Build Drop Area
+---------------
+Anything that is not a *.jar file
+will stay here.
+EOF
+
+    # Make them appear recent
+    touch -d '1 hour ago' "${ARTIFACTS}/fresh-feature-9999.jar" "${ARTIFACTS}/README.txt"
+
+    # ------------------------------------------------------------------
+    # Permissions
+    # ------------------------------------------------------------------
+    chmod 0755 "${BASE}" "${BUILDS}" "${ARTIFACTS}" "${ARCHIVE}"
+    chmod 0644 "${ARTIFACTS}"/*.jar "${ARTIFACTS}/README.txt"
+
+    # Give ownership to UID 1000 so the non-root runtime user can write
+    chown -R 1000:1000 "${BASE}"
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+
+%labels
+    Author build-engineering-task
+    Description Container pre-populated for the “age-out stale JARs” exercise.
+
+%runscript
+    echo "This container is meant to be used via 'apptainer exec ...' with your own commands."
+    echo "It only prepares the initial build-artifact state for the exercise."

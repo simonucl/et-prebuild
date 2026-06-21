@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install minimal dependencies
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        locales
+
+    # Make sure a UTF-8 locale is available for Python / pytest
+    locale-gen en_US.UTF-8
+
+    # Install pytest for the test runner
+    pip3 install --no-cache-dir pytest
+
+    # Create the base workspace directory expected by the grader.
+    # Do NOT create the benchmark artefacts the student must produce.
+    mkdir -p /home/user
+    chmod 0777 /home/user   # allow the (non-root) runtime user to write here
+
+    # Clean up apt caches to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+    export PYTHONIOENCODING=utf-8
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Base image with pytest installed and clean workspace for the benchmark assignment."
+
+%help
+    This container provides a pristine environment for the “size on disk”
+    benchmark assignment.  It only includes Python 3, pytest, and a writable
+    /home/user workspace; no benchmark artefacts are pre-created.

@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package list and install Python + pytest dependencies
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Establish the REQUIRED initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    # Base directory structure
+    mkdir -p /home/user/compliance/logs/2024-02-01
+    mkdir -p /home/user/compliance/logs/2024-02-02
+
+    # Pre-existing security log files with exact contents
+    echo "SECURITY LOG 2024-02-01" > /home/user/compliance/logs/2024-02-01/security.log
+    echo "SECURITY LOG 2024-02-02" > /home/user/compliance/logs/2024-02-02/security.log
+
+    # ------------------------------------------------------------------
+    # Permissions
+    # Give non-root users the ability to create the required symlinks
+    # and audit file while keeping everything world-readable.
+    # ------------------------------------------------------------------
+    chmod 777 /home/user/compliance
+    chmod 777 /home/user/compliance/logs
+    chmod 755 /home/user/compliance/logs/2024-02-01
+    chmod 755 /home/user/compliance/logs/2024-02-02
+    chmod 644 /home/user/compliance/logs/2024-02-01/security.log
+    chmod 644 /home/user/compliance/logs/2024-02-02/security.log
+
+%environment
+    # Ensure Python packages installed via pip are discoverable
+    export PYTHONPATH="/usr/local/lib/python3.10/dist-packages:${PYTHONPATH}"

@@ -1,0 +1,71 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package list and install required utilities
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        pigz \
+        parallel \
+        ca-certificates \
+        && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory structure and raw CSV data
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data/raw
+
+    # file1.csv
+    cat <<'EOF' > /home/user/data/raw/file1.csv
+id,name,status,value
+1,Alice,train,0.5
+2,Bob,test,0.8
+3,Carol,train,0.3
+4,Dan,train,0.9
+EOF
+
+    # file2.csv
+    cat <<'EOF' > /home/user/data/raw/file2.csv
+id,name,status,value
+3,Carol,train,0.3
+4,Dan,train,0.9
+5,Eve,train,0.4
+6,Frank,val,0.7
+EOF
+
+    # Ensure directories are writable by the (non-root) runtime user
+    chmod 777 /home/user
+    chmod 777 /home/user/data
+
+    # Raw files should be readable
+    chmod 644 /home/user/data/raw/file1.csv /home/user/data/raw/file2.csv
+
+    # Silence GNU parallel’s citation prompt for convenience
+    mkdir -p /home/user/.parallel
+    touch /home/user/.parallel/will-cite
+    chmod 600 /home/user/.parallel/will-cite
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python and typical tools are on PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Automated setup"
+    Description="Environment for ML data-prep task with pytest pre-installed"
+
+%help
+    This container provides the starting state for the ML data-preparation task.
+    Raw CSV files are placed in /home/user/data/raw; no output artefacts have
+    been generated yet. Utilities installed include:
+      • python3 + pytest
+      • pigz
+      • GNU parallel

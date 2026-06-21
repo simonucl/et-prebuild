@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author edge-ai
+    Description Base image for IoT-deployment exercise. Provides Python 3 and pytest,
+                plus a clean /home/user directory. No workspace files are present.
+
+%post
+    set -e
+
+    echo "Updating package index and installing Python 3 + pip..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    echo "Installing pytest for the autograder..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating /home/user directory..."
+    # Create a conventional non-privileged user (UID/GID 1000) so that the directory
+    # exists regardless of who runs the container.
+    groupadd -g 1000 user 2>/dev/null || true
+    useradd  -m -d /home/user -u 1000 -g 1000 user 2>/dev/null || true
+
+    # Ensure directory permissions are sensible and accessible.
+    mkdir -p /home/user
+    chmod 0755 /home/user
+
+    # Clean up apt caches to keep the image lean.
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure /home/user/.local/bin is on PATH for any user-installed packages.
+    export PATH="$PATH:/home/user/.local/bin"
+
+%runscript
+    echo "Container for IoT-deployment exercise.  Start an interactive shell."
+    exec /bin/bash

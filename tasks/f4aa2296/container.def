@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ########## 1. System packages & Python tooling ##########
+    apt-get update -y
+    # rsync is required by the exercise; python3-pip installs pytest
+    apt-get install -y --no-install-recommends rsync python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    ########## 2. Create an unprivileged user (`user`, uid/gid 1000) ##########
+    # If uid 1000 already exists (common in minimal images), skip creation.
+    if ! id -u 1000 >/dev/null 2>&1; then
+        groupadd -g 1000 user
+        useradd  -m -u 1000 -g 1000 -s /bin/bash user
+    fi
+
+    ########## 3. Prepare the initial filesystem state ##########
+    # Directory structure – permissions are 755
+    install -d -m 0755 /home/user/remote_host_sim/app_logs
+    install -d -m 0755 /home/user/local_backup/app_logs
+    # NB:  /home/user/sync_reports/ must NOT exist at build time.
+
+    # Remote “*.log” & “*.tmp” files with exact contents – permissions 644
+    cat > /home/user/remote_host_sim/app_logs/app-2023-10-01.log <<'EOF'
+LOG-A
+EOF
+    cat > /home/user/remote_host_sim/app_logs/app-2023-10-02.log <<'EOF'
+LOG-B
+EOF
+    cat > /home/user/remote_host_sim/app_logs/debug-2023-10-01.log <<'EOF'
+DEBUG-A
+EOF
+    cat > /home/user/remote_host_sim/app_logs/session.tmp <<'EOF'
+TEMP
+EOF
+    chmod 0644 /home/user/remote_host_sim/app_logs/*
+
+    ########## 4. Ownership ##########
+    # Make sure the unprivileged user owns everything under /home/user so that
+    # they can create new files/directories during the exercise.
+    chown -R 1000:1000 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep the standard PATH; no HOME override to respect Apptainer’s binding.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    # Default entry simply opens a shell in the container.
+    exec /bin/bash "$@"

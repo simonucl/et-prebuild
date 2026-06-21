@@ -1,0 +1,69 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+Author benchmark-setup
+Description "Initial filesystem and tooling for gzip timing benchmark task."
+
+%post
+    set -e
+
+    # Update apt cache and install required packages
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        gzip \
+        time \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial filesystem state expected by the tests
+    # ------------------------------------------------------------------
+
+    # 1. Ensure /home and /home/user exist
+    mkdir -p /home/user
+    chmod 0755 /home /home/user
+
+    # 2. Create artifacts directory with correct permissions
+    ARTIFACT_DIR="/home/user/artifacts"
+    mkdir -p "${ARTIFACT_DIR}"
+    chmod 0755 "${ARTIFACT_DIR}"
+
+    # 3. Create the build artifact file (~11 KB) with placeholder content
+    TAR_PATH="${ARTIFACT_DIR}/build_v1.2.3.tar"
+    : > "${TAR_PATH}"   # truncate / create
+
+    # Append the line 700 times to approximate 11–15 KB
+    for i in $(seq 1 700); do
+        echo "Hello Build Engineer" >> "${TAR_PATH}"
+    done
+
+    # Set expected permissions on the artifact
+    chmod 0644 "${TAR_PATH}"
+
+    # ------------------------------------------------------------------
+    # Clean up apt caches to keep the image smaller
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Preserve a sensible PATH and locale
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+%runscript
+    # Default runscript prints a brief help message
+    echo "Container ready for the gzip timing benchmark task."
+    echo "Refer to the assignment instructions for what actions to perform."
+
+%help
+This container sets up the initial state for the gzip compression timing
+benchmark task. It pre-installs gzip, GNU time, and pytest, and provides the
+required build artifact under /home/user/artifacts/ with the correct
+permissions.

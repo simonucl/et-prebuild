@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the credential-rotation task
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/credentials
+
+    # Make sure the main user directory is traversable
+    chmod 755 /home/user
+
+    # Credentials directory must be writable by the non-root runtime user
+    chmod 777 /home/user/credentials
+
+    # Create the version-stamped key files with exact contents
+    printf "OLD KEY 2023\n" > /home/user/credentials/api_key_2023.pem
+    printf "NEW KEY 2024\n" > /home/user/credentials/api_key_2024.pem
+    chmod 644 /home/user/credentials/api_key_2023.pem /home/user/credentials/api_key_2024.pem
+
+    # Current key symlink initially points to the 2023 key
+    ln -s /home/user/credentials/api_key_2023.pem /home/user/credentials/api_key_current.pem
+
+    # Do NOT create rotation.log here; it should not exist before the task starts
+
+%environment
+    # No special environment variables required; keep defaults.
+
+%labels
+    Author SecurityEngineerAI
+    Description "Container for credential-rotation task – initial state and pytest preinstalled"
+
+%help
+    This Apptainer image provides the starting environment for the
+    credential-rotation exercise.

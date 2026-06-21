@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author      apptainer-task-generator
+    Description Initial state for “daily uptime summary” terminal-processing exercise.
+
+%post
+    set -e
+
+    # Update package index and install Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the monitoring directory structure and seed the source CSV
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/monitoring
+    chmod 0755 /home/user
+    chmod 0755 /home/user/monitoring
+
+    # Populate the exact, newline-terminated CSV required by the tests
+    cat > /home/user/monitoring/uptime_report.csv <<'EOF'
+timestamp,service_name,status,response_time_ms
+2024-04-18T00:00:00Z,auth,UP,120
+2024-04-18T00:00:00Z,payments,DOWN,0
+2024-04-18T00:00:00Z,api,UP,95
+2024-04-18T01:00:00Z,auth,UP,110
+2024-04-18T01:00:00Z,payments,UP,210
+2024-04-18T01:00:00Z,api,UP,100
+2024-04-18T02:00:00Z,auth,DOWN,0
+2024-04-18T02:00:00Z,payments,UP,190
+2024-04-18T02:00:00Z,api,UP,98
+EOF
+
+    # Ensure the CSV file is world-readable (0644) and nothing else exists yet
+    chmod 0644 /home/user/monitoring/uptime_report.csv
+    rm -f /home/user/monitoring/daily_uptime_summary.txt || true
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python and common CLI tools are in PATH (Ubuntu default, but explicit for clarity)
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%help
+    This container supplies the starting environment for the “daily uptime
+    summary” text-processing exercise.  It includes:
+
+      • /home/user/monitoring/uptime_report.csv  – the raw probe export
+      • pytest                                   – for automated grading
+
+    Students should write shell commands inside the running container to produce
+    /home/user/monitoring/daily_uptime_summary.txt exactly as described in the
+    assignment.

@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update APT index and install Python tooling
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Create the initial directory / file structure for the exercise
+    # -----------------------------------------------------------------
+    # Base workspace for the unprivileged user executing the tests
+    mkdir -p /home/user
+
+    # Dataset root directory
+    mkdir -p /home/user/datasets/astronomy
+    mkdir -p /home/user/datasets/climate
+    mkdir -p /home/user/datasets/epidemiology
+
+    # astronomy dataset
+    echo -e "id\tname\tmagnitude\n1\tMilkyWay\t-20.9" > /home/user/datasets/astronomy/galaxies.tsv
+
+    # climate dataset
+    echo "date,temp_c" > /home/user/datasets/climate/temp.csv
+    echo "date,rain_mm" > /home/user/datasets/climate/rainfall.csv
+
+    # epidemiology dataset
+    echo "week,cases" > /home/user/datasets/epidemiology/flu_2020.csv
+    echo "week,cases" > /home/user/datasets/epidemiology/covid_2020.csv
+    echo "week,cases" > /home/user/datasets/epidemiology/measles_2019.csv
+
+    # Ensure the unprivileged runtime user can read existing items and
+    # create the manifest file later
+    chmod -R a+rX /home/user
+    chmod -R u+w /home/user
+    # Leave /home/user writable so the student/agent can create new files
+    chmod a+rwx /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is accessible as `python` for convenience
+    export PATH="/usr/bin:$PATH"
+
+%runscript
+    echo "Container for the 'dataset manifest' exercise."
+    echo "Run your commands inside this container to generate /home/user/dataset_manifest.tsv."
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Environment prepared for the dataset manifest exercise"

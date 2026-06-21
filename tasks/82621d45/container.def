@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic utilities and Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the automated checker
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    # Create the required directory structure
+    mkdir -p /home/user/pg_sandbox
+
+    # Populate postgresql.conf with the expected commented lines
+    cat > /home/user/pg_sandbox/postgresql.conf <<'EOF'
+#------------------------------------------------------------------------------
+# ERROR REPORTING AND LOGGING
+#------------------------------------------------------------------------------
+#log_min_duration_statement = -1        # -1 disables, 0 logs all statements
+#log_line_prefix = '%t [%p]: '          # see "logging parameters" in docs
+    chmod 755 /home/user
+
+
+#------------------------------------------------------------------------------
+# CUSTOM PARAMETERS
+#------------------------------------------------------------------------------
+# (other parameters may follow)
+EOF
+
+    # Make the sandbox writable by the unprivileged user who will run the task
+    chmod -R 777 /home/user/pg_sandbox
+
+%environment
+    # Ensure Python is accessible
+    export PATH="/usr/bin:${PATH}"
+    export PYTHONIOENCODING="utf-8"
+
+%runscript
+    exec "$@"

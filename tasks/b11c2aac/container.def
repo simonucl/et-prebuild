@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+Author credential-rotation-setup
+Description "Container initial state for API credential rotation task"
+
+%post
+    set -e
+
+    # Update package lists and install Python + Pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the grader
+    # ------------------------------------------------------------------
+    # 1. Create project directory
+    mkdir -p /home/user/project
+
+    # 2. Create the .env file with the exposed credential
+    cat > /home/user/project/.env <<'EOF'
+# Application environment variables
+SERVICE_URL="https://dev.example.com"
+OLD_API_KEY="ABC123"
+DEBUG=true
+EOF
+
+    # 3. Set permissive permissions so the unprivileged runtime user
+    #    can modify the files and directories during the exercise.
+    chmod 777 /home/user/project
+    chmod 666 /home/user/project/.env
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python and pytest are in PATH
+    PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for credential-rotation task.  Open a shell with:"
+    echo "  apptainer exec <image> /bin/bash"

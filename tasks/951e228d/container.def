@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Refresh package list and install Python & pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the validation suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the “tiny firewall” exercise.
+    # ------------------------------------------------------------------
+    # 1. Create the /home/user hierarchy
+    mkdir -p /home/user/firewall
+
+    # 2. Ensure directories are writable by any non-root user who will run inside the container
+    chmod 0777 /home/user
+    chmod 0777 /home/user/firewall
+
+    # 3. Create the initial rules.conf file containing exactly "#\n"
+    printf '#\n' > /home/user/firewall/rules.conf
+
+    # 4. Make the file world-writable so the unprivileged agent can modify it
+    chmod 0666 /home/user/firewall/rules.conf
+
+%environment
+    chmod 755 /home/user
+
+    # Keep the standard PATH while guaranteeing /usr/local/bin is searched first
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Environment for the tiny firewall exercise with pytest pre-installed."

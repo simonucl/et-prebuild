@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Prepare the required base directory for the exercise
+    mkdir -p /home/user/firewall_config
+    # Make sure all learners (regardless of host UID/GID) can write here
+    chmod 777 /home /home/user /home/user/firewall_config
+
+    # Guarantee a clean initial state (no pre-existing artefact files)
+    rm -f /home/user/firewall_config/iptables.rules || true
+    rm -f /home/user/firewall_config/changes.log   || true
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author firewall-config-demo
+
+%help
+    This container includes pytest and an empty /home/user/firewall_config
+    directory.  Learners will create firewall configuration artefacts inside
+    that directory during the exercise.

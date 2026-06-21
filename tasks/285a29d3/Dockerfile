@@ -1,0 +1,33 @@
+FROM ubuntu:22.04
+
+# Basic tooling
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Python testing framework (pytest)
+RUN pip3 install --no-cache-dir pytest
+
+# Prepare initial filesystem state
+RUN mkdir -p /home/user/backup/logs && \
+    chmod 755 /home/user && \
+    chmod 755 /home/user/backup && \
+    chmod 755 /home/user/backup/logs
+
+RUN cat <<'EOF' > /home/user/backup/logs/restore_2024-05-17.log
+[2024-05-17 10:15:21] INFO  Restored: /var/data/customer1.db
+[2024-05-17 10:15:22] ERROR Restore failed: /var/data/customer2.db - checksum mismatch
+[2024-05-17 10:15:23] INFO  Restored: /var/data/customer3.db
+[2024-05-17 10:15:25] INFO  Restored: /var/data/reports/2024_Q2.pdf
+[2024-05-17 10:15:27] ERROR Restore failed: /var/data/archive/2023.tar.gz - file missing
+[2024-05-17 10:15:30] INFO  Restored: /var/data/media/image1.png
+EOF
+
+RUN chmod 644 /home/user/backup/logs/restore_2024-05-17.log
+
+# Final touches
+RUN sed -i 's/\r$//' /home/user/backup/logs/restore_2024-05-17.log

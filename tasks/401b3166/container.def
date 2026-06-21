@@ -1,0 +1,68 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package list and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the verification suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare prerequisite data for the security-report exercise
+    # ------------------------------------------------------------------
+    # Create working directories
+    mkdir -p /home/user/scan_data
+    mkdir -p /home/user/security_scan   # Directory exists but is empty
+
+    # Make /home/user writable by any unprivileged user running inside
+    # the container (sticky bit for safety).
+    chmod 1777 /home/user
+    chmod 0755 /home/user/scan_data
+    chmod 1777 /home/user/security_scan
+
+    # 1. kernel.txt
+    printf '5.15.0-test\n' > /home/user/scan_data/kernel.txt
+
+    # 2. port_scan.log
+    cat > /home/user/scan_data/port_scan.log <<'EOF'
+Netid State      Recv-Q Send-Q Local Address:Port Peer Address:Port
+tcp   LISTEN     0      128      0.0.0.0:22      0.0.0.0:*
+tcp   LISTEN     0      128      0.0.0.0:8080    0.0.0.0:*
+udp   UNCONN     0      0        0.0.0.0:68      0.0.0.0:*
+EOF
+
+    # 3. sshd_config
+    cat > /home/user/scan_data/sshd_config <<'EOF'
+# Example sshd_config snippet
+PermitRootLogin yes
+PasswordAuthentication no
+EOF
+
+    # Set appropriate permissions for the data files
+    chmod 0644 /home/user/scan_data/kernel.txt
+    chmod 0644 /home/user/scan_data/port_scan.log
+    chmod 0644 /home/user/scan_data/sshd_config
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are available in PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author SecurityReportSetup
+    Description "Container with prerequisite data for the security report task and pytest installed."
+
+%help
+    This container image supplies the required input files located under
+    /home/user/scan_data for the security-report exercise and has pytest
+    pre-installed for automated assessment.

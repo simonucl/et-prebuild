@@ -1,0 +1,74 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author AI_Generated
+    Description "Environment for FinOps Q2-2023 patch-application exercise"
+
+%post
+    set -e
+
+    echo "Updating package lists and installing required tools..."
+    apt-get update -y
+    # patch utility is needed for the exercise; python3-pip installs pip
+    apt-get install -y --no-install-recommends patch python3-pip
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir --upgrade pip pytest
+
+    echo "Creating workspace directories and seed files..."
+    # Create user home dir hierarchy
+    mkdir -p /home/user/finops_reports
+
+    # ------------------------------------------------------------------
+    # Seed CSV file (pre-patch version)
+    # ------------------------------------------------------------------
+    cat > /home/user/finops_reports/cost_report_Q2_2023.csv << 'EOF'
+Project,Service,Month,CostUSD
+ProjectA,Compute,2023-04,1500.00
+ProjectA,Storage,2023-04,200.00
+ProjectB,Compute,2023-04,1800.00
+ProjectB,Database,2023-04,600.00
+EOF
+
+    # ------------------------------------------------------------------
+    # Seed patch file
+    # ------------------------------------------------------------------
+    cat > /home/user/finops_reports/cost_report_Q2_2023.patch << 'EOF'
+--- cost_report_Q2_2023.csv	2023-05-01 12:00:00.000000000 +0000
++++ cost_report_Q2_2023.csv	2023-05-02 12:00:00.000000000 +0000
+@@ -1,5 +1,6 @@
+ Project,Service,Month,CostUSD
+ ProjectA,Compute,2023-04,1500.00
+-ProjectA,Storage,2023-04,200.00
++ProjectA,Storage,2023-04,150.00
+ ProjectB,Compute,2023-04,1800.00
+-ProjectB,Database,2023-04,600.00
++ProjectB,Database,2023-04,450.00
++ProjectC,Analytics,2023-04,300.00
+EOF
+
+    # ------------------------------------------------------------------
+    # Permissions: ensure the runtime (non-root) user can write inside
+    # /home/user/finops_reports when applying the patch.
+    # ------------------------------------------------------------------
+    chmod 0777 /home/user/finops_reports
+    chmod 0666 /home/user/finops_reports/cost_report_Q2_2023.csv
+    chmod 0644 /home/user/finops_reports/cost_report_Q2_2023.patch
+
+    # Create the /home/user directory itself if it didn't exist in parent image
+    chmod 0755 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # No overrides needed; ensure UTF-8 locale for consistency
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for FinOps Q2-2023 patch exercise."
+    echo "Navigate to /home/user/finops_reports to begin."

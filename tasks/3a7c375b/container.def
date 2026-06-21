@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # --------------------------------------------------------------------- #
+    # Install Python tooling required for the autograder
+    # --------------------------------------------------------------------- #
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-distutils \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------- #
+    # Set up the initial /home/user directory structure expected by the tests
+    # --------------------------------------------------------------------- #
+    # Ensure /home and /home/user exist with secure permissions
+    mkdir -p /home/user
+    chmod 0755 /home /home/user
+
+    # Create the shared_data hierarchy
+    mkdir -p /home/user/shared_data
+    chmod 0755 /home/user/shared_data
+
+    # 1. World-writable regular file
+    touch /home/user/shared_data/suspicious.log
+    chmod 0777 /home/user/shared_data/suspicious.log
+
+    # 2. World-writable directory
+    mkdir -p /home/user/shared_data/public
+    chmod 0777 /home/user/shared_data/public
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python uses UTF-8 everywhere
+    export PYTHONIOENCODING=UTF-8
+    export PYTHONUNBUFFERED=1

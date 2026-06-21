@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Minimal packages required for the task and testing
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        make \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # Create the initial directory structure (owned by root during build)
+    mkdir -p /home/user/deploy_demo
+    : > /home/user/deploy_demo/README.md
+    chmod -R 0775 /home/user/deploy_demo
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure the required initial state exists each time the container starts.
+    # This runs as the invoking (non-root) user, guaranteeing correct ownership.
+    if [ -d /home/user/deploy_demo ]; then
+        rm -rf /home/user/deploy_demo
+    fi
+
+    mkdir -p /home/user/deploy_demo
+    : > /home/user/deploy_demo/README.md
+    chmod -R u+rwX,go+rX /home/user/deploy_demo
+
+    # Basic PATH (keep anything already set, then append standard locations)
+    export PATH="$PATH:/usr/local/bin:/usr/bin:/bin"

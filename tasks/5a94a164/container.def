@@ -1,0 +1,63 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating APT and installing prerequisites..."
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        curl \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating /home/user directory with permissive write access..."
+    mkdir -p /home/user
+    # Sticky bit (1) so users can only remove their own files; world-writable so the
+    # non-root runtime user can create /home/user/perf_logs later on.
+    chmod 1777 /home/user
+
+    echo "Setting up mock API resources..."
+    mkdir -p /home/user/mock_api
+    chmod 755 /home/user/mock_api
+
+    cat >/home/user/mock_api/users.json <<'EOF'
+[
+  { "id": 1, "name": "Alice", "email": "alice@example.com" },
+  { "id": 2, "name": "Bob", "email": "bob@example.com" }
+]
+EOF
+
+    cat >/home/user/mock_api/posts.json <<'EOF'
+[
+  { "id": 1, "title": "Hello World", "body": "First post" },
+  { "id": 2, "title": "Another Post", "body": "Second post" }
+]
+EOF
+
+    cat >/home/user/mock_api/comments.json <<'EOF'
+[
+  { "id": 1, "postId": 1, "body": "Nice!" },
+  { "id": 2, "postId": 1, "body": "Thanks!" }
+]
+EOF
+
+    chmod 644 /home/user/mock_api/*.json
+
+%labels
+    Author    example@example.com
+    Description  "Container for quick baseline timing task – ships mock API JSON files and pytest."
+
+%environment
+    # Ensure Python and user-installed packages are in PATH
+    export PATH=/usr/local/bin:$PATH
+
+%runscript
+    # Default action when the container is executed without a command.
+    exec /bin/bash "$@"

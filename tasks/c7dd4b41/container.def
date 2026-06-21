@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Set up the initial repository state expected by the automated tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/app
+
+    # Original, non-compliant Dockerfile that the agent must modify later
+    cat > /home/user/app/Dockerfile <<'EOF'
+FROM alpine:latest
+
+CMD ["echo", "Hello World"]
+EOF
+
+    # Permissions: world-readable file; directories writable by future user
+    chmod 644 /home/user/app/Dockerfile
+    chmod -R a+rX /home/user
+    chmod -R a+w  /home/user   # ensure the runtime user can write
+
+    # Clean up APT caches
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:$PATH

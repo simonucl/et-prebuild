@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install required system utilities
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        iputils-ping \
+        traceroute \
+        dnsutils
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # Create the base workspace directory expected by the assignment
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Clean up APT cache to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    Author  "Automated build for Loopback Interface Sanity Check exercise"
+
+%help
+    This container provides a clean Ubuntu 22.04 environment—complete with
+    ping, traceroute, nslookup, Python 3, and pytest—ready for the “Loopback
+    Interface Sanity Check” assignment.  No diagnostic artefacts are present;
+    learners must create them as specified in the exercise instructions.

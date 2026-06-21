@@ -1,0 +1,82 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install prerequisites
+    # ------------------------------------------------------------------
+    apt-get update -y
+    # Python and pip for pytest; coreutils already present but install
+    # explicitly for completeness.
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        coreutils
+
+    # Clean up apt caches to keep image small.
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # 2. Install pytest (required by the autograder)
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 3. Create required directory structure and seed data files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data
+
+    # people.txt
+    cat > /home/user/data/people.txt <<'EOF'
+1,John,Doe,Engineering
+2,Jane,Smith,Marketing
+3,Bob,Johnson,Sales
+4,Alice,Williams,Engineering
+5,Mike,Brown,Support
+EOF
+
+    # salaries.txt
+    cat > /home/user/data/salaries.txt <<'EOF'
+1,90000,5000,2023
+2,80000,4000,2023
+3,75000,3000,2023
+4,95000,6000,2023
+5,60000,2000,2023
+EOF
+
+    # addresses.txt
+    cat > /home/user/data/addresses.txt <<'EOF'
+1,Seattle,WA,98101
+2,Portland,OR,97201
+3,San Francisco,CA,94105
+4,Boston,MA,02108
+5,Austin,TX,73301
+EOF
+
+    # Ensure files and directories have safe, world-readable permissions.
+    chmod 755 /home/user /home/user/data
+    chmod 644 /home/user/data/*.txt
+
+    # ------------------------------------------------------------------
+    # 4. Leave /home/user/output untouched.
+    #    The grading tests allow it to be absent; the student will create
+    #    necessary files there during their solution.
+    # ------------------------------------------------------------------
+
+%environment
+    # Ensure Python points to python3
+    export PYTHONIOENCODING="utf-8"
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author task-preparer
+    Description Container with initial dataset and pytest for employee report assignment.
+
+%help
+    This Apptainer image provides the initial filesystem state for the
+    "employee report" assignment.  It contains the three required source
+    data files in /home/user/data and has pytest pre-installed for
+    automated grading.

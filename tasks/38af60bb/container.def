@@ -1,0 +1,71 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #--------------------------------------------------------------------
+    # Basic OS packages
+    #--------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        python3-setuptools
+
+    # Upgrade pip and install pytest (latest version)
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    #--------------------------------------------------------------------
+    # Create required user, home directory and initial filesystem layout
+    #--------------------------------------------------------------------
+    # Create a non-privileged 'user' account if it doesn't already exist.
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -d /home/user -s /bin/bash user
+    fi
+
+    # Ensure the compliance directory exists
+    mkdir -p /home/user/compliance
+    chmod 0755 /home/user/compliance
+
+    #--------------------------------------------------------------------
+    # Provision the pre-existing configuration file with exact contents
+    #--------------------------------------------------------------------
+    cat > /home/user/compliance/app.conf <<'EOF'
+[Security]
+encryption = AES256
+password_policy = strong
+
+[Network]
+port = 443
+tls  = enabled
+
+[Database]
+backup = daily
+EOF
+
+    # Set correct permissions (0644)
+    chmod 0644 /home/user/compliance/app.conf
+
+    #--------------------------------------------------------------------
+    # Guarantee that the audit artefacts do NOT exist at image build time
+    #--------------------------------------------------------------------
+    rm -rf /home/user/compliance/audit || true
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default $HOME binding behaviour; no overrides required.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author auditors-team
+    Description "Container preset for INI audit-log assignment (pre-task state only)"
+    Version "1.0"
+
+%runscript
+    echo "This container is prepared for the INI audit-log assignment."
+    echo "Invoke your commands with:  apptainer exec <image> <cmd>"

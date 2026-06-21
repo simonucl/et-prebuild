@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Basic tooling: Python + pip + pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # 2. Prepare initial experiment-tracking workspace
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/experiments
+
+    # Give write permission to any non-root user that will run inside the
+    # container (agents won’t have root privileges).
+    chmod 777 /home/user
+    chmod 777 /home/user/experiments
+
+    # 2.a  experiment_metrics.csv  (header + 2 data rows, LF endings, final LF)
+    cat >/home/user/experiments/experiment_metrics.csv <<'EOF'
+experiment_id,accuracy,loss
+1,0.85,0.45
+2,0.88,0.40
+EOF
+    chmod 666 /home/user/experiments/experiment_metrics.csv
+
+    # 2.b  last_run_config.json  (single line, NO trailing newline)
+    printf '{"lr":0.001,"accuracy":0.93,"loss":0.35}' \
+        >/home/user/experiments/last_run_config.json
+    chmod 666 /home/user/experiments/last_run_config.json
+
+    # Ensure output files do NOT exist yet
+    rm -f /home/user/experiments/best_accuracy.json \
+          /home/user/experiments/update_log.txt
+
+%labels
+    chmod 755 /home/user
+
+    Author="Container setup for experiment-tracking task"
+
+%environment
+    # Do not override HOME; leave default.
+    export LC_ALL=C
+    export LANG=C

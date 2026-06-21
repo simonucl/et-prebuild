@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Create required directory structure and sample log file
+    mkdir -p /home/user/qa_logs
+
+    cat > /home/user/qa_logs/application.log <<'EOF'
+2024-06-01 10:00:00 [INFO] Starting application
+2024-06-01 10:00:01 [DEBUG] Initializing modules
+2024-06-01 10:00:02 [WARN] Deprecated API used
+2024-06-01 10:00:03 [INFO] Module A ready
+2024-06-01 10:00:04 [ERROR] Null pointer exception
+2024-06-01 10:00:05 [WARN] Low disk space
+2024-06-01 10:00:06 [DEBUG] Cache cleared
+2024-06-01 10:00:07 [ERROR] Out of memory
+2024-06-01 10:00:08 [INFO] Shutdown requested
+2024-06-01 10:00:09 [WARN] Configuration file missing
+EOF
+
+    # Ensure permissions allow the non-root runtime user to add new files
+    chmod 777 /home/user/qa_logs
+    chmod 644 /home/user/qa_logs/application.log
+
+    # Create a matching non-privileged user (UID/GID 1000) if it doesn't exist
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -d /home/user -s /bin/bash user
+    fi
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    author="container-builder"
+    description="Environment for QA log-triage exercise with pytest pre-installed"

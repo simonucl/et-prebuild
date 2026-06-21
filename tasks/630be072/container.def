@@ -1,0 +1,75 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tools and Python runtime
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-venv \
+        ca-certificates && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Testing framework required by the checker
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the assignment
+    # ------------------------------------------------------------------
+    # Create the required manifests directory and YAML files
+    mkdir -p /home/user/manifests
+
+    cat <<'EOF' > /home/user/manifests/web-deploy.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+      - name: web
+        image: myapp/web:v1
+EOF
+
+    cat <<'EOF' > /home/user/manifests/cache-deploy.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cache
+  template:
+    metadata:
+      labels:
+        app: cache
+    spec:
+      containers:
+      - name: cache
+        image: myapp/cache:v1
+EOF
+
+    # Permissions:
+    #  - /home/user must be writable by the non-root runtime user so they
+    #    can create new files and directories during the exercise.
+    chmod 777 /home/user
+    chmod 755 /home/user/manifests
+    chmod 644 /home/user/manifests/*.yaml
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PYTHONIOENCODING=utf-8

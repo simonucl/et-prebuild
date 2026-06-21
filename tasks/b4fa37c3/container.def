@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author AI_GPT
+    Description "Base image for provisioning-log exercise; includes Python, pytest, and an empty /home/user workspace."
+
+%post
+    set -e
+
+    # Ensure non-interactive APT operations
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install Python + pip
+    apt-get update -qq
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the forthcoming test suite
+    pip3 install --no-cache-dir pytest
+
+    # Create an empty writable workspace for the student/agent
+    mkdir -p /home/user
+    # Allow any non-root user to create the required sub-directories and files
+    chmod 0777 /home/user
+
+    # Clean up APT cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    # Default command when the container is executed without arguments
+    exec bash
+
+%help
+    This container provides a minimal Ubuntu 22.04 environment with Python 3 and
+    pytest pre-installed.  It also sets up an empty, writable /home/user
+    directory where exercise participants will generate
+    /home/user/provisioning/logs/initial_diagnostics.log according to the
+    assignment instructions.

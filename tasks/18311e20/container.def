@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author your_name
+    Description Container for firewall-configuration task (clean initial state).
+
+%post
+    set -e
+
+    echo "Updating apt repositories and installing required packages..."
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        git \
+        bash
+
+    echo "Adding non-root user 'user' with home directory /home/user ..."
+    adduser --disabled-password --gecos "" user
+    chown -R user:user /home/user
+
+    echo "Installing pytest for the autograder ..."
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # Clean up apt cache to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure a reasonable PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%runscript
+    # Default action when the container is run
+    exec /bin/bash -l "$@"
+
+%help
+    This container is prepared for the firewall-configuration coding task.
+    The initial filesystem state is intentionally clean:
+      • /home/user/ci does not exist.
+      • No firewall scripts or logs are present.
+    Students will author these as part of their solution.

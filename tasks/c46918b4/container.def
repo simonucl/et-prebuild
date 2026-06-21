@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install required packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        tzdata \
+        locales
+
+    # Install pytest for the automated grading framework
+    pip3 install --no-cache-dir pytest
+
+    # Create the base /home/user directory (must be writable by the unprivileged user)
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and user-local binaries are on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    # Default action when the container is run
+    exec /bin/bash

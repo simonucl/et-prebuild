@@ -1,0 +1,75 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author DevSecOpsContainer
+    Description "Sets up initial state for policy-as-code disk-usage assignment"
+
+%post
+    set -eux
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Create the reference repository that the student must NOT modify.
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/policy-code/tests
+
+    # 1. policy.yaml  (exactly 113 bytes)
+    cat > /home/user/policy-code/policy.yaml <<'EOF'
+apiVersion: v1
+kind: Policy
+metadata:
+  name: sample-policy
+spec:
+  description: Sample security policy file.
+#
+EOF
+    truncate -s 113 /home/user/policy-code/policy.yaml
+
+    # 2. README.md  (exactly 88 bytes)
+    cat > /home/user/policy-code/README.md <<'EOF'
+# Policy Code
+
+This repository contains sample policy code used for disk usage testing.
+EOF
+    truncate -s 88 /home/user/policy-code/README.md
+
+    # 3. script.sh  (exactly 67 bytes, executable)
+    cat > /home/user/policy-code/script.sh <<'EOF'
+#!/bin/bash
+# Sample enforcement script
+echo "Enforcing policy..."
+EOF
+    truncate -s 67 /home/user/policy-code/script.sh
+    chmod 755 /home/user/policy-code/script.sh
+
+    # 4. tests/test1.txt  (exactly 16 bytes)
+    echo "dummy test file" > /home/user/policy-code/tests/test1.txt
+    truncate -s 16 /home/user/policy-code/tests/test1.txt
+
+    # ------------------------------------------------------------------
+    # Set sane, world-readable permissions
+    # ------------------------------------------------------------------
+    chmod 755 /home/user
+    chmod 755 /home/user/policy-code
+    chmod 755 /home/user/policy-code/tests
+    chmod 644 /home/user/policy-code/*.yaml
+    chmod 644 /home/user/policy-code/*.md
+    chmod 644 /home/user/policy-code/tests/*.txt
+
+%environment
+    # Ensure user-installed Python tools are on PATH
+    export PATH=$PATH:/usr/local/bin
+
+%runscript
+    echo "Container for Policy-as-Code disk-usage assignment."
+    echo "Use this image as the execution environment for the grading tasks."

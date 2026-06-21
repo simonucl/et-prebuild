@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # ------------------------------------------------------------------
+    # 1. Install Python and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Create regular (non-root) user “user”
+    #    UID/GID 1000 is traditional for the first unprivileged account.
+    # ------------------------------------------------------------------
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g 1000 -s /bin/bash user
+
+    # ------------------------------------------------------------------
+    # 3. Prepare initial exercise data
+    #    • /home/user/localization directory  (mode 0755)
+    #    • translations.csv with exact byte contents (mode 0644)
+    # ------------------------------------------------------------------
+    LOC_DIR="/home/user/localization"
+    mkdir -p "${LOC_DIR}"
+    chmod 0755 "${LOC_DIR}"
+
+    cat > "${LOC_DIR}/translations.csv" <<'CSV'
+key,en_US,fr_FR,de_DE
+welcome,Welcome,,Willkommen
+bye,Goodbye,Au revoir,Auf Wiedersehen
+thanks,Thank you,,Danke
+hello,Hello,Bonjour,Hallo
+morning,Good morning,,Guten Morgen
+CSV
+    chmod 0644 "${LOC_DIR}/translations.csv"
+
+    # Ensure ownership belongs to the non-root user
+    chown -R 1000:1000 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure the standard binary paths are available
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Apptainer image for the 'missing French translations' exercise."
+    echo "Invoke commands inside the container with 'apptainer exec'."

@@ -1,0 +1,68 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author TaskPreparer
+    Description "Base image for CSV-permissions exercise. Provides initial raw data and pytest."
+
+%post
+    set -e
+
+    # Non-interactive apt
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python 3 and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory layout and raw CSV files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/datasets/raw
+
+    # data1.csv  (initial mode 644)
+    cat > /home/user/datasets/raw/data1.csv <<'EOF'
+id,value
+1,23
+2,
+3,45
+EOF
+
+    # data2.csv  (initial mode 644)
+    cat > /home/user/datasets/raw/data2.csv <<'EOF'
+id,value,score
+1,10,0.5
+2,,0.7
+3,12,
+EOF
+
+    # Ensure correct permissions
+    chmod 644 /home/user/datasets/raw/data1.csv
+    chmod 644 /home/user/datasets/raw/data2.csv
+
+%runscript
+    chmod 755 /home/user
+
+    echo "Container for CSV-permissions exercise.  Nothing to run by default."
+
+%help
+    This container is the starting point for the “CSV permissions and cleaning”
+    task.  It already contains:
+      • /home/user/datasets/raw/data1.csv
+      • /home/user/datasets/raw/data2.csv
+    Both files are in their initial state (mode 644) ready for the student
+    script to process.
+
+%test
+    # Basic sanity check (optional during build)
+    python3 - <<'PY'
+import os, sys, stat, pathlib, textwrap
+raw = pathlib.Path("/home/user/datasets/raw")
+assert raw.is_dir(), "Missing raw directory"
+files = sorted(p.name for p in raw.glob("*.csv"))
+assert files == ["data1.csv", "data2.csv"], f"Unexpected CSV files: {files}"
+print("Sanity check passed.")
+PY

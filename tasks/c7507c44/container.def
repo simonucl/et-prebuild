@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Seed the raw-data directory expected by the automated tests
+    # ------------------------------------------------------------------
+    RAW_DIR="/home/user/data/raw"
+    mkdir -p "${RAW_DIR}"
+
+    # Create three non-empty placeholder CSV files
+    cat > "${RAW_DIR}/cats_vs_dogs.csv" <<'EOF'
+id,feature,label
+1,sample_data,cat
+2,another_sample,dog
+EOF
+
+    cat > "${RAW_DIR}/flowers102.csv" <<'EOF'
+id,feature,category
+1,sample_data,rose
+2,another_sample,lily
+EOF
+
+    cat > "${RAW_DIR}/cifar10.csv" <<'EOF'
+id,feature,label
+1,sample_data,airplane
+2,another_sample,ship
+EOF
+
+    # Set permissions so the non-root user running the container can read them
+    chmod -R a+rX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author  Your Name
+    Description  Base image for “configuration files” task — provides raw CSV data and pytest.

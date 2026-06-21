@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the test suite
+    # ------------------------------------------------------------------
+
+    # Create required directory structure
+    mkdir -p /home/user/kube-operator/config
+
+    # Write the exact configuration file (must end with a newline)
+    cat > /home/user/kube-operator/config/app.ini <<'EOF'
+[staging]
+app_name=my-web
+image=example/my-web:v1.2.3
+replicas=2
+port=8080
+
+[production]
+app_name=my-web
+image=example/my-web:v1.2.3
+replicas=5
+port=80
+EOF
+
+    # Ensure permissions are world-readable (umask 022)
+    chmod 644 /home/user/kube-operator/config/app.ini
+    chmod 755 /home/user /home/user/kube-operator /home/user/kube-operator/config
+
+%environment
+    # Make sure Python is on the PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    # Default action when container is executed without arguments
+    exec "$@"

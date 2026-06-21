@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the “backup scheduler” task
+    # ------------------------------------------------------------------
+    # Create the expected directory hierarchy and configuration file.
+    mkdir -p /home/user/backups/conf
+    chmod 755 /home/user/backups/conf      # Ensure exactly 0755
+
+    # Write the db_backup.ini file with required content
+    cat > /home/user/backups/conf/db_backup.ini <<'EOF'
+[schedule]
+daily_time = 02:30
+weekly_day = Sun
+weekly_time = 03:00
+EOF
+    chmod 644 /home/user/backups/conf/db_backup.ini
+
+    # Guarantee parent directories have sensible permissions
+    chmod 755 /home/user
+    mkdir -p /home/user/backups
+    chmod 755 /home/user/backups
+
+    # Do NOT create /home/user/backups/logs; the task requires it absent.
+
+%environment
+    # Ensure pip-installed binaries (pytest) are on PATH
+    export PATH="$PATH:~/.local/bin"
+
+%labels
+    Author task-prep
+    Description "Environment for backup scheduler task with pytest installed"
+
+%runscript
+    echo "Container for backup scheduler task. Use 'apptainer exec' to run commands."

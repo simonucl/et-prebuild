@@ -1,0 +1,69 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare directory structure and log file required by the tests
+    # ------------------------------------------------------------------
+
+    # Ensure /home/user exists
+    mkdir -p /home/user
+
+    # Build directories
+    mkdir -p /home/user/build/logs
+    mkdir -p /home/user/build/reports
+
+    # Create the log file with the precise 23 lines (each ending in '\n')
+    cat > /home/user/build/logs/mobile_build.log <<'EOF'
+INFO: Build started
+WARNING: Unused resource
+INFO: Checking dependencies
+WARNING: Deprecated API usage
+INFO: Running Lint
+WARNING: Unused resource
+ERROR: Missing keystore
+WARNING: Missing translation
+INFO: Compiling sources
+WARNING: Deprecated API usage
+INFO: Packaging APK
+WARNING: Unused resource
+ERROR: Build failed
+WARNING: Large APK size
+INFO: Build environment: Android-30
+WARNING: Missing translation
+INFO: Retrying build steps
+WARNING: Deprecated API usage
+INFO: Re-running unit tests
+INFO: Build completed with warnings
+WARNING: Unused resource
+INFO: Archiving artifacts
+INFO: Pipeline finished
+EOF
+
+    # ------------------------------------------------------------------
+    # Set the required permissions
+    # Directories: 0755, File: 0644
+    # ------------------------------------------------------------------
+    chmod 755 /home/user
+    chmod 755 /home/user/build
+    chmod 755 /home/user/build/logs
+    chmod 755 /home/user/build/reports
+    chmod 644 /home/user/build/logs/mobile_build.log
+
+%environment
+    # Nothing to set; rely on default HOME from the runtime environment.
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=UTF-8
+
+%labels
+    Author example
+    Description "Environment for Mobile Build Warning Frequency task; includes pytest and pre-populated log file."

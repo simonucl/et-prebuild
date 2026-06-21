@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + supporting utilities
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        procps \
+        ca-certificates
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the working directory for the assignment is writable by any user
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Expose Python executable path
+    export PYTHONIOENCODING=UTF-8
+    export LC_ALL=C.UTF-8
+
+%labels
+    Author task-preparer
+    Description Apptainer image for process-management assignment; contains pytest and writable /home/user.
+
+%help
+    This container sets up a minimal Ubuntu 22.04 environment with Python and pytest
+    pre-installed, plus a writable /home/user directory required by the assignment.

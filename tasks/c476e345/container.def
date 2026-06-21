@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # --------------------------------------------------------------------- #
+    # Basic tooling: Python + PyPI pytest
+    # --------------------------------------------------------------------- #
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # --------------------------------------------------------------------- #
+    # Create the initial dataset that the learner will clean up
+    # --------------------------------------------------------------------- #
+    mkdir -p /home/user/projects/data/raw/2020
+    mkdir -p /home/user/projects/data/raw/2021
+    mkdir -p /home/user/projects/data/raw/2022
+
+    BASE=/home/user/projects/data/raw
+
+    # ----- 2020 ----------------------------------------------------------- #
+    cat > "${BASE}/2020/q1_sales.csv" <<'EOF'
+id,amount
+1,100
+2,200
+EOF
+    cp  "${BASE}/2020/q1_sales.csv"  "${BASE}/2020/q1_sales.csv.bak"
+    touch "${BASE}/2020/empty.csv"       # zero-byte file
+    echo "2020 quarterly sales figures. Internal use only." > "${BASE}/2020/README.txt"
+
+    # ----- 2021 ----------------------------------------------------------- #
+    cat > "${BASE}/2021/q2_sales.csv" <<'EOF'
+id,amount
+3,300
+4,400
+EOF
+    cp  "${BASE}/2021/q2_sales.csv"  "${BASE}/2021/q2_sales.csv.bak"
+    touch "${BASE}/2021/empty.csv"       # zero-byte file
+    echo "secret note" > "${BASE}/2021/.hidden"
+
+    # ----- 2022 ----------------------------------------------------------- #
+    cat > "${BASE}/2022/q3_sales.csv" <<'EOF'
+id,amount
+5,500
+6,600
+EOF
+    cp  "${BASE}/2022/q3_sales.csv"  "${BASE}/2022/q3_sales.csv.bak"
+    touch "${BASE}/2022/empty.csv"       # zero-byte file
+
+    # --------------------------------------------------------------------- #
+    # Permissions: allow the unprivileged runtime user to modify the tree
+    # --------------------------------------------------------------------- #
+    # Read/execute for everything
+    chmod -R a+rX /home/user
+    # Write access to the project directories so the learner can delete/create
+    find /home/user/projects -type d -exec chmod a+rwx {} +
+
+%labels
+    chmod 755 /home/user
+
+    Author      "Apptainer Exercise – Data Cleanup"
+    Description "Provides the initial messy CSV dataset plus pytest for validation."

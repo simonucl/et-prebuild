@@ -1,0 +1,78 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # ------------------------------------------------------------------
+    # 1. Basic tooling
+    # ------------------------------------------------------------------
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        git \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tzdata \
+        locales
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Create initial repository layout for “capacity-planner”
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/capacity-planner/logs
+    cd /home/user/capacity-planner
+
+    # VERSION file
+    printf '1.4.3\n' > VERSION
+
+    # CHANGELOG with some previous content (non-empty, placeholder)
+    cat > CHANGELOG.md <<'EOF'
+## [1.4.3] - 2023-09-15
+
+### Fixed
+- Resolved memory leak in forecasting engine.
+EOF
+
+    # Logs
+    cat > logs/web.csv <<'EOF'
+timestamp,cpu_percent,mem_mb
+00:00,12,100
+00:01,20,110
+00:02,18,95
+EOF
+
+    cat > logs/db.csv <<'EOF'
+timestamp,cpu_percent,mem_mb
+00:00,30,210
+00:01,45,220
+00:02,40,215
+EOF
+
+    # ------------------------------------------------------------------
+    # 3. Initialise Git repository with an initial commit
+    # ------------------------------------------------------------------
+    git init -q
+    git config user.email "builder@example.com"
+    git config user.name  "Builder"
+    git add .
+    git commit -q -m "chore: initial commit 1.4.3"
+
+    # ------------------------------------------------------------------
+    # 4. Ensure write permissions for non-root users
+    # ------------------------------------------------------------------
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is easily reachable
+    export PATH="/usr/local/bin:$PATH"
+
+%labels
+    Author "Container preparation for capacity-planner task"
+
+%runscript
+    exec /bin/bash "$@"

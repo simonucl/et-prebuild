@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package list and install required system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the pre-existing directory and SQLite database expected by
+    # the automated tests.
+    # ------------------------------------------------------------------
+    DOC_DIR="/home/user/doc_management"
+    DB_PATH="${DOC_DIR}/doc_index.db"
+
+    # Create directory with the required permissions (rwxr-xr-x)
+    mkdir -p "${DOC_DIR}"
+    chmod 755 "${DOC_DIR}"
+
+    # Build the SQLite database with the specified schema and rows
+    cat > /tmp/init_documents.sql <<'SQL_END'
+    CREATE TABLE documents(
+        doc_id   INTEGER PRIMARY KEY,
+        title    TEXT NOT NULL,
+        category TEXT NOT NULL
+    );
+
+    INSERT INTO documents(doc_id, title, category) VALUES
+        (1, 'Getting_Started', 'Guide'),
+        (2, 'API_Reference',   'Reference'),
+        (3, 'Release_Notes',   'Changelog');
+SQL_END
+
+    sqlite3 "${DB_PATH}" < /tmp/init_documents.sql
+    rm /tmp/init_documents.sql
+
+    # Ensure the database file is world-readable so the unprivileged
+    # runtime user can open it in read-only mode.
+    chmod 644 "${DB_PATH}"
+
+%runscript
+    chmod 755 /home/user
+
+    echo "Container for documentation export task."
+    echo "Use a single SQLite command to create /home/user/doc_management/documents_export.csv as described."
+
+%labels
+    Author    ExampleAuthor
+    Description "Environment for SQLite export task with pytest pre-installed."
+
+%help
+    This container sets up the initial state for the documentation export task.
+    It contains:
+      • /home/user/doc_management directory
+      • /home/user/doc_management/doc_index.db SQLite database with the required schema and rows
+    Pytest is installed for the grading suite.

@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT and install Python + pip for pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest (needed by the automated checker)
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the tests
+    # ------------------------------------------------------------------
+    # 1) Real Android SDK directory (must already exist and be non-empty)
+    mkdir -p /home/user/build-tools/android-sdk-r30
+    # Add a dummy file so the directory is non-empty
+    touch /home/user/build-tools/android-sdk-r30/placeholder.txt
+
+    # 2) Real Gradle wrapper script (executable file)
+    mkdir -p /home/user/projects/sample-app
+    touch /home/user/projects/sample-app/gradlew
+    chmod +x /home/user/projects/sample-app/gradlew
+
+    # Make sure the student (non-root runtime user) can write under /home/user
+    chmod -R 0777 /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author mobile-ci-prep
+    Description "Environment for symlink normalisation task (Android SDK & Gradle). Pytest pre-checks included."

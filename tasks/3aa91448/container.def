@@ -1,0 +1,72 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Base packages + Python tooling
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip iptables ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create non-privileged user that the tests will rely on
+    # ------------------------------------------------------------------
+    useradd -m -s /bin/bash user || true
+
+    # ------------------------------------------------------------------
+    # Pre-populate required directory structure and artefacts
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/firewall_rules
+    mkdir -p /home/user/logs
+
+    # 1. initial_rules.v4  (iptables-save format)
+    cat > /home/user/firewall_rules/initial_rules.v4 <<'EOF'
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+# Allow established
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+# Allow loopback
+-A INPUT -i lo -j ACCEPT
+# Wide-open rule that must stay last
+-A INPUT -p tcp -j ACCEPT
+COMMIT
+EOF
+
+    # 2. packet.log  (sample packet capture)
+    cat > /home/user/logs/packet.log <<'EOF'
+2023-10-05T12:01:01Z SRC=203.0.113.45 DST=192.0.2.10 LEN=60 PROTO=TCP
+2023-10-05T12:01:05Z SRC=198.51.100.23 DST=192.0.2.10 LEN=60 PROTO=TCP
+2023-10-05T12:03:01Z SRC=203.0.113.45 DST=192.0.2.11 LEN=60 PROTO=TCP
+2023-10-05T12:05:01Z SRC=198.51.100.47 DST=192.0.2.10 LEN=60 PROTO=TCP
+2023-10-05T12:07:01Z SRC=203.0.113.45 DST=192.0.2.12 LEN=60 PROTO=TCP
+2023-10-05T12:09:01Z SRC=198.51.100.23 DST=192.0.2.13 LEN=60 PROTO=TCP
+EOF
+
+    # ------------------------------------------------------------------
+    # Permissions
+    # ------------------------------------------------------------------
+    chown -R user:user /home/user
+
+    # Directories need to be writable by the unprivileged user so that the
+    # learner can create new files later on.
+    chmod 0777 /home/user/firewall_rules
+    chmod 0777 /home/user/logs
+
+    # Files themselves only need read access initially
+    chmod 0644 /home/user/firewall_rules/initial_rules.v4
+    chmod 0644 /home/user/logs/packet.log
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    exec /bin/bash "$@"

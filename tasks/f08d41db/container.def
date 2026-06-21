@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author MLOps-Task-Setup
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python and pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip ca-certificates && \
+        rm -rf /var/lib/apt/lists/*
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the exercise.
+    # ------------------------------------------------------------------
+    # Ensure the /home/user hierarchy exists
+    mkdir -p /home/user/mlops/artifacts/experiments
+
+    # Create alpha_metrics.tsv
+    cat > /home/user/mlops/artifacts/experiments/alpha_metrics.tsv <<'EOF'
+epoch	run_id	alpha_acc	alpha_loss
+1	ALPHA-001	0.80	0.45
+2	ALPHA-002	0.82	0.40
+3	ALPHA-003	0.83	0.38
+EOF
+
+    # Create beta_metrics.tsv
+    cat > /home/user/mlops/artifacts/experiments/beta_metrics.tsv <<'EOF'
+epoch	run_id	beta_acc	beta_loss
+1	BETA-001	0.78	0.50
+2	BETA-002	0.79	0.48
+3	BETA-003	0.81	0.44
+EOF
+
+    # Set safe permissions
+    chmod 644 /home/user/mlops/artifacts/experiments/*.tsv
+    chmod -R 755 /home/user
+
+    # Add a non-root 'user' account if it does not already exist
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 -s /bin/bash user
+    fi
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    exec "$@"

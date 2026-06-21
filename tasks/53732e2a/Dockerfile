@@ -1,0 +1,33 @@
+FROM ubuntu:22.04
+
+# Help text from %help
+# This container provides the starting point for the FinOps log filtering task.
+# It includes:
+#   • /home/user/finops/raw/usage-2023-09.log – the original raw log file.
+#   • pytest – already installed for automated checks.
+
+LABEL Author="AI-Generated"
+LABEL Description="Environment for FinOps log filtering exercise with pytest pre-installed."
+
+RUN set -e && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    mkdir -p /home/user/finops/raw
+
+RUN cat >/home/user/finops/raw/usage-2023-09.log <<'EOF'
+2023-09-01T00:05:14Z,ec2,StartInstances,increase,4.27
+2023-09-01T00:15:51Z,ec2,StopInstances,decrease,-1.89
+2023-09-01T00:45:07Z,s3,PutObject,increase,0.01
+2023-09-01T01:12:33Z,rds,CreateDBInstance,increase,1.20
+2023-09-01T01:30:05Z,rds,DeleteDBInstance,decrease,-1.20
+2023-09-01T02:05:00Z,ec2,RunInstances,increase,6.34
+2023-09-01T02:50:49Z,lambda,InvokeFunction,increase,0.0002
+2023-09-01T03:15:30Z,ec2,TerminateInstances,decrease,-4.27
+2023-09-01T04:22:10Z,rds,ModifyDBInstance,increase,0.58
+2023-09-01T05:02:45Z,s3,DeleteObject,decrease,-0.01
+EOF
+
+RUN chmod 755 /home || true && \
+    chmod -R 755 /home/user || true && \
+    chmod 644 /home/user/finops/raw/usage-2023-09.log

@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #------------------------------------------------------------------
+    # 1. Install runtime dependencies
+    #------------------------------------------------------------------
+    apt-get update -y && \
+        apt-get install -y --no-install-recommends \
+            python3-pip \
+            file \
+            xxd \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+    pip3 install --no-cache-dir pytest
+
+    #------------------------------------------------------------------
+    # 2. Prepare initial sandbox state expected by the exercise
+    #------------------------------------------------------------------
+    mkdir -p /home/user/dev_site/pages
+
+    # ---- index.html (windows-1252) ----------------------------------
+    cat >/tmp/index_hex <<'EOF'
+3c6d65746120636861727365743d2277696e646f77732d31323532223e0a3c68313e4372e86d65204272fb6ce9653c2f68313e0a3c703e50726963653a203130803c2f703e0a
+EOF
+    xxd -r -p /tmp/index_hex >/home/user/dev_site/pages/index.html
+
+    # ---- about.html (iso-8859-1) -----------------------------------
+    cat >/tmp/about_hex <<'EOF'
+3c6d65746120636861727365743d2269736f2d383835392d31223e0a3c703e5365f16f722061f16f206361f1f36e3c2f703e0a
+EOF
+    xxd -r -p /tmp/about_hex >/home/user/dev_site/pages/about.html
+
+    # ---- contact.html (windows-1252) -------------------------------
+    cat >/tmp/contact_hex <<'EOF'
+3c6d65746120636861727365743d2277696e646f77732d31323532223e0a3c703e50686f6e653a202b343920303330203132333435363c2f703e0a3c703e456d61696c3a20fc626572406578616d706c652e636f6d3c2f703e0a
+EOF
+    xxd -r -p /tmp/contact_hex >/home/user/dev_site/pages/contact.html
+
+    # Cleanup temporary hex files
+    rm -f /tmp/index_hex /tmp/about_hex /tmp/contact_hex
+
+    # Permissions: readable by any unprivileged user
+    chmod 644 /home/user/dev_site/pages/*.html
+    chmod -R a+rX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure predictable UTF-8 handling for any user code
+    export PYTHONIOENCODING=utf-8

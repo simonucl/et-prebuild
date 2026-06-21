@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Create the required directory structure
+    mkdir -p /home/user/cloud/reports
+
+    # Make the reports directory world-writable so the unprivileged runtime
+    # user can create the output file there.
+    chmod 0777 /home/user/cloud/reports
+
+    # Create the canonical costs.ini file
+    cat > /home/user/cloud/costs.ini <<'EOF'
+[vm1]
+status=active
+env=dev
+cost=12.34
+
+[db1]
+status=inactive
+env=dev
+cost=5.00
+
+[web1]
+status=active
+env=staging
+cost=20.00
+
+[cache1]
+status=active
+env=prod
+cost=15.50
+
+[queue1]
+status=inactive
+env=prod
+cost=3.00
+EOF
+
+    # Ensure read permissions for everyone
+    chmod 0644 /home/user/cloud/costs.ini
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure locally-installed Python tools are on PATH
+    export PATH="$HOME/.local/bin:$PATH"
+
+%runscript
+    # Default to an interactive shell if the container is run without args
+    exec /bin/bash "$@"

@@ -1,0 +1,99 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # ------------------------------------------------------------------
+    # Base OS packages and Python tooling
+    # ------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare challenge directory structure and seed data
+    # ------------------------------------------------------------------
+    # Create writable home hierarchy
+    mkdir -p /home/user/data/configs
+    chmod 0777 /home/user            # allow the unprivileged runtime user to create /home/user/analysis
+    chmod 0777 /home/user/data
+    chmod 0777 /home/user/data/configs
+
+    # ------------------------------------------------------------------
+    # Legacy INI files (exact content, with trailing blank line)
+    # ------------------------------------------------------------------
+    cat > /home/user/data/configs/app1.ini <<'EOF'
+[general]
+name = Alpha
+version = 1.2.0
+
+[network]
+port = 8080
+host = 127.0.0.1
+
+[thresholds]
+cpu = 85
+memory = 65
+disk = 90
+
+EOF
+
+    cat > /home/user/data/configs/app2.ini <<'EOF'
+[general]
+name = Beta
+version = 2.4.1
+
+[network]
+port = 9090
+host = 192.168.1.10
+
+[thresholds]
+cpu = 50
+memory = 75
+disk = 60
+
+EOF
+
+    cat > /home/user/data/configs/app3.ini <<'EOF'
+[general]
+name = Gamma
+version = 3.1.5
+
+[network]
+port = 7070
+host = 10.0.0.5
+
+[thresholds]
+cpu = 95
+memory = 80
+disk = 70
+temperature = 88
+
+EOF
+
+    # Ensure the INI files are readable by everyone
+    chmod -R a+r /home/user/data/configs
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PYTHONIOENCODING=utf-8
+
+%labels
+    Author "Container build script"
+    Description "Provides the pristine environment (legacy INI files + pytest) for the threshold auditing task."
+
+%help
+This container image contains:
+  • Three legacy INI configuration files in /home/user/data/configs
+  • Python 3 and pytest pre-installed
+
+The runtime user can create /home/user/analysis and the required output
+artefacts there when solving the challenge.

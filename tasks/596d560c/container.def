@@ -1,0 +1,67 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # ------------------------------------------------------------------
+    # 1. Install Python + pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # 2. Create initial exercise filesystem layout
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/network
+
+    # firewall_rules.conf (exact baseline content, final newline included)
+    cat > /home/user/network/firewall_rules.conf <<'EOF'
+# Simulated iptables-save output generated on 2024-01-01
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -p tcp --dport 22 -j ACCEPT
+-A INPUT -p tcp --dport 23 -j ACCEPT
+-A INPUT -p tcp --dport 80 -j ACCEPT
+-A INPUT -j DROP
+COMMIT
+EOF
+
+    # nmap_scan.txt (auxiliary file; not modified by the student)
+    cat > /home/user/network/nmap_scan.txt <<'EOF'
+Starting Nmap 7.80 ( https://nmap.org ) at 2024-01-02 00:00 UTC
+Nmap scan report for localhost (127.0.0.1)
+Host is up (0.000098s latency).
+Not shown: 997 closed ports
+PORT   STATE SERVICE
+22/tcp open  ssh
+23/tcp open  telnet
+80/tcp open  http
+EOF
+
+    # ------------------------------------------------------------------
+    # 3. Permissions: allow the non-root runtime user to modify contents
+    # ------------------------------------------------------------------
+    chmod 0777 /home/user/network
+    chmod 0666 /home/user/network/firewall_rules.conf /home/user/network/nmap_scan.txt
+
+%labels
+    chmod 755 /home/user
+
+    Author          ExampleAuthor
+    Description     Initial state for “Disable inbound Telnet” exercise
+
+%help
+This Apptainer image provides the starting filesystem needed for the
+“Disable inbound Telnet” network-security task.  
+The directory /home/user/network contains:
+
+  • firewall_rules.conf   (baseline iptables ruleset)
+  • nmap_scan.txt         (reference scan output)
+
+No backup or remediation log exists yet; the student must create them.  
+
+pytest is pre-installed for automated grading.

@@ -1,0 +1,36 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python tooling for the test harness
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the exercise
+    # ------------------------------------------------------------------
+    # Create the logs directory structure
+    mkdir -p /home/user/logs
+
+    # Generate the three required log files with exact byte counts:
+    #   access.log : 100 lines  -> 500 bytes
+    #   error.log  :  50 lines  -> 250 bytes
+    #   app.log    : 200 lines  -> 1000 bytes
+    yes line | head -n 100 > /home/user/logs/access.log
+    yes line | head -n 50  > /home/user/logs/error.log
+    yes line | head -n 200 > /home/user/logs/app.log
+
+    # Ensure permissions allow the (non-root) agent to create a new file
+    chmod 777 /home/user/logs
+    chmod 644 /home/user/logs/*.log
+    chmod 755 /home/user
+
+%runscript
+    # Default runscript: just execute whatever the caller asked for
+    exec "$@"

@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author ChatGPT
+    Description "Base image for the backup-robot exercise. Includes Python, pytest, ssh-keygen and a writable /home/user directory."
+
+%post
+    set -eux
+
+    # Refresh package lists and install required tools.
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        openssh-client \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading infrastructure.
+    pip3 install --no-cache-dir pytest
+
+    # Create a writable home directory for the student.
+    mkdir -p /home/user
+    # Give everybody full access so whichever host UID runs inside the
+    # container can modify its contents.
+    chmod 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and Pip are available on the PATH and set a default HOME.
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    export HOME=/home/user
+
+%runscript
+    # Default action when the container is executed without arguments.
+    exec /bin/bash "$@"

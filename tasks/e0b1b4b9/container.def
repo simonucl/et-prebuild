@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the evaluation framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the required initial filesystem state under /home/user
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/build_logs
+
+    # Create the agent_status.log file with the exact expected contents,
+    # including the single trailing newline character.
+    cat > /home/user/build_logs/agent_status.log <<'EOF'
+agent_id:A01 status:OK latency_ms:94
+agent_id:A12 status:FAIL latency_ms:256
+agent_id:B03 status:OK latency_ms:101
+agent_id:C07 status:FAIL latency_ms:305
+agent_id:D99 status:OK latency_ms:87
+EOF
+
+    # Ensure correct permissions (ownership defaults to root inside container)
+    chmod 755 /home/user/build_logs
+    chmod 644 /home/user/build_logs/agent_status.log
+
+    # Guarantee that the reports directory does NOT exist yet
+    rm -rf /home/user/build_reports || true
+
+    # Clean up apt caches to keep image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    Author AI Assistant
+    Description "Apptainer image for mobile build-agent health task with pytest pre-installed."
+
+%help
+    This container sets up the initial filesystem state for the build-agent
+    health summarization task and provides pytest for automated grading.

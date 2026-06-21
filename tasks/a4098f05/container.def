@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update apt repositories and install Python and pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the assessment harness
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------------------
+    # Create the initial project directory structure and seed file
+    # -----------------------------------------------------------------------------
+    PROJECT_DIR="/home/user/project/logs"
+    mkdir -p "${PROJECT_DIR}"
+
+    # Populate the source log file with the exact required contents
+    cat > "${PROJECT_DIR}/update_2023-04-01.log" <<'EOF'
+[INFO]  I1000: Assets scanned: 42
+[ERROR] E2300: Missing translation for locale 'fr' key 'home.title'
+[ERROR] E2300: Missing translation for locale 'de' key 'settings.label'
+[ERROR] E2300: Missing translation for locale 'es' key 'about.header'
+[WARN]  W3400: Placeholder count mismatch in 'de' for key 'login.button'
+[WARN]  W3400: Placeholder count mismatch in 'fr' for key 'profile.subtitle'
+[INFO]  I1001: Catalog compiled
+[ERROR] E2300: Missing translation for locale 'fr' key 'logout.confirm'
+[WARN]  W3400: Placeholder count mismatch in 'it' for key 'cart.total'
+[INFO]  I1002: Build complete
+[ERROR] E2300: Missing translation for locale 'de' key 'contact.phone'
+[WARN]  W3400: Placeholder count mismatch in 'de' for key 'order.summary'
+[ERROR] E2300: Missing translation for locale 'fr' key 'checkout.button'
+[ERROR] E2300: Missing translation for locale 'de' key 'error.404'
+[INFO]  Summary: 6 missing translations, 4 warnings, 2 infos
+EOF
+
+    # Ensure the directories are writable by the (non-root) runtime user
+    chmod -R 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Guarantee that python and pip are in PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author localization-task-preparer
+    Description "Container for localization log-filtering task – initial state with source log and pytest installed."

@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ## 1. System packages -----------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    ## 2. Python testing framework -------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    ## 3. Prepare initial directory layout -----------------------------------
+    # Base path
+    mkdir -p /home/user
+
+    # releases/shared structure
+    mkdir -p /home/user/releases/shared/config
+    mkdir -p /home/user/releases/shared/scripts
+
+    # legacy release dir
+    mkdir -p /home/user/releases/release-1.0.0
+
+    # Auxiliary writable directories
+    mkdir -p /home/user/logs
+    mkdir -p /home/user/uploads
+    mkdir -p /home/user/deployment_logs
+
+    ## 4. Seed files with exact required contents ----------------------------
+    # shared/config/settings.yml
+    printf 'staging: {}\n' > /home/user/releases/shared/config/settings.yml
+
+    # shared/scripts/start.sh
+    cat << 'EOF' > /home/user/releases/shared/scripts/start.sh
+#!/bin/bash
+echo starting
+EOF
+
+    # shared/scripts/stop.sh
+    cat << 'EOF' > /home/user/releases/shared/scripts/stop.sh
+#!/bin/bash
+echo stopping
+EOF
+
+    # Make the scripts executable (not strictly required but reasonable)
+    chmod 755 /home/user/releases/shared/scripts/start.sh \
+              /home/user/releases/shared/scripts/stop.sh
+
+    ## 5. Create the "current" symlink pointing to the legacy release --------
+    ln -s /home/user/releases/release-1.0.0 /home/user/current
+
+    ## 6. Permissions: ensure non-root users can work in the tree ------------
+    chmod -R a+rX /home/user
+    chmod -R a+rwX /home/user/logs /home/user/uploads /home/user/deployment_logs
+
+%environment
+    # Ensure python and pip are easily found
+    export PATH="/usr/bin:$PATH"
+
+%runscript
+    echo "Container for Release-Manager task. Execute your automation script inside."

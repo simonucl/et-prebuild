@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package list and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create the base directory required by the exercise
+    mkdir -p /home/user
+    # World-writable (sticky) so the unprivileged learner can create sub-dirs/files
+    chmod 1777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard paths are available
+    PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+    export PATH
+
+%runscript
+    echo "Incident-response exercise container."
+    echo "Start an interactive shell with:  apptainer shell <image>.sif"

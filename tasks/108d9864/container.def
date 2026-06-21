@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author  dns-audit-task
+    Description  Base image for DNS mini-audit exercise. Provides Python, pytest and common DNS utilities.
+
+%post
+    # Update package lists
+    apt-get update
+
+    # Install Python, pip and DNS / network utilities required for look-ups
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        dnsutils \
+        iputils-ping \
+        ca-certificates
+
+    # Install pytest for the test harness
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # Create the unprivileged exercise user and its home directory
+    # (UID/GID 1000 is conventional; ownership is not critical at build time)
+    useradd -m -u 1000 -s /bin/bash user || true
+    mkdir -p /home/user
+    chmod 0755 /home/user
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and common utilities are on PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%runscript
+    exec /bin/bash "$@"

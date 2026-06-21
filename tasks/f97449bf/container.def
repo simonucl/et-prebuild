@@ -1,0 +1,76 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install Python tooling and pytest
+    # ------------------------------------------------------------------
+    apt-get update -y
+    # Minimal packages required to run pytest
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # 2. Prepare the initial exercise filesystem
+    # ------------------------------------------------------------------
+    # Create /home/user and make sure the future, non-root runtime user
+    # can write into it.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Create the web application skeleton
+    WEBAPP="/home/user/webapp"
+    mkdir -p "${WEBAPP}/admin"
+
+    # --------------------------------------------------
+    # 2a. /home/user/webapp/index.php  (18 lines, eval on line 14)
+    # --------------------------------------------------
+    INDEX_PHP="${WEBAPP}/index.php"
+    : > "${INDEX_PHP}"          # truncate / create file
+    echo "<?php" >> "${INDEX_PHP}"
+    for i in $(seq 2 13); do
+        echo "// line ${i}" >> "${INDEX_PHP}"
+    done
+    # Line 14 – the only occurrence of 'eval(' in this file
+    echo "eval(\$_GET['run']);" >> "${INDEX_PHP}"
+    for i in $(seq 15 18); do
+        echo "// line ${i}" >> "${INDEX_PHP}"
+    done
+
+    # --------------------------------------------------
+    # 2b. /home/user/webapp/admin/tools.php
+    #      70 lines; exec( on line 45, eval( on line 60
+    # --------------------------------------------------
+    TOOLS_PHP="${WEBAPP}/admin/tools.php"
+    : > "${TOOLS_PHP}"
+    echo "<?php" >> "${TOOLS_PHP}"          # line 1
+    for i in $(seq 2 44); do
+        echo "// line ${i}" >> "${TOOLS_PHP}"
+    done
+    echo "exec(\$cmd);" >> "${TOOLS_PHP}"   # line 45 – only 'exec(' occurrence
+    for i in $(seq 46 59); do
+        echo "// line ${i}" >> "${TOOLS_PHP}"
+    done
+    echo "eval(\$dangerous);" >> "${TOOLS_PHP}"   # line 60 – only 'eval(' here
+    for i in $(seq 61 70); do
+        echo "// line ${i}" >> "${TOOLS_PHP}"
+    done
+
+    # Ensure everything is readable/writable by any user
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author SecurityExercisePrep
+    Description "Container prepared for the 'quick static security sweep' exercise"
+
+%help
+This container image sets up a small PHP web-app under /home/user/webapp
+and installs pytest for automated evaluation.

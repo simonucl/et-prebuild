@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python 3 and pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    # Upgrade pip tooling and install pytest for the grader
+    pip3 install --no-cache-dir --upgrade pip setuptools wheel
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state required for the assignment
+    # ------------------------------------------------------------------
+    # Create the target directory
+    mkdir -p /home/user/rotate
+
+    # Populate old_creds.csv with the exact reference data (final newline included)
+    cat > /home/user/rotate/old_creds.csv <<'CSV_EOF'
+username,password,expiration
+alice,pa55w0rd!,2023-03-01
+bob,letMeIn123,2023-04-15
+carol,S3cur3Key#,2023-05-30
+CSV_EOF
+
+    # Set permissions so the non-privileged student user can create new files
+    chmod 777 /home/user/rotate
+    chmod 644 /home/user/rotate/old_creds.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure the user-level pip install directory is in PATH should the student need it
+    export PATH="${PATH}:${HOME}/.local/bin"
+
+%labels
+    Author="container-prep"
+    Description="Initial state container for the credential-rotation exercise."
+
+%help
+    This image contains the starting files for the credential-rotation task:
+
+      /home/user/rotate/old_creds.csv  – the pre-populated credential list.
+
+    Students must generate new_creds.csv and rotation.log inside the same
+    directory using standard shell utilities. Pytest is already installed for
+    automated grading.

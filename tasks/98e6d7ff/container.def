@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update base system and install Python tooling
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the automated tests
+    # ------------------------------------------------------------------
+    # Create the docs directory structure
+    mkdir -p /home/user/docs
+
+    # Make sure the directory is writable by any (non-root) user
+    chmod 0777 /home/user/docs
+
+    # Create the required CSV file with exact contents
+    cat > /home/user/docs/index.csv <<'EOF'
+id,title,section
+1,Introduction,Getting Started
+2,Installation,Getting Started
+3,Configuration,Advanced Topics
+4,FAQ,Appendix
+EOF
+
+    # Set permissive read permissions on the CSV
+    chmod 0644 /home/user/docs/index.csv
+
+    # Clean up apt caches to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%runscript
+    exec "$@"

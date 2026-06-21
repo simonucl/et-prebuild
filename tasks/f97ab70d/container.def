@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ---------------------------------------------------------------------
+    # Prepare initial filesystem state required for the exercise
+    # ---------------------------------------------------------------------
+    # Create the “pseudo-/etc/ssl” tree
+    mkdir -p /home/user/etc/ssl/private
+    mkdir -p /home/user/etc/ssl/certs
+
+    # Populate the three starter files with the exact canonical content
+    cat > /home/user/etc/ssl/private/server.key <<'EOF'
+-----BEGIN KEY-----
+foo
+-----END KEY-----
+EOF
+
+    cat > /home/user/etc/ssl/certs/server.crt <<'EOF'
+-----BEGIN CERTIFICATE-----
+bar
+-----END CERTIFICATE-----
+EOF
+
+    cat > /home/user/etc/ssl/certs/ca.pem <<'EOF'
+-----BEGIN CERTIFICATE-----
+baz
+-----END CERTIFICATE-----
+EOF
+
+    # Ensure the current runtime user (unknown UID) can read *and* write
+    # everywhere under /home/user by making the tree world-writable.
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author task-setup
+    Description "Initial state for SSL/TLS backup-and-restore exercise"
+
+%runscript
+    echo "Container for SSL/TLS backup-and-restore exercise. Start an interactive shell:"
+    exec bash -l

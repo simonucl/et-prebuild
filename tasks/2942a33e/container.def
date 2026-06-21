@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Create the initial directory structure and seed the users.log file
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/data
+    chmod 0777 /home/user/data   # Allow the runtime (non-root) user to write here
+
+    cat > /home/user/data/users.log <<'EOF'
+alice
+bob
+charlie
+alice
+bob
+alice
+dave
+eve
+bob
+charlie
+charlie
+charlie
+frank
+grace
+heidi
+ivan
+judy
+mallory
+oscar
+peggy
+trent
+victor
+walter
+peggy
+trent
+trent
+trent
+mallory
+mallory
+trent
+EOF
+
+    # Ensure correct permissions on the log file (read-only for others)
+    chmod 0644 /home/user/data/users.log
+
+%labels
+    chmod 755 /home/user
+
+    Author  ChatGPT
+    Description  Starter image for username frequency report task (users.log preset, pytest installed)
+
+%help
+    This container provides the initial environment for the “username frequency
+    report” task.  It includes:
+      • /home/user/data/users.log  – the raw log the student must process
+      • pytest                    – pre-installed for test execution

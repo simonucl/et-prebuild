@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    #!/bin/bash
+    set -e
+
+    # ----------------------------------------------------------------------
+    # Install required packages
+    # ----------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        sqlite3 \
+        python3 \
+        python3-pip \
+        ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    # ----------------------------------------------------------------------
+    # Install pytest for the validation suite
+    # ----------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ----------------------------------------------------------------------
+    # Prepare the initial filesystem layout and database
+    # ----------------------------------------------------------------------
+    mkdir -p /home/user/configs
+
+    DB_PATH="/home/user/configs/security_audit.db"
+
+    # Create the SQLite database with the required table and seed data
+    sqlite3 "${DB_PATH}" <<'EOF'
+    PRAGMA journal_mode=OFF;
+    CREATE TABLE services (
+        id     INTEGER PRIMARY KEY,
+        name   TEXT NOT NULL,
+        status TEXT NOT NULL
+    );
+    INSERT INTO services (id, name, status) VALUES
+        (1, 'sshd', 'enabled'),
+        (2, 'cron', 'enabled'),
+        (3, 'cups', 'disabled'),
+        (4, 'ufw',  'enabled');
+EOF
+
+    # ----------------------------------------------------------------------
+    # Set permissions
+    # ----------------------------------------------------------------------
+    chmod 755 /home/user
+    chmod 755 /home/user/configs
+    chmod 644 "${DB_PATH}"
+
+%environment
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author "Generated definition file for enabled_services CSV task"
+
+%runscript
+    echo "Container for the enabled_services CSV task."
+    echo "Use this environment to solve the exercise."

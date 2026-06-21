@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt repositories and installing required packages..."
+    apt-get update -y
+    # Basic tooling plus Python and pip
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates \
+        locales \
+        grep \
+        gawk \
+        coreutils \
+        nano \
+        less
+
+    # Clean up apt caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating initial CI directory structure and log files..."
+    # Create directories
+    mkdir -p /home/user/ci/logs
+
+    # Populate log files with the specified contents
+    cat << 'EOF' > /home/user/ci/logs/service-auth.log
+[2023-07-15T10:05:23Z] INFO Starting auth service
+[2023-07-15T10:05:24Z] ERROR Failed to connect to DB
+[2023-07-15T10:05:25Z] INFO Retrying connection
+[2023-07-15T10:05:26Z] ERROR Failed to connect to DB
+[2023-07-15T10:05:27Z] INFO Service shutting down
+EOF
+
+    cat << 'EOF' > /home/user/ci/logs/service-payment.log
+2023-07-15 10:06:11 INFO  Payment processor started
+2023-07-15 10:06:12 ERROR Gateway timeout
+2023-07-15 10:06:13 ERROR Gateway timeout
+2023-07-15 10:06:14 INFO  Payment retried OK
+EOF
+
+    # Ensure non-root users in the container have write access to create the summary later
+    chmod -R 777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author      task-setup-automation
+    Description "Apptainer image pre-populated with CI log files and pytest installed."

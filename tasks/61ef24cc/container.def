@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt cache and installing required packages..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        curl \
+        jq \
+        python3 \
+        python3-pip
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating seed directories and files for the mock API..."
+    mkdir -p /home/user/mock_api
+    chmod 0777 /home/user            # Allow non-root users to create /home/user/logs later
+
+    # ---------------------------------------------------------------------
+    # /home/user/mock_api/inventory.json
+    # ---------------------------------------------------------------------
+    cat >/home/user/mock_api/inventory.json <<'EOF'
+{
+  "total_items": 3,
+  "items": ["widget", "gadget", "doodad"]
+}
+EOF
+
+    # ---------------------------------------------------------------------
+    # /home/user/mock_api/user.json
+    # ---------------------------------------------------------------------
+    cat >/home/user/mock_api/user.json <<'EOF'
+{
+  "users": [
+    { "id": 1, "username": "alice" },
+    { "id": 2, "username": "bob" }
+  ]
+}
+EOF
+
+    # ---------------------------------------------------------------------
+    # /home/user/mock_api/health.txt  (must end with a single LF)
+    # ---------------------------------------------------------------------
+    printf 'OK\n' >/home/user/mock_api/health.txt
+
+    # Ensure world-readable permissions for the seed files
+    chmod 0644 /home/user/mock_api/inventory.json
+    chmod 0644 /home/user/mock_api/user.json
+    chmod 0644 /home/user/mock_api/health.txt
+
+    echo "Initial container setup complete."
+
+%environment
+    chmod 755 /home/user
+
+    # No special environment variables are required for this task.
+    # HOME will be left to Apptainer's default binding behaviour.
+
+%labels
+    Author devops-container-generator
+    Description "Apptainer image for mock API DevOps exercise (curl/jq/pytest prepared)"
+    Version v1.0

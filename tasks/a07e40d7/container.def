@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        pip3 install --no-cache-dir pytest && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare the directory structure expected by the grading tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/projects/utils
+
+    # /home/user/projects/deploy.sh
+    cat > /home/user/projects/deploy.sh <<'EOF'
+#!/usr/bin/env bash
+# Deploy script
+db_password=secret123
+echo "Deploying application..."
+# END
+EOF
+
+    # /home/user/projects/README.md
+    cat > /home/user/projects/README.md <<'EOF'
+Project documentation goes here.
+EOF
+
+    # /home/user/projects/utils/cleanup.sh
+    cat > /home/user/projects/utils/cleanup.sh <<'EOF'
+#!/usr/bin/env bash
+ password =cleanme
+password=cleanme2
+echo "Cleanup completed"
+EOF
+
+    # /home/user/projects/utils/helper.sh
+    cat > /home/user/projects/utils/helper.sh <<'EOF'
+#!/usr/bin/env bash
+echo "Helper"
+
+passwd=letmein
+EOF
+
+    # Make sure scripts are executable and readable
+    chmod 755 /home/user/projects/deploy.sh
+    chmod 755 /home/user/projects/utils/cleanup.sh
+    chmod 755 /home/user/projects/utils/helper.sh
+    chmod 644 /home/user/projects/README.md
+
+%labels
+    Author credential-check-setup
+
+%environment
+    # No changes to runtime environment needed.

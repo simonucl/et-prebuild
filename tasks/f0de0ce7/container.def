@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ############################################################
+    # 1. Install runtime dependencies (Python + pytest)
+    ############################################################
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ############################################################
+    # 2. Create the required user-accessible directory tree
+    ############################################################
+    mkdir -p /home/user/firmware/configs
+    mkdir -p /home/user/firmware/firewall
+
+    ############################################################
+    # 3. Populate initial files with exact required contents
+    ############################################################
+    # device.conf with original hard-coded key
+    printf 'API_KEY="DEADBEEFDEADBEEFDEADBEEFDEADBEEF"\n' \
+        > /home/user/firmware/configs/device.conf
+
+    # firewall rules.conf with three ALLOW lines
+    {
+        printf 'ALLOW 22\n'
+        printf 'ALLOW 8080\n'
+        printf 'ALLOW 1883\n'
+    } > /home/user/firmware/firewall/rules.conf
+
+    # security_audit.log must NOT exist yet – ensure absence
+    rm -f /home/user/security_audit.log
+
+    ############################################################
+    # 4. Make everything writable/readable by any runtime user
+    ############################################################
+    chmod -R a+rwx /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure /usr/local/bin (pip installs) is in PATH
+    export PATH="/usr/local/bin:${PATH}"
+
+%runscript
+    exec "$@"

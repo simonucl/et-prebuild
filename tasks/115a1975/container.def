@@ -1,0 +1,81 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+  Author FinOps-Task-Setup
+  Description "Base image prepared for FinOps July-2023 multi-cloud cost exercise."
+
+%post
+  set -e
+
+  # ---------------------------------------------------------------------------
+  # 1) Install Python and Pytest (needed by the autograder)
+  # ---------------------------------------------------------------------------
+  apt-get update -y
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+  pip3 install --no-cache-dir pytest
+
+  # ---------------------------------------------------------------------------
+  # 2) Set up initial filesystem state
+  #    • Create /home/user/raw_costs/ with the three CSVs
+  #    • DO NOT create any of the output directories/files that the student
+  #      must generate.
+  # ---------------------------------------------------------------------------
+  mkdir -p /home/user/raw_costs
+
+  cat > /home/user/raw_costs/aws_july2023.csv <<'EOF'
+Cloud,Service,Environment,CostUSD
+AWS,EC2,Prod,123.45
+AWS,S3,Dev,45.67
+AWS,RDS,Prod,600.00
+AWS,Lambda,Dev,12.34
+AWS,DynamoDB,Prod,50.00
+EOF
+
+  cat > /home/user/raw_costs/gcp_july2023.csv <<'EOF'
+Cloud,Service,Environment,CostUSD
+GCP,Compute,Prod,200.11
+GCP,Storage,Dev,50.00
+GCP,BigQuery,Prod,700.00
+GCP,CloudFunctions,Dev,30.00
+EOF
+
+  cat > /home/user/raw_costs/azure_july2023.csv <<'EOF'
+Cloud,Service,Environment,CostUSD
+Azure,VM,Prod,400.00
+Azure,Blob,Dev,80.00
+Azure,SQLDB,Prod,650.00
+Azure,Functions,Dev,25.00
+EOF
+
+  # ---------------------------------------------------------------------------
+  # 3) Ensure the student (non-root runtime user) can read/write the workspace.
+  #    Making the whole /home/user tree writable avoids permission issues when
+  #    the grader runs as an unprivileged user.
+  # ---------------------------------------------------------------------------
+  chmod -R 0777 /home/user
+
+  # Clean up apt caches to keep the image small
+  apt-get clean
+  rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+  # Preserve a sane PATH that includes Python user-installs (if any)
+  export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+  # By default just drop the user into a shell;
+  # the exercise instructions will guide further actions.
+  exec /bin/bash "$@"
+
+%test
+  python3 - <<'PY'
+import pathlib, sys, os, textwrap, subprocess, json, tempfile, shutil, importlib.util, inspect, types, itertools
+print("Container build sanity check: pytest installed =", end=" ")
+import pytest
+print(pytest.__version__)
+PY

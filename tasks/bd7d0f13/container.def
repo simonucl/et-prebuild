@@ -1,0 +1,77 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author          BuildEngineer
+    Description     Base image for the “offline Python artifact bundle” exercise.
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # ------------------------------------------------------------------
+    # OS packages – keep it minimal but functional
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-venv \
+        python3-pip \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Python tooling for the test-harness
+    # ------------------------------------------------------------------
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the non-privileged user expected by the assignment
+    # ------------------------------------------------------------------
+    groupadd -r user
+    useradd  -r -g user -m -d /home/user -s /bin/bash user
+
+    # ------------------------------------------------------------------
+    # Pre-populate the local, read-only wheel repository
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/package_repo
+
+    python3 - <<'PY'
+import subprocess, sys
+dest = "/home/user/package_repo"
+pkgs = [
+    "colorama==0.4.6",
+    "humanfriendly==10.0",
+    "pytz==2023.3",
+]
+subprocess.check_call([sys.executable, "-m", "pip", "download",
+                       "--no-deps", "--dest", dest] + pkgs)
+PY
+
+    # Sanity-check: ensure exactly the expected three wheels are present
+    cd /home/user/package_repo
+    expected="colorama-0.4.6|humanfriendly-10.0|pytz-2023.3"
+    count=0
+    for w in *.whl; do
+        case "$w" in
+            colorama-0.4.6-*.whl|humanfriendly-10.0-*.whl|pytz-2023.3-*.whl) ;;
+            *) echo "Unexpected wheel found: $w"; exit 1 ;;
+        esac
+        count=$((count + 1))
+    done
+    [ "$count" -eq 3 ] || { echo "Expected 3 wheels, found $count"; exit 1; }
+
+    # Permissions: make sure the normal user can read everything
+    chown -R user:user /home/user
+    chmod 755 /home/user /home/user/package_repo
+
+%environment
+    # Helper: include the typical user-level binary path
+    export PATH="${PATH}:/home/user/.local/bin"
+
+%runscript
+    echo "Container for the offline-bundle task is ready."
+    echo "Switch to the expected user with:"
+    echo "  apptainer exec --pwd /home/user --userns ${SINGULARITY_CONTAINER} /bin/bash"

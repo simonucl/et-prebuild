@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update APT index and install Python + pip
+    apt-get update && \
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            ca-certificates && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the validation suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the non-root user that the agent will utilize
+    # ------------------------------------------------------------------
+    useradd -m -u 1000 user
+
+    # ------------------------------------------------------------------
+    # Prepare the initial dataset directory structure and CSV files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data/csv
+    cd       /home/user/data/csv
+
+    # Create zero-filled CSV files with the exact required byte sizes
+    truncate -s 1250 customers.csv
+    truncate -s 2750 orders.csv
+    truncate -s 500  returns.csv
+
+    # Ensure safe default permissions
+    chmod 0644 customers.csv orders.csv returns.csv
+    chmod 0755 /home/user /home/user/data /home/user/data/csv
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is in PATH for convenience
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author csv-disk-usage-prep
+    Description "Environment for the CSV disk-usage summary task with initial data and pytest installed."
+
+%runscript
+    echo "This container is prepared for the 'CSV disk-usage summary' task."
+    echo "Switch to the working directory and begin your analysis as needed."

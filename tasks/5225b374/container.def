@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #-----------------------------------------------------------------------
+    # Install required packages
+    #-----------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        zip \
+        gzip \
+        tar \
+        coreutils
+    pip3 install --no-cache-dir pytest
+
+    #-----------------------------------------------------------------------
+    # Create initial directory structure
+    #-----------------------------------------------------------------------
+    mkdir -p /home/user/artifacts/source
+    mkdir -p /home/user/artifacts/releases
+    mkdir -p /home/user/artifacts/staging
+
+    #-----------------------------------------------------------------------
+    # Populate /home/user/artifacts/source/ with the exact starting files
+    #-----------------------------------------------------------------------
+    # binary1.bin : "BIN1\n" repeated 50 times  -> 250 bytes
+    bash -c 'for i in $(seq 1 50); do printf "BIN1\n"; done' \
+        > /home/user/artifacts/source/binary1.bin
+
+    # binary2.bin : "BIN2\n" repeated 50 times  -> 250 bytes
+    bash -c 'for i in $(seq 1 50); do printf "BIN2\n"; done' \
+        > /home/user/artifacts/source/binary2.bin
+
+    # readme.txt : single 48-byte line
+    printf 'These are sample binaries for compression test.\n' \
+        > /home/user/artifacts/source/readme.txt
+
+    #-----------------------------------------------------------------------
+    # Ensure appropriate permissions so the non-root agent can work
+    #-----------------------------------------------------------------------
+    chmod -R a+rwX /home/user/artifacts
+
+%environment
+    chmod 755 /home/user
+
+    # Keep the default HOME and prepend standard paths
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author    artifact-manager-template
+    Description "Environment for the artifact-manager task – initial state prepared."

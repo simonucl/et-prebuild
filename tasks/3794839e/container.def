@@ -1,0 +1,79 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+Author    agent
+Description Initial state for MLOps artifacts aggregation task. Installs pytest and creates the required experiment directory tree and artifacts.txt files under /home/user.
+
+%post
+    set -e
+
+    # Basic development utilities
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test-runner
+    pip3 install --no-cache-dir pytest
+
+    # -------------------------------------------------------------------------
+    # Create non-root user `user` (UID/GID 1000) so the evaluation can execute
+    # without elevated privileges.
+    # -------------------------------------------------------------------------
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g 1000 -s /bin/bash user
+
+    # -------------------------------------------------------------------------
+    # Set up the initial directory structure expected by the tests.
+    # -------------------------------------------------------------------------
+    install -d -o user -g user /home/user/mlops/experiments/exp_alpha
+    install -d -o user -g user /home/user/mlops/experiments/exp_beta
+    install -d -o user -g user /home/user/mlops/experiments/exp_gamma
+
+    # Helper to create an artifacts.txt file with a trailing newline on each line
+    write_artifacts() {
+        local filepath="$1"; shift
+        printf "%s\n" "$@" > "${filepath}"
+    chmod 755 /home/user
+
+        chown user:user "${filepath}"
+        chmod 0644       "${filepath}"
+    }
+
+    # exp_alpha/artifacts.txt
+    write_artifacts /home/user/mlops/experiments/exp_alpha/artifacts.txt \
+        "model_alpha_v1.pt" \
+        "metrics_alpha_v1.json" \
+        "config_alpha.yml"
+
+    # exp_beta/artifacts.txt
+    write_artifacts /home/user/mlops/experiments/exp_beta/artifacts.txt \
+        "model_beta_v2.pt" \
+        "metrics_beta_v2.json" \
+        "config_beta.yml" \
+        "shared_vocab.txt"
+
+    # exp_gamma/artifacts.txt
+    write_artifacts /home/user/mlops/experiments/exp_gamma/artifacts.txt \
+        "model_gamma_v3.pt" \
+        "metrics_gamma_v3.json" \
+        "config_gamma.yml" \
+        "shared_vocab.txt"
+
+    # Ensure everything under /home/user is owned by the non-root user
+    chown -R user:user /home/user
+
+%environment
+    # Ensure Python user installs land in a writable location, and PATH includes it
+    export PATH=/usr/local/bin:$PATH
+    export PYTHONUSERBASE=${HOME}/.local
+    export PATH=${PYTHONUSERBASE}/bin:${PATH}
+
+%runscript
+    echo "Container for the MLOps artifacts aggregation task."
+    echo "Switch to the 'user' account before performing actions:"
+    echo "    apptainer exec --userns --pwd /home/user \$SIF <cmd>"
+    /bin/bash

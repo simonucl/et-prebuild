@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required tools
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        make
+
+    # Install pytest for the grading suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial file system state expected by the tests
+    # ------------------------------------------------------------------
+
+    # 1. Create the input data directory and file
+    mkdir -p /home/user/data
+    cat > /home/user/data/usage.tsv <<'EOF'
+timestamp	cpu_percent	mem_percent	disk_percent
+2023-01-01T00:00:00Z	15	40	60
+2023-01-01T01:00:00Z	25	55	65
+2023-01-01T02:00:00Z	20	50	70
+EOF
+
+    # 2. Ensure the work directory does NOT exist so students start clean
+    rm -rf /home/user/capacity_planner || true
+
+    # 3. Make everything under /home/user writable by the unprivileged user
+    chmod -R a+rwx /home/user
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%runscript
+    echo "Container ready for the capacity-planner assignment."
+    echo "Run the test suite with:  pytest -q"
+
+%labels
+    org.opencontainers.image.title="Capacity Planner Assignment Base Image"
+    org.opencontainers.image.authors="ChatGPT Automation"

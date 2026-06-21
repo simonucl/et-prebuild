@@ -1,0 +1,32 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author AutomatedSetup
+    Description "Environment for artifact-tracking task with initial experiment data."
+
+%post
+    set -e
+
+    # Basic tooling
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create required workspace structure
+    mkdir -p /home/user/experiments/exp_alpha
+    mkdir -p /home/user/experiments/exp_beta
+
+    # Populate the pickle files with exact contents / sizes
+    # exp_alpha → 19 bytes
+    printf 'dummy model alpha \n' > /home/user/experiments/exp_alpha/model_alpha.pkl
+    # exp_beta  → 34 bytes
+    printf 'dummy model beta with bigger size\n' > /home/user/experiments/exp_beta/model_beta.pkl
+
+    # Ensure the non-root runtime user can write into /home/user
+    chmod -R a+rwX /home/user
+
+%runscript
+    chmod 755 /home/user
+
+    exec "$@"

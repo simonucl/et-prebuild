@@ -1,0 +1,48 @@
+# syntax=docker/dockerfile:1
+# Author: release-manager-task
+# Description: Container prepared for the release-manager terminal assignment.
+# Help:
+#   This container provides:
+#     • jq
+#     • Python 3 with pytest
+#     • Pre-populated draft release descriptors in /home/user/releases/input/
+#   No output artefacts have been created yet.
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked --mount=type=cache,target=/var/lib/apt,sharing=locked set -e && \
+    apt-get update -y && \
+    apt-get install -y python3 python3-pip jq --no-install-recommends && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN --mount=type=cache,target=/root/.cache/pip pip3 install --no-cache-dir pytest
+
+RUN mkdir -p /home/user/releases/input
+
+RUN cat <<'EOF' > /home/user/releases/input/release-a.json
+{
+  "version": "v1",
+  "services": [
+    { "name": "auth",    "image": "registry.example.com/auth:1.2.3",    "replicas": 2 },
+    { "name": "billing", "image": "registry.example.com/billing:3.4.5", "replicas": 1 }
+  ]
+}
+EOF
+
+RUN cat <<'EOF' > /home/user/releases/input/release-b.json
+{
+  "version": "v2",
+  "services": [
+    { "name": "auth",   "image": "registry.example.com/auth:1.2.4",   "replicas": 3 },
+    { "name": "search", "image": "registry.example.com/search:2.1.0", "replicas": 2 }
+  ]
+}
+EOF
+
+RUN chmod 755 /home/user /home/user/releases /home/user/releases/input && \
+    chmod 644 /home/user/releases/input/release-a.json /home/user/releases/input/release-b.json
+
+RUN echo "Initial container setup complete."

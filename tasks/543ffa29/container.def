@@ -1,0 +1,74 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic tooling
+    # ------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates
+
+    # Make the generic `python` command available (many test harnesses expect it)
+    ln -sf /usr/bin/python3 /usr/local/bin/python
+
+    # ------------------------------------------------------------------
+    # Python testing framework
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    # Create the user home directory hierarchy expected by the assignment
+    mkdir -p /home/user/perf_logs
+
+    # Populate the three required log files with the exact prescribed content
+    cat <<'EOF' >/home/user/perf_logs/cpu_profile.log
+time,usage
+0,12
+1,18
+2,17
+EOF
+
+    cat <<'EOF' >/home/user/perf_logs/memory_profile.log
+time,usage
+0,153600
+1,158720
+2,162304
+EOF
+
+    cat <<'EOF' >/home/user/perf_logs/io_profile.log
+time,bytes
+0,4096
+1,8192
+2,6144
+EOF
+
+    # ------------------------------------------------------------------
+    # Permissions
+    # ------------------------------------------------------------------
+    # Allow the (non-root) learner to create /home/user/backups later on
+    chmod 0777 /home/user
+
+    # Logs need only be readable, not writable
+    chmod 0755 /home/user/perf_logs
+    chmod 0644 /home/user/perf_logs/*.log
+
+    # Clean up APT caches to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure the standard Python and pip commands are on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    exec "$@"

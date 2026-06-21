@@ -1,0 +1,42 @@
+FROM ubuntu:22.04
+
+# Author="Platform Engineering Bot"
+# Description="Starter image for the error-code summary exercise"
+# Help:
+# This container image sets up the initial filesystem state for the
+# “error-code summary” task:
+#
+#   • /home/user/ci_pipeline/logs/build_2024-05-01.log  (pre-populated, read-only)
+#   • /home/user/ci_pipeline/reports                    (absent on purpose)
+#
+# Pytest is installed so that the automated checker can validate the starting
+# state before the learner begins.
+
+RUN set -e && \
+    apt-get update -qq && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates && \
+    pip3 install --no-cache-dir pytest
+
+RUN mkdir -p /home/user/ci_pipeline/logs
+
+RUN cat > /home/user/ci_pipeline/logs/build_2024-05-01.log <<'EOF'
+[2024-05-01T12:00:01Z] ERROR E101: Dependency download failed
+[2024-05-01T12:00:02Z] ERROR E202: Unit test failure
+[2024-05-01T12:00:03Z] ERROR E101: Dependency download failed
+[2024-05-01T12:00:04Z] ERROR E303: Linting error
+[2024-05-01T12:00:05Z] ERROR E101: Dependency download failed
+[2024-05-01T12:00:06Z] ERROR E202: Unit test failure
+[2024-05-01T12:00:07Z] ERROR E404: Resource not found
+[2024-05-01T12:00:08Z] ERROR E202: Unit test failure
+[2024-05-01T12:00:09Z] ERROR E202: Unit test failure
+EOF
+
+RUN chmod -R 777 /home/user/ci_pipeline && \
+    chmod 644 /home/user/ci_pipeline/logs/build_2024-05-01.log && \
+    chmod 755 /home/user
+
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8

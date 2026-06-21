@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial experiment directory tree and log files
+    # ------------------------------------------------------------------
+    base=/home/user/experiments
+    mkdir -p \
+        "${base}/run_alpha/logs" \
+        "${base}/run_beta/logs" \
+        "${base}/run_gamma/logs"
+
+    # run_alpha
+    cat > "${base}/run_alpha/logs/node1.log" <<'EOF'
+TRAINING_COMPLETE
+Epoch 10/10 finished
+EOF
+    cat > "${base}/run_alpha/logs/node2.log" <<'EOF'
+Init OK
+TRAINING_COMPLETE
+EOF
+
+    # run_beta
+    cat > "${base}/run_beta/logs/node1.log" <<'EOF'
+TRAINING_COMPLETE
+All good
+EOF
+    cat > "${base}/run_beta/logs/node2.log" <<'EOF'
+ERROR: CUDA out of memory
+EOF
+
+    # run_gamma
+    cat > "${base}/run_gamma/logs/node1.log" <<'EOF'
+Something
+TRAINING_COMPLETE
+EOF
+    cat > "${base}/run_gamma/logs/node2.log" <<'EOF'
+TRAINING_COMPLETE
+Done
+EOF
+
+    # Set sane permissions (directories 0755, files 0644)
+    find /home/user/experiments -type d -exec chmod 0755 {} +
+    find /home/user/experiments -type f -exec chmod 0644 {} +
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure /usr/local binaries and site-packages are visible
+    export PATH="/usr/local/bin:${PATH}"

@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # --- Install Python tooling and pytest -----------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # --- Prepare initial filesystem state ------------------------------
+    mkdir -p /home/user/vuln_scans/raw
+
+    # initial_network.nmap
+    cat > /home/user/vuln_scans/raw/initial_network.nmap <<'EOF'
+# Nmap 7.93 scan initiated Fri Sep 15 13:45:00 2023 as: nmap -A -T4 192.168.1.0/24
+Host: 192.168.1.10 ()  Status: Up
+PORT     STATE SERVICE     VERSION
+22/tcp   open  ssh         OpenSSH 7.9p1 Ubuntu 10 (Ubuntu Linux; protocol 2.0)
+80/tcp   open  http        Apache httpd 2.4.29 ((Ubuntu))
+
+# Nmap done at Fri Sep 15 13:45:30 2023 -- 256 IP addresses (1 host up) scanned in 30.00 seconds
+EOF
+    echo >> /home/user/vuln_scans/raw/initial_network.nmap   # ensure trailing newline
+
+    # ssh_bruteforce.hydra
+    cat > /home/user/vuln_scans/raw/ssh_bruteforce.hydra <<'EOF'
+Hydra v9.1 (c) 2023 - Please do not use in unauthorised ways.
+Target: 192.168.1.10 - ssh
+[22][ssh] host: 192.168.1.10   login: root   password: toor
+1 of 1 target successfully completed, 1 valid password found
+EOF
+    echo >> /home/user/vuln_scans/raw/ssh_bruteforce.hydra    # trailing newline
+
+    # webdir_enum.gobuster
+    cat > /home/user/vuln_scans/raw/webdir_enum.gobuster <<'EOF'
+===============================================================
+Gobuster v3.3.0
+===============================================================
+/admin (Status: 301)
+/login (Status: 200)
+/config.php (Status: 403)
+===============================================================
+EOF
+    echo >> /home/user/vuln_scans/raw/webdir_enum.gobuster    # trailing newline
+
+    # Ensure permissive permissions for the unprivileged runtime user
+    chmod -R u+rwX,go+rX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author      You
+    Description Container for backup-creation task – includes pytest and initial raw files.

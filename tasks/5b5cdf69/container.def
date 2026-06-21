@@ -1,0 +1,68 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Maintainer backoffice
+    Description "Environment for archive-integrity task (pytest included)"
+
+%post
+    set -e
+
+    #---------------------------------------------------------------------------
+    # Basics and Python tooling
+    #---------------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        gzip \
+        ca-certificates \
+        dpkg \
+        coreutils
+
+    pip3 install --no-cache-dir pytest
+
+    #---------------------------------------------------------------------------
+    # Create an unprivileged user `user` with home /home/user
+    #---------------------------------------------------------------------------
+    adduser --disabled-password --gecos "" user
+
+    #---------------------------------------------------------------------------
+    # Prepare required initial filesystem state
+    #  /home/user/archives/
+    #       ├── backup_20231015.tar.gz                (empty file, 0 bytes)
+    #       └── backup_20231015.tar.gz.sha256         (one-line reference hash)
+    #---------------------------------------------------------------------------
+    ARCHIVE_DIR="/home/user/archives"
+    mkdir -p "${ARCHIVE_DIR}"
+
+    # Empty archive file (0 bytes)
+    : > "${ARCHIVE_DIR}/backup_20231015.tar.gz"
+
+    # SHA-256 line for an empty byte-stream
+    printf 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  backup_20231015.tar.gz\n' \
+        > "${ARCHIVE_DIR}/backup_20231015.tar.gz.sha256"
+
+    # Ensure ownership for the unprivileged user
+    chown -R user:user /home/user
+
+    # Clean up apt caches to keep image slim
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Preserve the default environment; just set a convenient PATH.
+    export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+%runscript
+    # Default runscript does nothing special; pass through to shell/command.
+    exec "$@"
+
+%help
+    This container image provides the starting environment for the
+    archive-integrity verification task.  The necessary archive files are
+    pre-installed under /home/user/archives, while the verify_logs directory
+    is intentionally absent so that the learner can create it.  pytest is
+    available for the automated grader.

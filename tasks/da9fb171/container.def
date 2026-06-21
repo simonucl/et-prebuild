@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Fundamental tools + pytest for the grader
+    # ------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the simulated CI filesystem under /home/user
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/mobile-build/artifacts
+    mkdir -p /home/user/mobile-build/logs
+
+    # ---- Artefact files ------------------------------------------------
+    # Sizes are strict multiples of 1024 × 1024 as required by the tests.
+    truncate -s 26214400  /home/user/mobile-build/artifacts/app-debug-1.apk   # 25 MiB
+    truncate -s 31457280  /home/user/mobile-build/artifacts/app-release.apk   # 30 MiB
+    truncate -s 29360128  /home/user/mobile-build/artifacts/old-test.ipa      # 28 MiB
+    truncate -s 19922944  /home/user/mobile-build/artifacts/beta-small.apk    # 19 MiB
+
+    # ---- Log files -----------------------------------------------------
+    truncate -s 12000  /home/user/mobile-build/logs/build-20230901.log
+    truncate -s 8000   /home/user/mobile-build/logs/test-20230902.log
+    truncate -s 15000  /home/user/mobile-build/logs/build-latest.log
+
+    # Mark the first two logs as “old” (>7 days) at build time.
+    touch -d "$(date -d '10 days ago')" /home/user/mobile-build/logs/build-20230901.log
+    touch -d "$(date -d '9 days ago')"  /home/user/mobile-build/logs/test-20230902.log
+    # build-latest.log deliberately keeps its build-time timestamp; it will
+    # be refreshed to “now” at every container start-up in %environment.
+    chmod 755 /home/user
+
+
+    # ------------------------------------------------------------------
+    # Permissions: everything world-readable/executable for the CI user.
+    # ------------------------------------------------------------------
+    chmod -R a+rX /home/user/mobile-build
+
+%environment
+    #!/bin/sh
+    # Ensure the “new” log is always ≤ 7 days old by refreshing its mtime
+    # every time the container starts.
+    if [ -f /home/user/mobile-build/logs/build-latest.log ]; then
+        touch /home/user/mobile-build/logs/build-latest.log
+    fi
+
+    # No extra environment variables are required, but this section
+    # guarantees the timestamp fix-up runs for both ‘run’ and ‘exec’.

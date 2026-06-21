@@ -1,0 +1,32 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Refresh package lists and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create the empty home directory expected by the exercise
+    mkdir -p /home/user
+    chmod 0777 /home/user    # grant write permissions to the unprivileged agent
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are on the PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+
+%runscript
+    # Default runscript: start a shell so the agent can interact
+    exec bash -l

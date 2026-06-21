@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Set up initial project state for "clean-sensor-data"
+    # ---------------------------------------------------------------------
+    # Ensure the /home/user hierarchy exists
+    mkdir -p /home/user/projects/clean-sensor-data
+
+    PROJECT_DIR="/home/user/projects/clean-sensor-data"
+
+    # 1. VERSION file with initial version 0.2.1
+    printf "0.2.1\n" > "${PROJECT_DIR}/VERSION"
+
+    # 2. CHANGELOG.md with historical entries (no 0.2.2 yet)
+    cat > "${PROJECT_DIR}/CHANGELOG.md" <<'EOF'
+# Changelog
+
+## [0.2.1] - 2024-04-10
+### Fixed
+- Ensure correct parsing of humidity values (#17)
+
+## [0.2.0] - 2024-03-01
+### Added
+- Initial public release
+EOF
+
+    # 3. Permissions: make sure future (non-root) processes can edit files
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special needed; keep default $HOME binding
+
+%runscript
+    echo "This container sets up the initial state for the 'clean-sensor-data' task."
+    echo "Use 'apptainer exec' with your command or open a shell with:"
+    echo "   apptainer shell <this_image.sif>"

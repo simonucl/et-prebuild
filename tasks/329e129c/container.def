@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python and pytest
+    apt-get update -y
+    apt-get install -y python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial on-disk state expected by the automated tests
+    # ------------------------------------------------------------------
+    # Directory hierarchy
+    mkdir -p /home/user/ci_cd/build-artifacts/cache
+
+    # Required *.tmp files
+    echo "temp1"       > /home/user/ci_cd/build-artifacts/temp1.tmp
+    echo "temp2"       > /home/user/ci_cd/build-artifacts/temp2.tmp
+    echo "cache build" > /home/user/ci_cd/build-artifacts/cache/build123.tmp
+    echo "old build"   > /home/user/ci_cd/build-artifacts/cache/old.build.tmp
+
+    # Non-tmp artefact that must remain intact after the task
+    printf '\x42\x49\x4E\x00' > /home/user/ci_cd/build-artifacts/important.bin
+
+    # Reasonable permissions (readable by the unprivileged runtime user)
+    find /home/user/ci_cd -type d -exec chmod 755 {} +
+    find /home/user/ci_cd -type f -exec chmod 644 {} +
+
+%environment
+    chmod 755 /home/user
+
+    # Do NOT touch $HOME; only ensure pip-installed tools are on PATH
+    export PATH="$PATH:/home/user/.local/bin"
+
+%labels
+    Author "Apptainer Task Generator"
+    Description "Environment for the CI/CD *.tmp cleanup task with pytest pre-installed."
+
+%runscript
+    echo "Container for CI/CD *.tmp cleanup task. Run your commands interactively."

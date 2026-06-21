@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # --------------------------------------------------------------------- #
+    # Basic tooling
+    # --------------------------------------------------------------------- #
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------- #
+    # Prepare the initial filesystem state expected by the tests
+    # --------------------------------------------------------------------- #
+    # Create required directories
+    mkdir -p /home/user/logs
+    mkdir -p /home/user/resources
+
+    # Create input file: /home/user/logs/dns_failures.log
+    cat > /home/user/logs/dns_failures.log <<'EOF'
+app.internal.local
+db.internal.local
+cache.internal.local
+auth.service
+gateway.service
+EOF
+
+    # Create input file: /home/user/resources/hosts_override
+    cat > /home/user/resources/hosts_override <<'EOF'
+10.0.0.11 app.internal.local
+10.0.0.12 db.internal.local
+10.0.0.13 cache.internal.local
+EOF
+
+    # --------------------------------------------------------------------- #
+    # Permissions – readable (and where applicable, executable) by any user
+    # --------------------------------------------------------------------- #
+    chmod 755 /home
+    chmod -R 755 /home/user
+    chmod 644 /home/user/logs/dns_failures.log
+    chmod 644 /home/user/resources/hosts_override
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure UTF-8 locale for any Python/text processing the agent might do
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PYTHONUNBUFFERED=1

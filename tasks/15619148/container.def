@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #------------------------------------------------------------------
+    # Basic development tooling
+    #------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    # Give the container a generic `python` alias so test-harness scripts
+    # that invoke `python` instead of `python3` still work.
+    ln -s /usr/bin/python3 /usr/local/bin/python || true
+
+    #------------------------------------------------------------------
+    # Python packages required for the test-suite
+    #------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    #------------------------------------------------------------------
+    # Pre-populate the filesystem with the sample JSON payload
+    #------------------------------------------------------------------
+    mkdir -p /home/user/api_responses
+    mkdir -p /home/user/work
+
+    cat > /home/user/api_responses/orders.json <<'EOF'
+[
+  { "order_id": 1001, "customer_id": "C001", "total": 123.45, "status": "shipped" },
+  { "order_id": 1002, "customer_id": "C002", "total": 67.89,  "status": "processing" },
+  { "order_id": 1003, "customer_id": "C003", "total": 250.0,   "status": "delivered"  }
+]
+EOF
+
+    # Ensure appropriate permissions so the unprivileged agent can read/write.
+    chmod 755 /home/user
+    chmod 755 /home/user/api_responses
+    chmod 644 /home/user/api_responses/orders.json
+    chmod 777 /home/user/work
+
+%environment
+    # Keep environment minimal; relying on default HOME binding.
+    export PYTHONUNBUFFERED=1
+
+%runscript
+    echo "Container for the Orders endpoint exercise. Open a shell or execute your script."

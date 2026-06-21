@@ -1,0 +1,72 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author automated_task_setup
+    Description "Environment for log-processing automation task"
+
+%post
+    set -eux
+
+    # Update apt and install Python and pytest prerequisites
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        passwd
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create a non-root user “user” (UID 1000) and its home directory.
+    # Although the container will finally run with the caller’s UID,
+    # providing an explicit passwd entry avoids “unknown uid” issues.
+    # ------------------------------------------------------------------
+    if ! id -u 1000 >/dev/null 2>&1; then
+        useradd -m -u 1000 -s /bin/bash user
+    fi
+
+    # ------------------------------------------------------------------
+    # Seed the initial log files that the grading tests expect.
+    # ------------------------------------------------------------------
+    LOG_DIR=/home/user/logs
+    mkdir -p "${LOG_DIR}"
+
+    cat > "${LOG_DIR}/app1.log" <<'EOF'
+[2023-08-01 10:00:00] INFO Starting service
+[2023-08-01 10:05:00] ERROR Failed to connect to database
+[2023-08-01 10:06:00] WARN Cache miss
+[2023-08-01 10:07:00] ERROR Timeout while reading from socket
+[2023-08-01 10:08:00] INFO Service running
+[2023-08-01 10:09:00] ERROR Failed to connect to database
+EOF
+
+    cat > "${LOG_DIR}/app2.log" <<'EOF'
+[2023-08-01 09:00:00] INFO Booting
+[2023-08-01 09:01:00] ERROR NullPointerException at line 42
+[2023-08-01 09:02:00] ERROR NullPointerException at line 42
+[2023-08-01 09:03:00] INFO Ready
+EOF
+
+    cat > "${LOG_DIR}/app3.log" <<'EOF'
+[2023-08-01 11:00:00] INFO Starting cron
+[2023-08-01 11:01:00] WARN Slow query
+[2023-08-01 11:02:00] INFO Tick
+EOF
+
+    # Give broad read/write access so the non-root execution user can modify them.
+    chmod -R a+rwX /home/user
+
+    # Clean up apt caches to keep the image lean.
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for log-processing task. Open a shell with:  apptainer exec <image> /bin/bash"

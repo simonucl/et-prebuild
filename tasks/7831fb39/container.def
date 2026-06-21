@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python tooling
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial experiment artefacts directory and index file
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/experiment_artifacts
+
+    # Set directory permissions to 755 (rwxr-xr-x)
+    chmod 755 /home/user/experiment_artifacts
+
+    # Populate the artefact index file with exact fixture contents
+    cat > /home/user/experiment_artifacts/artifact_index.txt <<'EOF'
+model_v1.bin
+metrics_v1.json
+model_v2.bin
+metrics_v2.json
+model_v2.bin
+logs_v2.txt
+model_v1.bin
+summary_v1.pdf
+metrics_v1.json
+logs_v2.txt
+model_v3.bin
+metrics_v3.json
+model_v3.bin
+model_v3.bin
+EOF
+
+    # Set file permissions to 644 (rw-r--r--)
+    chmod 644 /home/user/experiment_artifacts/artifact_index.txt
+
+%labels
+    Author example_builder
+    Description Container with initial dataset for artefact frequency task
+
+%help
+    This image provides the initial filesystem state for the artefact
+    frequency summarisation task and includes pytest for automated grading.

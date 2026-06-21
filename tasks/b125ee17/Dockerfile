@@ -1,0 +1,128 @@
+FROM ubuntu:22.04
+
+# Labels
+LABEL Author="Apptainer Task Prep"
+LABEL Description="Starter environment for SQLite query optimisation exercise."
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Base tools
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        sqlite3 \
+        python3 \
+        python3-pip \
+        tzdata \
+        ca-certificates && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create working directory
+RUN mkdir -p /home/user
+
+# Build the SQLite database with the required schema and seed rows
+RUN python3 - <<'PY'
+import sqlite3, random, datetime, pathlib, os, sys
+db_path = "/home/user/sales.db"
+pathlib.Path("/home/user").mkdir(parents=True, exist_ok=True)
+
+conn = sqlite3.connect(db_path)
+cur  = conn.cursor()
+
+# Performance pragmas for quicker load during build
+cur.execute("PRAGMA journal_mode=OFF;")
+cur.execute("PRAGMA synchronous=OFF;")
+
+# Schema
+cur.executescript("""
+CREATE TABLE customers(
+    id   INTEGER PRIMARY KEY,
+    name TEXT
+);
+
+CREATE TABLE orders(
+    id          INTEGER PRIMARY KEY,
+    customer_id INTEGER,
+    order_total REAL,
+    order_date  TEXT,
+    FOREIGN KEY(customer_id) REFERENCES customers(id)
+);
+""")
+
+# Seed customers (100 rows)
+cur.executemany(
+    "INSERT INTO customers(id, name) VALUES(?, ?);",
+    [(i, f'Customer {i}') for i in range(1, 101)]
+)
+
+# Seed orders (50,000 rows, uniform customer_id distribution, 2019-01-01 … 2023-12-31)
+rng         = random.Random(42)     # deterministic
+start_date  = datetime.date(2019, 1, 1)
+end_date    = datetime.date(2023, 12, 31)
+days_range  = (end_date - start_date).days + 1
+
+orders = []
+for order_id in range(1, 50001):
+    cust_id     = rng.randint(1, 100)
+    order_total = round(rng.uniform(5.0, 500.0), 2)
+    day_offset  = rng.randint(0, days_range - 1)
+    order_date  = (start_date + datetime.timedelta(days=day_offset)).isoformat()
+    orders.append((order_id, cust_id, order_total, order_date))
+
+cur.executemany(
+    "INSERT INTO orders(id, customer_id, order_total, order_date) VALUES(?, ?, ?, ?);",
+    orders
+)
+
+conn.commit()
+conn.close()
+PY
+
+# Helper SQL file with the two analytical queries
+RUN cat > /home/user/queries.sql <<'SQL'
+-- name: top_customers
+SELECT
+    customers.name,
+    SUM(orders.order_total) AS total_spent
+FROM customers
+JOIN orders
+      ON customers.id = orders.customer_id
+GROUP BY customers.id
+ORDER BY total_spent DESC
+LIMIT 5;
+
+-- name: monthly_revenue
+SELECT
+    substr(order_date,1,7) AS month,
+    SUM(order_total)       AS revenue
+FROM orders
+GROUP BY month
+ORDER BY month DESC;
+SQL
+
+# Helper shell script to execute the named queries with timing
+RUN cat > /home/user/run_query.sh <<'BASH'
+#!/usr/bin/env bash
+set -e
+QUERY_NAME="$1"
+sqlite3 -cmd ".timer on" /home/user/sales.db < <(awk -v q="-- name: ${QUERY_NAME}" '
+    $0 == q {flag=1; next}
+    /^-- name:/ && flag {exit}
+    flag
+' /home/user/queries.sql)
+BASH
+
+RUN chmod +x /home/user/run_query.sh
+
+# Standard permissions
+RUN chmod 644 /home/user/queries.sql /home/user/sales.db
+
+# Environment
+ENV PATH=$PATH:/home/user
+
+RUN chmod 755 /home/user
+
+WORKDIR /home/user
+
+CMD echo "SQLite optimisation training container." && echo "Relevant files are located in /home/user."

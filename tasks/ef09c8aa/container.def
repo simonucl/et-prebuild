@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the necessary directory structure and initial file
+    mkdir -p /home/user/disk_reports
+
+    cat >/home/user/disk_reports/index.html <<'EOF'
+<html>
+<head><title>Storage Report</title></head>
+<body>
+<h1>Storage Administrator Disk Usage Report</h1>
+<p>This is a placeholder report.</p>
+</body>
+</html>
+EOF
+
+    # Permissions: make directory writeable for any non-root user; file readable
+    chmod 0777 /home/user/disk_reports
+    chmod 0644 /home/user/disk_reports/index.html
+
+    # Ensure /home/user exists and create a non-privileged user with that home
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 -d /home/user user
+    fi
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+
+%labels
+    Author "Apptainer Task Builder"
+    Description "Initial state container for the disk-usage report webserver task"
+
+%help
+This container sets up the initial environment for the disk-usage report
+exercise. It installs pytest for grading, creates the required
+/home/user/disk_reports/index.html file, and leaves everything else for
+the learner to complete.

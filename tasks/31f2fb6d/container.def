@@ -1,0 +1,78 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package index and install required system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        time \
+        ca-certificates
+
+    # Clean up APT cache to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the forthcoming test-runner
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the pre-existing project tree expected by the test suite
+    # ------------------------------------------------------------------
+    PROJECT_ROOT="/home/user/project"
+    SRC_DIR="${PROJECT_ROOT}/src"
+    UTILS_DIR="${SRC_DIR}/utils"
+
+    # Create directory structure
+    mkdir -p "${UTILS_DIR}"
+
+    # Make project root writable by any user running inside the container
+    chmod 0777 "${PROJECT_ROOT}"
+
+    # ------------------------------------------------------------------
+    # Create the required files
+    # ------------------------------------------------------------------
+
+    # Empty __init__.py
+    : > "${SRC_DIR}/__init__.py"
+    chmod 0644 "${SRC_DIR}/__init__.py"
+
+    # main.py with canonical Hello-world line
+    cat > "${SRC_DIR}/main.py" <<'EOF'
+print('Hello world')
+EOF
+    chmod 0644 "${SRC_DIR}/main.py"
+
+    # helpers.py with a helper() stub
+    cat > "${UTILS_DIR}/helpers.py" <<'EOF'
+def helper():
+    pass
+EOF
+    chmod 0644 "${UTILS_DIR}/helpers.py"
+
+    # README.md with at least 5 lines
+    cat > "${PROJECT_ROOT}/README.md" <<'EOF'
+# Project Title
+
+This is a sample project used for benchmarking demonstration.
+It contains a small source tree with a classic Hello world program.
+The benchmark task will measure the performance of a few maintenance
+operations such as directory listing, compression, and line counting.
+EOF
+    chmod 0644 "${PROJECT_ROOT}/README.md"
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are on PATH (should already be, but be explicit)
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author BenchmarkSetup
+    Description "Initial container state for benchmarking assignment"
+
+%runscript
+    echo "Container for benchmarking task. Execute the assignment steps in an interactive shell."

@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Non-interactive APT operations
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Seed the filesystem with the snapshot that the learner must parse
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/certs
+
+    cat > /home/user/certs/server_info.txt <<'EOF'
+Subject: CN=www.acme-inc.internal
+Not Before: Jun 15 00:00:00 2023 GMT
+Not After : Jun 15 23:59:59 2025 GMT
+Serial    : 65A9C3
+EOF
+
+    # Make sure the learner (non-root) can work inside /home/user
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+
+%labels
+    Author      Incident-Responder Exercise Team
+    Description Base image for the “internal TLS certificate” hands-on task

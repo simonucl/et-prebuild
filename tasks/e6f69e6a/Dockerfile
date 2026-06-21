@@ -1,0 +1,44 @@
+FROM ubuntu:22.04
+
+# Install Python and pip
+RUN set -e && \
+    echo "Updating package lists and installing Python + pip..." && \
+    apt-get update -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates && \
+    pip3 install --no-cache-dir pytest && \
+    echo "Creating initial directory tree and log files..." && \
+    mkdir -p /home/user && \
+    chmod 0777 /home/user && \
+    mkdir -p /home/user/logs/raw && \
+    chmod 0755 /home/user/logs && \
+    chmod 0755 /home/user/logs/raw
+
+# Create log file: 2023-06-01
+RUN cat > /home/user/logs/raw/access-2023-06-01.log <<'EOF'
+127.0.0.1 - - [01/Jun/2023:12:00:01 +0000] "GET /index.html HTTP/1.1" 200 1024
+192.168.1.10 - - [01/Jun/2023:12:00:05 +0000] "GET /about.html HTTP/1.1" 404 512
+EOF
+
+# Create log file: 2023-06-02
+RUN cat > /home/user/logs/raw/access-2023-06-02.log <<'EOF'
+127.0.0.1 - - [02/Jun/2023:13:15:45 +0000] "GET /contact.html HTTP/1.1" 404 256
+192.168.1.11 - - [02/Jun/2023:13:16:01 +0000] "GET /index.html HTTP/1.1" 200 1024
+EOF
+
+# Create log file: 2023-06-03
+RUN cat > /home/user/logs/raw/access-2023-06-03.log <<'EOF'
+10.0.0.5 - - [03/Jun/2023:09:05:12 +0000] "GET /pricing.html HTTP/1.1" 404 128
+10.0.0.6 - - [03/Jun/2023:09:07:33 +0000] "GET /index.html HTTP/1.1" 200 2048
+EOF
+
+# Set file permissions
+RUN chmod 0644 /home/user/logs/raw/access-2023-06-*.log
+
+# Environment variables
+ENV PATH="/home/user/.local/bin:${PATH}"
+
+# Set working directory
+WORKDIR /home/user

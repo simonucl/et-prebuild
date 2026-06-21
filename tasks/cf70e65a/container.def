@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package lists and installing required packages..."
+    apt-get update -qq
+    # Core utilities:
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        time \
+        ca-certificates \
+        git
+
+    # Install pytest for the forthcoming test-suite.
+    pip3 install --no-cache-dir pytest
+
+    # Create an unprivileged ‘user’ account with a home directory.
+    echo "Adding user 'user'..."
+    useradd -m -s /bin/bash user
+
+    # Do NOT create /home/user/benchmark here; it must be absent initially.
+
+    # Clean up apt caches to keep the image small.
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal environment — do NOT override HOME so that Apptainer binds it correctly.
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author="Your Name"
+    Description="Base image for the benchmarking assignment. Provides python, pytest, and /usr/bin/time."

@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #--------------------------------------------------------------------
+    # Basic tooling
+    #--------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip
+
+    pip3 install --no-cache-dir pytest
+
+    #--------------------------------------------------------------------
+    # Create initial project structure and seed files
+    #--------------------------------------------------------------------
+    mkdir -p /home/user/logtool/config
+    mkdir -p /home/user/logtool/output
+
+    # settings.yaml (initial state expected by the tests)
+    cat > /home/user/logtool/config/settings.yaml <<'EOF'
+# LogTool configuration
+alert_threshold: 90
+pattern_detection: false
+log_paths:
+  - /var/log/syslog
+  - /var/log/auth.log
+EOF
+
+    # filters.toml (initial state expected by the tests)
+    cat > /home/user/logtool/config/filters.toml <<'EOF'
+# Default filter rules
+[[rules]]
+name = "ignore_health_checks"
+pattern = "healthcheck"
+action = "drop"
+EOF
+
+    #--------------------------------------------------------------------
+    # Ensure non-root users can work with the repo
+    #--------------------------------------------------------------------
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Apptainer setup for logtool challenge"
+    Description="Initial container state for the logtool file-editing exercise."

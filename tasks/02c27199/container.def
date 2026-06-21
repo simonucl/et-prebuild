@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-venv \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel \
+        locales \
+        ca-certificates
+
+    # Configure locale to avoid warnings
+    locale-gen en_US.UTF-8
+
+    # Install pytest for the grading tests
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the DevSecOps exercise
+    # ------------------------------------------------------------------
+    # Ensure home directory exists
+    mkdir -p /home/user
+
+    # Create the project directory and place the allow-list file
+    mkdir -p /home/user/devsecops-policy
+    echo "requests==2.31.0" > /home/user/devsecops-policy/allowed_packages.txt
+
+    # Make sure the student (non-root container user) can write inside the project
+    chmod -R a+rwX /home/user/devsecops-policy
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8

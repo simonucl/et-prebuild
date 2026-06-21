@@ -1,0 +1,32 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package index and install required tools
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        iputils-ping \
+        traceroute \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the expected home directory exists
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+%environment
+    # Force C locale so ping/traceroute output is predictable for regex parsing
+    export LANG=C
+    export LC_ALL=C
+    export PATH="/home/user/.local/bin:$PATH"
+
+%labels
+    Author finops_validator
+    Description Container prepared for FinOps network diagnostics task

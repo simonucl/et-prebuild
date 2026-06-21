@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install Python tooling (pytest is required for the exercise tests)
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Create the initial project tree expected by the assignment
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/projects/website
+
+    # package.json (exact text including trailing newline)
+    cat >/home/user/projects/website/package.json <<'EOF'
+{
+  "name": "awesome-website",
+  "version": "1.2.3",
+  "description": "A demo website",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
+EOF
+
+    # CHANGELOG.md (exact text including trailing newline)
+    cat >/home/user/projects/website/CHANGELOG.md <<'EOF'
+## [1.2.3] - 2024-05-20
+### Fixed
+- Resolved navigation bug.
+EOF
+
+    # ------------------------------------------------------------------
+    # Set safe permissions so the non-root learner can modify the files
+    # ------------------------------------------------------------------
+    chmod 0755 /home/user /home/user/projects /home/user/projects/website
+    chmod 0644 /home/user/projects/website/package.json \
+               /home/user/projects/website/CHANGELOG.md
+
+%environment
+    chmod 755 /home/user
+
+    # Keep a sensible PATH inside the container
+    export PATH="/usr/local/bin:/usr/bin:/bin"

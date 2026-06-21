@@ -1,0 +1,32 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python & pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # Ensure /home/user exists and is writable by the unprivileged runtime user
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up apt cache to keep image small
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure pip-installed binaries (e.g., pytest) are on PATH
+    export PATH="/usr/local/bin:$PATH"
+
+%runscript
+    echo "Container for the IoT edge collector exercise."
+    echo "This container is intended to provide a clean starting environment."
+    echo "No deliverable files or processes are created automatically."

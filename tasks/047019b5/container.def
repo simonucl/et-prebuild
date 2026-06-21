@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package list and install Python with venv support
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-venv \
+        python3-pip
+
+    # Install pytest for the grading suite
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create a writable /home/user that the unprivileged agent will use.
+    # The agent will not have root, so ensure correct permissions.
+    # ------------------------------------------------------------------
+    # Create group and user 'user' with uid/gid 1000 if they don’t exist.
+    if ! getent group 1000 >/dev/null 2>&1; then
+        groupadd -g 1000 user
+    fi
+    if ! id -u 1000 >/dev/null 2>&1; then
+        useradd -m -u 1000 -g 1000 user
+    fi
+
+    # Ensure the directory exists and is writable by anyone (safest for CI)
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up apt caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure user-local installs are found first (optional quality-of-life)
+    export PATH=/home/user/.local/bin:$PATH
+    export PIP_DISABLE_PIP_VERSION_CHECK=1
+
+%runscript
+    # Default action: start an interactive shell
+    exec /bin/bash

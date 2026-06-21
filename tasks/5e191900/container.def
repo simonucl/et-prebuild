@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install Python + pytest (needed by the grader)
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # 2. Prepare directory layout expected by the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/input
+    mkdir -p /home/user/output
+
+    # ------------------------------------------------------------------
+    # 3. Populate the two input TSV files
+    # ------------------------------------------------------------------
+    cat > /home/user/input/users_full.tsv <<'EOF'
+id	username	first_name	last_name	email	department	role	status
+1001	alice	Alice	Smith	alice.smith@example.com	HR	MANAGER	ACTIVE
+1002	bob	Bob	Jones	bob.jones@example.com	IT	SYSADMIN	INACTIVE
+1003	carol	Carol	Taylor	carol.taylor@example.com	IT	SYSADMIN	ACTIVE
+1004	dave	Dave	Wilson	dave.wilson@example.com	Finance	ACCOUNTANT	ACTIVE
+1005	erin	Erin	Andrews	erin.andrews@example.com	IT	DEVELOPER	INACTIVE
+EOF
+
+    cat > /home/user/input/new_roles.tsv <<'EOF'
+alice	HR-LEAD
+bob	DESKTOP-ADMIN
+carol	SECURITY-ADMIN
+dave	SENIOR-ACCOUNTANT
+erin	FRONTEND-LEAD
+EOF
+
+    # ------------------------------------------------------------------
+    # 4. Permissions: world-readable, writable only by owner
+    # ------------------------------------------------------------------
+    chmod 755 /home/user
+    chmod 755 /home/user/input
+    chmod 755 /home/user/output
+    chmod 644 /home/user/input/users_full.tsv
+    chmod 644 /home/user/input/new_roles.tsv
+
+%environment
+    # Keep locale simple and predictable for core-utils
+    export LANG=C
+    export LC_ALL=C
+
+%labels
+    Author      "Prepared by ChatGPT"
+    Description "Container image for TSV manipulation exercise with pytest pre-installed"

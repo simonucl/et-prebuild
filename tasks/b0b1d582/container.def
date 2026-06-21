@@ -1,0 +1,31 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Install system packages
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install Python testing framework (pytest) and supervisord (useful later)
+    pip3 install --no-cache-dir \
+        pytest \
+        supervisor
+
+    # Prepare a writable home for the non-root runtime user.
+    # DO NOT create any of the task-specific paths; only ensure /home/user exists and is writable.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and user-installed binaries are on PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for the 'temperature-sensor' edge-computing task."
+    echo "Python and pytest are installed.  Begin your work in /home/user."

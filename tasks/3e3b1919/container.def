@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package index and install required tools
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip rsync
+
+    # Install pytest for the test-runner
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state for the rsync exercise
+    # ------------------------------------------------------------------
+    # Create directory layout
+    mkdir -p /home/user/datasets/raw
+    mkdir -p /home/user/remote_server/datasets_backup
+
+    # Create the source CSV files with *exact* contents/sizes
+    cat > /home/user/datasets/raw/customers.csv <<'EOF'
+id,name,age
+1,Alice,30
+2,Bob,25
+3,Charlie,35
+EOF
+
+    cat > /home/user/datasets/raw/sales.csv <<'EOF'
+order_id,customer_id,amount
+1001,1,250.50
+1002,2,150.00
+1003,3,300.00
+EOF
+
+    # Make everything under /home/user writable by the unprivileged user
+    chmod -R 777 /home/user
+
+%runscript
+    chmod 755 /home/user
+
+    echo "Container for rsync exercise ready."

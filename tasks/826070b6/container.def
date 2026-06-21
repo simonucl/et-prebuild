@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install Python tooling required by the autograder
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state for the learner
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/build_logs
+
+    cat >/home/user/build_logs/full_build.log <<'EOF'
+2024-01-23 10:15:33,123 [INFO] Fetching dependencies...
+2024-01-23 10:15:35,456 [INFO] Artifact: commons-lang3-3.12.0.jar SHA256=aae3fc61d7
+2024-01-23 10:15:36,001 [INFO] Artifact: guava-32.0.1.jar SHA256=bbeef1023a
+2024-01-23 10:15:37,333 [WARN] Some minor warning
+2024-01-23 10:15:38,789 [INFO] Artifact: my-app-1.2.1-SNAPSHOT.jar SHA256=caa12cc998
+2024-01-23 10:15:40,111 [ERROR] Build failed unexpectedly.
+EOF
+
+    # Ensure the learner (non-root runtime user) can freely modify /home/user
+    chmod -R 0777 /home/user
+
+    # Clean up APT caches to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    chmod 755 /home/user
+
+    exec /bin/bash "$@"
+
+%labels
+    Author="Apptainer Task Prep Bot"
+    Description="Environment for Maven artifact extraction exercise"
+
+%help
+    This container provides the starting point for the Maven artifact
+    extraction task.  The build log is pre-populated in
+    /home/user/build_logs/full_build.log and pytest is installed for the
+    automated grader.

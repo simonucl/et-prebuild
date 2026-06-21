@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        openssh-client \
+        ca-certificates
+
+    # Clean up apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the assessment framework
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Prepare the filesystem layout required by the exercise
+    # ---------------------------------------------------------------------
+
+    # Ensure the base home directory exists
+    mkdir -p /home/user
+    chmod 0777 /home/user        # Make sure any non-root user can write here
+
+    # 1. Pre-existing directory that must be writable by the student
+    mkdir -p /home/user/backup_verification
+    chmod 0777 /home/user/backup_verification
+
+    # 2. Simulated remote host’s .ssh directory and starter authorized_keys
+    mkdir -p /home/user/remote_host/.ssh
+    chmod 0755 /home/user/remote_host/.ssh     # NOT world-writable
+
+    # Create the authorized_keys file with the required starter comment
+    echo "# remote host authorized keys" > /home/user/remote_host/.ssh/authorized_keys
+    chmod 0666 /home/user/remote_host/.ssh/authorized_keys  # Student must be able to append
+
+%labels
+    chmod 755 /home/user
+
+    Author backup-engineer-exercise
+    Description "Container image for the SSH backup verification task – provides initial state and pytest."

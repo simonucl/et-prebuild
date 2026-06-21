@@ -1,0 +1,36 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install python and pytest
+RUN apt-get update && \
+    apt-get -y install python3-pip python3-setuptools python3-venv && \
+    pip3 install --no-cache-dir pytest
+
+# Prepare initial filesystem expected by the exercise
+RUN mkdir -p /home/user/raw_data
+
+# inventory_q1.csv
+RUN cat >/home/user/raw_data/inventory_q1.csv <<'CSV'
+id,product,quantity
+1,Apples,50
+2,Bananas,75
+3,Carrots,40
+CSV
+
+# inventory_q2.csv
+RUN cat >/home/user/raw_data/inventory_q2.csv <<'CSV'
+id,product,quantity
+4,Dates,60
+5,Eggplants,30
+6,Flour,90
+CSV
+
+# Ensure all created items are writable by the non-root user that will run
+RUN chmod -R 0777 /home/user
+
+# Container for the "Quarterly Inventory CSV Processing" task.
+# Initial state:
+#   /home/user/raw_data/ contains inventory_q1.csv and inventory_q2.csv.
+#   No /home/user/processed_data/ directory exists.
+# Pytest is installed for automated grading.

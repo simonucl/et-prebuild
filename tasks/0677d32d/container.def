@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT index and install Python & pip
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the validation suite
+    pip3 install --no-cache-dir pytest
+
+    # Create a non-root user that will match the runtime user context
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 -s /bin/bash user
+    fi
+
+    # Set up the initial project structure and files
+    mkdir -p /home/user/utils
+
+    # VERSION file (must end with a single newline)
+    cat > /home/user/utils/VERSION <<'EOF'
+1.4.2
+EOF
+
+    # CHANGELOG.md with exact required content and trailing newline
+    cat > /home/user/utils/CHANGELOG.md <<'EOF'
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [1.4.2] - 2023-09-28
+### Added
+- Initial release of data-parsing utilities.
+EOF
+
+    # Ensure the created files and directories are owned by the non-root user
+    chown -R 1000:1000 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure user-level Python packages (if any) are found first
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%labels
+    Author="Container setup for version-bump task"
+    Description="Provides initial state and pytest for automated grading."

@@ -1,0 +1,83 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    #--------------------------------------------------------------------
+    # Install system packages and Python tooling
+    #--------------------------------------------------------------------
+    apt-get update && \
+        apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+
+    #--------------------------------------------------------------------
+    # Install pytest (required by the automated test harness)
+    #--------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    #--------------------------------------------------------------------
+    # Seed the initial CI log files that the learner will work with
+    #--------------------------------------------------------------------
+    # Create the user home directory tree
+    mkdir -p /home/user/ci_logs
+
+    # Make sure the learner (runs as an unprivileged UID) can write inside
+    # /home/user/ci_logs when they create new artifacts later.
+    chmod 0777 /home/user
+    chmod 0777 /home/user/ci_logs
+
+    # -----------------------------
+    # build_backend_20230912.log
+    # -----------------------------
+    cat > /home/user/ci_logs/build_backend_20230912.log <<'EOF'
+[INFO] Starting backend build
+[INFO] Fetching dependencies
+[ERROR] Missing dependency: libfoo
+[INFO] Retrying...
+[ERROR] Missing dependency: libfoo
+[INFO] Build failed
+EOF
+
+    # -----------------------------
+    # build_frontend_20230912.log
+    # -----------------------------
+    cat > /home/user/ci_logs/build_frontend_20230912.log <<'EOF'
+[INFO] Starting frontend build
+[INFO] Installing packages
+[INFO] Compiling TypeScript
+[ERROR] Can't resolve './App'
+[ERROR] Can't resolve './Header'
+[INFO] Build failed
+EOF
+
+    # -----------------------------
+    # build_docs_20230912.log
+    # -----------------------------
+    cat > /home/user/ci_logs/build_docs_20230912.log <<'EOF'
+[INFO] Starting docs build
+[INFO] Generating docs
+[INFO] Docs build completed successfully
+EOF
+
+    # Ensure the three log files have read/write permissions for everyone
+    chmod 0666 /home/user/ci_logs/*.log
+
+    # Do NOT create trimmed_logs/ or error_summary.tsv; those are for the learner
+    # to generate during the exercise.
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to override; keep default environment so $HOME is respected
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author CI-Task-Generator
+    Description "Environment for CI/CD log-trimming exercise with pytest pre-installed."
+
+%help
+    This container provides the initial filesystem state for the “CI/CD log-trimming”
+    exercise. Three raw build logs are pre-seeded in /home/user/ci_logs/.
+    Learners must generate trimmed error files and a summary TSV using awk/sed.

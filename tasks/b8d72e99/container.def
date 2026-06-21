@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install required packages
+    # ------------------------------------------------------------------
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        jq \
+        ca-certificates \
+        dumb-init
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Create dedicated non-root user with stable UID/GID = 1000
+    # ------------------------------------------------------------------
+    groupadd -g 1000 user || true
+    useradd  -m -u 1000 -g 1000 user || true
+
+    # ------------------------------------------------------------------
+    # 3. Prepare the sample_app troubleshooting bundle
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/sample_app/logs
+
+    # status.json (0600)
+    cat > /home/user/sample_app/status.json <<'EOF'
+{"pid": 4242, "cpu_pct": 2.3, "mem_pct": 1.1, "open_ports": [8080, 9090]}
+EOF
+    chmod 0600 /home/user/sample_app/status.json
+
+    # app.log (0644)
+    cat > /home/user/sample_app/logs/app.log <<'EOF'
+[2023-07-10 10:00:00] INFO  Starting service
+[2023-07-10 10:01:00] INFO  Initialising configuration
+[2023-07-10 10:02:13] ERROR Connection timed out to database
+[2023-07-10 10:02:14] WARN  Retrying connection
+[2023-07-10 10:02:20] ERROR Connection timed out to database
+[2023-07-10 10:05:33] INFO  Configuration reloaded
+[2023-07-10 10:10:04] ERROR Failed to load configuration file
+[2023-07-10 10:15:42] INFO  Health-check passed
+[2023-07-10 10:20:11] ERROR User authentication failed
+[2023-07-10 10:25:00] INFO  Shutting down
+EOF
+    chmod 0644 /home/user/sample_app/logs/app.log
+
+    # ------------------------------------------------------------------
+    # 4. Adjust ownership so the runtime (non-root) user can access them
+    # ------------------------------------------------------------------
+    chown -R 1000:1000 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author dev-helper
+    Description "Environment for the 'sample_app' diagnostic task with pytest pre-installed."

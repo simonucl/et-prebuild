@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Essential packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        curl \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare directory structure under /home/user/
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/mock_api/auth
+    mkdir -p /home/user/mock_api/files
+    mkdir -p /home/user/mock_api/billing
+    mkdir -p /home/user/ticket_logs
+
+    # ------------------------------------------------------------------
+    # Populate mock API JSON files
+    # ------------------------------------------------------------------
+    cat > /home/user/mock_api/auth/status.json <<'EOF'
+{ "service": "auth", "status": "ok" }
+EOF
+
+    cat > /home/user/mock_api/files/status.json <<'EOF'
+{ "service": "files", "status": "ok" }
+EOF
+
+    cat > /home/user/mock_api/billing/status.json <<'EOF'
+{ "service": "billing", "status": "degraded" }
+EOF
+
+    # ------------------------------------------------------------------
+    # Permissions: ensure the runtime (non-root) user can work in /home/user
+    # ------------------------------------------------------------------
+    chmod -R 0755 /home/user
+    chmod 0777 /home/user/ticket_logs
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author "Container Prepared for Monitoring Ticket Exercise"

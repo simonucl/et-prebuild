@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install Python tooling and pytest (for the grading test suite)
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Create the required directory structure and log files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/api_test/logs
+
+    # Exact byte-perfect log contents (no trailing newlines)
+    printf '{"request":"ping"}'   > /home/user/api_test/logs/request_20240601.json
+    printf '{"response":"pong"}'  > /home/user/api_test/logs/response_20240601.json
+    printf '{"error":null}'       > /home/user/api_test/logs/error_20240601.json
+
+    chmod 644 /home/user/api_test/logs/*.json
+
+    # ------------------------------------------------------------------
+    # 3. Prepare (empty) backups directory – may or may not exist per tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/api_test/backups
+    chmod 755 /home/user/api_test/backups
+
+    # Ensure no leftover artefacts are present
+    rm -f /home/user/api_test/backups/logs_backup_20240601.tar.gz
+    rm -f /home/user/api_test/backups/latest_backup_manifest.txt
+
+%environment
+    # Helpful defaults
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author="Your Name"
+    Description="Environment for the API log backup exercise with pre-seeded log files and pytest installed."

@@ -1,0 +1,31 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package lists and install Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create the required base home directory
+    mkdir -p /home/user
+    chmod 0755 /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure that pip-installed executables such as `pytest` are visible
+    export PATH="/usr/local/bin:/usr/local/sbin:${PATH}"
+
+%runscript
+    echo "This container provides the environment for the incident-response exercise."
+    echo "Invoke your own scripts or an interactive shell as needed."

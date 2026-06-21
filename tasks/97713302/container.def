@@ -1,0 +1,72 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update apt indices and install required packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        jq \
+        csvtool \
+        ca-certificates
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    #################################################################
+    # Runtime bootstrap script
+    #
+    #  Anything placed in /.singularity.d/env/*.sh is sourced on every
+    #  `apptainer exec|run|shell` invocation.  Placing the setup logic
+    #  here ensures the files are created *at runtime* by the invoking
+    #  user, so ownership and permissions satisfy the tests.
+    #################################################################
+    cat << 'EOF' > /.singularity.d/env/90-setup-incidents.sh
+#!/bin/sh
+# Ensure the initial incident artefacts exist with correct permissions.
+
+INC_DIR="/home/user/incidents"
+CSV_PATH="${INC_DIR}/auth_failures.csv"
+
+# Only create them if they do not already exist (idempotent).
+if [ ! -e "${CSV_PATH}" ]; then
+    mkdir -p "${INC_DIR}"
+    chmod 755 "${INC_DIR}"
+
+    cat > "${CSV_PATH}" << 'CSVEOF'
+timestamp,username,source_ip,status
+2024-05-14T08:41:23Z,alice,192.168.1.10,FAILED
+2024-05-14T09:02:11Z,bob,10.0.0.3,SUCCESS
+2024-05-14T10:15:04Z,charlie,172.16.5.5,FAILED
+2024-05-14T10:45:30Z,alice,192.168.1.10,FAILED
+2024-05-14T11:00:00Z,dave,203.0.113.99,SUCCESS
+CSVEOF
+
+    # Set required permissions on the CSV file
+    chmod 644 "${CSV_PATH}"
+fi
+EOF
+
+    chmod +x /.singularity.d/env/90-setup-incidents.sh
+
+%labels
+    chmod 755 /home/user
+
+    Author Incidents Task Maintainer
+    Description Environment for authentication incident response task
+
+%help
+This container provides the starting state for the "failed login" incident
+response exercise.  When executed (via `apptainer exec|run|shell`), it
+ensures the required CSV file is present under /home/user/incidents with the
+correct permissions and contents.  Python3, pytest, jq, and csvtool are
+pre-installed for convenience.

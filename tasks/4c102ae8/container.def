@@ -1,0 +1,98 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package lists and installing Python tooling..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest for the grading framework..."
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating initial directory structure and CSV files..."
+    mkdir -p /home/user/data
+
+    # Create sales_q1.csv : 10 data rows + header
+    cat > /home/user/data/sales_q1.csv <<'EOF'
+id,value
+1,100
+2,200
+3,300
+4,400
+5,500
+6,600
+7,700
+8,800
+9,900
+10,1000
+EOF
+
+    # Create sales_q2.csv : 8 data rows + header
+    cat > /home/user/data/sales_q2.csv <<'EOF'
+id,value
+1,150
+2,250
+3,350
+4,450
+5,550
+6,650
+7,750
+8,850
+EOF
+
+    # Create sales_q3.csv : 12 data rows + header
+    cat > /home/user/data/sales_q3.csv <<'EOF'
+id,value
+1,120
+2,220
+3,320
+4,420
+5,520
+6,620
+7,720
+8,820
+9,920
+10,1020
+11,1120
+12,1220
+EOF
+
+    # Ensure /home/user is writable by the runtime (non-root) user
+    chmod 0777 /home/user
+
+    # Make CSVs world-readable; they don't need to be writable
+    chmod 0644 /home/user/data/sales_q*.csv
+    chmod 0755 /home/user/data
+
+    echo "Setup complete."
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python and pip are in PATH (they already are, but just for safety)
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author "Automated Build"
+    Description "Base image for parallel CSV processing assignment with pytest pre-installed and starter CSV files present."
+
+%help
+    This Apptainer image provides the initial filesystem state for the
+    “parallel CSV processing benchmark” assignment.
+
+    Pre-installed:
+      • python3, pip, pytest
+
+    Pre-created directories and files:
+      • /home/user/data/sales_q1.csv  (10 data rows)
+      • /home/user/data/sales_q2.csv  (8 data rows)
+      • /home/user/data/sales_q3.csv  (12 data rows)
+
+    Students must produce:
+      /home/user/benchmarks/csv_processing_benchmark.log

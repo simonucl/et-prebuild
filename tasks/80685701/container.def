@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python & pip
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the autograder
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial project data directory and populate it with the
+    # two source files that the tests expect to find *before* the student
+    # does any work.
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/project_data
+
+    # employees.csv (exact contents, including header and 6 records)
+    cat > /home/user/project_data/employees.csv <<'EOF'
+id,name,dept,salary
+101,Alice Smith,Engineering,90000
+102,Bob Johnson,Marketing,65000
+103,Carol Martinez,Engineering,72000
+104,David Lee,Engineering,68000
+105,Eve Turner,HR,70000
+106,Frank Wright,Engineering,80000
+EOF
+
+    # statuses.json (pretty-printed exactly as required)
+    cat > /home/user/project_data/statuses.json <<'EOF'
+[
+  {"id": 101, "active": true},
+  {"id": 102, "active": false},
+  {"id": 103, "active": true},
+  {"id": 104, "active": false},
+  {"id": 105, "active": true},
+  {"id": 106, "active": true}
+]
+EOF
+
+    # Give write permissions so the unprivileged runtime user can create
+    # the "processed" sub-directory and output files during the exercise.
+    chmod -R 0777 /home/user/project_data
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are on the PATH (usually true, but explicit is nice)
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Apptainer Task Generator"
+    Description="Container image providing initial state for project data consolidation task."

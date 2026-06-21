@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Base tooling: make sure Python and pytest are available
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Prepare initial workspace expected by the exercise
+    # ------------------------------------------------------------------
+    # Make sure the generic user can create /home/user/analysis later on.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Create the distributed_logs directory and populate log files
+    mkdir -p /home/user/distributed_logs
+
+    # ----- serviceA.log ------------------------------------------------
+    cat > /home/user/distributed_logs/serviceA.log << 'EOF'
+2023-10-18T02:12:00Z SERVICE_A INFO  Node=alpha   Msg="Heartbeat"
+2023-10-18T02:13:45Z SERVICE_A ERROR Node=alpha   Msg="Timeout while contacting Node beta"
+2023-10-18T02:14:30Z SERVICE_A INFO  Node=alpha   Msg="Recovered connection"
+2023-10-18T02:15:01Z SERVICE_A ERROR Node=alpha   Msg="Timeout while contacting Node gamma"
+2023-10-18T02:16:30Z SERVICE_A WARN  Node=alpha   Msg="High latency detected"
+2023-10-17T23:59:59Z SERVICE_A ERROR Node=alpha   Msg="Timeout while contacting Node delta"
+EOF
+
+    # ----- serviceB.log ------------------------------------------------
+    cat > /home/user/distributed_logs/serviceB.log << 'EOF'
+2023-10-18T02:13:00Z SERVICE_B INFO  Node=bravo   Msg="Heartbeat"
+2023-10-18T02:14:00Z SERVICE_B ERROR Node=bravo   Msg="Timeout while contacting Node delta"
+2023-10-18T02:15:30Z SERVICE_B INFO  Node=bravo   Msg="Recovered connection"
+2023-10-18T02:16:17Z SERVICE_B ERROR Node=bravo   Msg="Timeout while contacting Node epsilon"
+EOF
+
+    # ----- serviceC.log ------------------------------------------------
+    cat > /home/user/distributed_logs/serviceC.log << 'EOF'
+2023-10-18T02:14:30Z SERVICE_C ERROR Node=charlie Msg="Timeout while contacting Node alpha"
+EOF
+
+    # Ensure the files are world-readable
+    chmod 644 /home/user/distributed_logs/*.log
+
+%labels
+    chmod 755 /home/user
+
+    Author Time-out-Exercise-Builder
+
+%help
+    Container image that sets up the initial filesystem state for the
+    “distributed time-out analysis” programming exercise.

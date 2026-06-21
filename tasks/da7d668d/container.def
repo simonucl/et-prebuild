@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python/pip
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        ca-certificates
+
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Establish the required initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    # Ensure the /home/user hierarchy exists
+    mkdir -p /home/user
+
+    # Create the firewall working directory with 0700 permissions
+    mkdir -p /home/user/firewall
+    chmod 0700 /home/user/firewall
+
+    # Populate the original rules file with the exact required contents
+    cat > /home/user/firewall/current_rules.v4 <<'EOF'
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT  -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+-A INPUT  -p icmp -j ACCEPT
+-A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+-A FORWARD -s 10.10.10.0/24   -p tcp -m tcp --dport 22  -j ACCEPT
+-A FORWARD -j DROP
+COMMIT
+EOF
+    chmod 0600 /home/user/firewall/current_rules.v4
+
+    # Leave /home/user/firewall/proposed_rules.v4
+    # and /home/user/firewall/config_changes.log absent on purpose.
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special required; keep default environment.
+
+%runscript
+    # Default runscript: start an interactive shell
+    exec /bin/bash "$@"

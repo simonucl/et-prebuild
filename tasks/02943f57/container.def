@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author AutomationSetup
+    Description "Environment for SQLite inventory summarization task"
+
+%post
+    # Update package lists
+    apt-get update
+
+    # Install required packages: Python, pip, and SQLite CLI
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3 \
+        ca-certificates
+
+    # Clean apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the verification harness
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create directory structure expected by the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data
+    mkdir -p /home/user/output
+
+    # Make the output directory world-writable so the non-root runtime
+    # user can create the summary.log file.
+    chmod 0777 /home/user/output
+
+    # ------------------------------------------------------------------
+    # Build the SQLite database with the required schema and data
+    # ------------------------------------------------------------------
+    sqlite3 /home/user/data/warehouse.db <<'SQL_END'
+    PRAGMA journal_mode=OFF;
+    CREATE TABLE inventory (
+        id   INTEGER PRIMARY KEY,
+        item TEXT    NOT NULL,
+        qty  INTEGER NOT NULL
+    );
+    INSERT INTO inventory (id, item, qty) VALUES
+        (1, 'bolts',   10),
+        (2, 'nuts',    12),
+        (3, 'washers',  8),
+        (4, 'screws',   7),
+        (5, 'spacers',  5);
+SQL_END
+
+    # Ensure the database is readable by any user
+    chmod 0644 /home/user/data/warehouse.db
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python and pytest are in PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for the inventory summarization task."
+    echo "Use an interactive shell or execute your commands directly."

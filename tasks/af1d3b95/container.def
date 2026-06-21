@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip ca-certificates tzdata
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Create an unprivileged user
+    useradd -m -d /home/user -s /bin/bash user
+
+    # Prepare initial (non-compliant) configuration files
+    CONFIG_DIR=/home/user/configs
+    mkdir -p "${CONFIG_DIR}"
+
+    cat > "${CONFIG_DIR}/app_config.yml" <<'EOF'
+database:
+  host: 127.0.0.1
+  port: 5432
+  user: appuser
+  password: changeme
+logging:
+  level: info
+  file: /var/log/app.log
+EOF
+
+    cat > "${CONFIG_DIR}/app_settings.toml" <<'EOF'
+[server]
+address = "0.0.0.0"
+port = 8080
+
+[feature_flags]
+enable_beta = false
+use_cache = true
+EOF
+
+    # Set safe permissions so the future non-root agent can edit the files
+    chown -R user:user /home/user
+    chmod 755 /home/user /home/user/configs
+    chmod 664 "${CONFIG_DIR}/app_config.yml" "${CONFIG_DIR}/app_settings.toml"
+
+%runscript
+    exec /bin/bash "$@"
+
+%labels
+    Author          task-generator
+    Description     Initial workstation state for the compliance audit task.
+
+%help
+This container sets up the initial, non-compliant configuration files that
+the agent must bring into compliance during testing.

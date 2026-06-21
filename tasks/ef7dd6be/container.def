@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #---------------------------------------------------------------------#
+    # 1.  Base system packages
+    #---------------------------------------------------------------------#
+    apt-get update -y
+    # Python (includes python3), pip, rsync (handy for the assignment)
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        rsync \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #---------------------------------------------------------------------#
+    # 2.  Python testing framework
+    #---------------------------------------------------------------------#
+    pip3 install --no-cache-dir pytest
+
+    #---------------------------------------------------------------------#
+    # 3.  Prepare initial assignment filesystem
+    #---------------------------------------------------------------------#
+    # Home base
+    mkdir -p /home/user
+    chmod 0777 /home/user        # Make sure the runtime user can write here
+
+    # Source project tree
+    mkdir -p /home/user/project/public
+
+    # Files in project root ---------------------------------------------#
+    printf '<html>Index</html>\n'         > /home/user/project/index.html
+    printf 'top secret\n'                 > /home/user/project/secret.txt
+    printf 'Project read-me\n'            > /home/user/project/readme.md
+    printf 'DB_PASS=1234\n'               > /home/user/project/.env
+
+    # Files in project/public -------------------------------------------#
+    printf 'body {margin:0;}\n'           > /home/user/project/public/style.css
+    printf '#!/bin/bash\necho hi\n'       > /home/user/project/public/script.sh
+
+    # Permissions --------------------------------------------------------#
+    chmod 0644 /home/user/project/index.html
+    chmod 0600 /home/user/project/secret.txt
+    chmod 0664 /home/user/project/readme.md
+    chmod 0600 /home/user/project/.env
+    chmod 0644 /home/user/project/public/style.css
+    chmod 0755 /home/user/project/public/script.sh
+
+    # Destination directory (initially empty, writable by runtime user)
+    mkdir -p /home/user/simulated_remote
+    chmod 0777 /home/user/simulated_remote
+
+    # Ensure correct ownership (not strictly required, but helpful)
+    chown -R 0:0 /home/user   # keep root ownership; perms already allow access
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python is in PATH
+    export PATH=/usr/bin:$PATH

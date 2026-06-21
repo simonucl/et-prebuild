@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # System packages
+    # ------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # ------------------------------------------------------------------
+    # Python tooling
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare required directory structure and source log file
+    # ------------------------------------------------------------------
+    LOG_DIR="/home/user/api_test/logs"
+    mkdir -p "${LOG_DIR}"
+
+    cat > "${LOG_DIR}/api_integration.log" <<'EOF'
+2024-09-10 10:15:21,345 INFO  [AuthService] - Authentication succeeded for user id 42
+2024-09-10 10:15:22,103 WARN  [PaymentService] - Payment took longer than expected (842ms)
+2024-09-10 10:15:23,511 ERROR [PaymentService] - Payment gateway timeout after 30000ms
+2024-09-10 10:15:24,186 INFO  [NotificationService] - Email sent to user id 42
+2024-09-10 10:15:25,902 ERROR [ShipmentService] - Invalid shipping address provided
+2024-09-10 10:15:26,778 DEBUG [InventoryService] - Stock level for SKU-12345 is 98
+2024-09-10 10:15:27,664 FATAL [InventoryService] - Database unreachable
+2024-09-10 10:15:28,350 INFO  [AuthService] - Logout completed for user id 42
+2024-09-10 10:15:29,021 ERROR [PaymentService] - Currency mismatch: expected USD got EUR
+EOF
+
+    # Ensure readability for non-root users inside the container
+    chmod -R a+r "${LOG_DIR}"
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python and pip are on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Container with initial state for API log extraction exercise."

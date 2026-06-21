@@ -1,0 +1,29 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Ensure a usable home directory for the unprivileged user that
+    # will solve the exercise.
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Install Python and pytest for the automated grading framework.
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Clean up APT caches to keep the image small.
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Make sure user-installed Python tools are on PATH.
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%labels
+    Author firewall-task
+    Description "Base image for the firewall configuration exercise with pytest pre-installed."

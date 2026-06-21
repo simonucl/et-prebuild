@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author TaskSetup
+    Description "Initial state for credential rotation parsing challenge"
+
+%post
+    set -e
+
+    # Install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        ca-certificates
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the tests
+    # ------------------------------------------------------------------
+    # Create /home/user and the rotation sub-directory
+    mkdir -p /home/user/rotation
+
+    # Make sure the future, non-root runtime user can write into it
+    chmod 0777 /home/user
+    chmod 0777 /home/user/rotation
+
+    # Populate the credential_rotation.log with the exact canonical content
+    cat > /home/user/rotation/credential_rotation.log <<'EOF'
+[2024-05-03 09:14:02] user=alice action=update password_old=2c1743a password_new=10ac5bd
+[2024-05-03 09:15:45] user=alice action=confirm rotation_status=success
+[2024-05-03 10:01:11] user=bob action=update password_old=ffab23a password_new=946adfe
+[2024-05-03 10:03:02] user=bob action=confirm rotation_status=success
+[2024-05-03 11:20:55] user=charlie action=update password_old=ab41dfe password_new=dfee551
+[2024-05-03 11:22:11] user=charlie action=confirm rotation_status=success
+[2024-05-03 12:10:13] user=david action=confirm rotation_status=success
+EOF
+
+    # Ensure the file is writable by any user inside the container
+    chmod 0666 /home/user/rotation/credential_rotation.log
+
+%environment
+    chmod 755 /home/user
+
+    # Keep locale sane for text processing utilities
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%runscript
+    echo "Container for credential rotation parsing challenge."
+    echo "Open a shell with:  apptainer exec <image> /bin/bash"

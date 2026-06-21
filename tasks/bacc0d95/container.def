@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3-pip python3-setuptools locales && \
+        rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # Ensure a usable UTF-8 locale is present
+    locale-gen en_US.UTF-8
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/ci_data
+
+    # build_results.csv
+    cat > /home/user/ci_data/build_results.csv <<'CSV'
+build_id,artifact,status
+1001,service-api,success
+1002,service-auth,failure
+1003,website,success
+1004,worker,success
+CSV
+
+    # deployment_targets.csv
+    cat > /home/user/ci_data/deployment_targets.csv <<'CSV'
+build_id,target_env
+1001,prod
+1003,staging
+1004,prod
+CSV
+
+    # Make sure the unprivileged agent has full access
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Prefer UTF-8 for Python and tooling
+    export LC_ALL=en_US.UTF-8
+    export LANG=en_US.UTF-8
+    export LANGUAGE=en_US.UTF-8

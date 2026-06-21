@@ -1,0 +1,28 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and a DNS utility suite (provides host, dig, nslookup)
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip dnsutils
+    pip3 install --no-cache-dir pytest
+
+    # Prepare the writable project directory required by the exercise
+    mkdir -p /home/user/projects/project-lambda
+    chmod -R 0777 /home/user/projects
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special required; rely on Apptainer's default HOME binding
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for the DNS lookup helper exercise. Use 'apptainer exec' to work inside the image."

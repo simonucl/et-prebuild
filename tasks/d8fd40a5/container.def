@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package list and install Python + pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem expected by the grading tests
+    # ------------------------------------------------------------------
+
+    # Ensure /home/user exists and is writable by any runtime UID
+    mkdir -p /home/user
+    chmod 777 /home/user
+
+    # Create the directory that will hold the INI configuration
+    mkdir -p /home/user/db_configs
+    chmod 755 /home/user/db_configs
+
+    # Create the INI file with exact required contents (final newline included)
+    cat > /home/user/db_configs/db_service.ini <<'EOF'
+[database]
+host=localhost
+port=5432
+dbname=inventory
+user=inventory_admin
+
+[optimizations]
+max_connections=200
+work_mem=4MB
+shared_buffers=128MB
+effective_cache_size=512MB
+EOF
+    chmod 644 /home/user/db_configs/db_service.ini
+
+%labels
+    Maintainer="apptainer-setup"

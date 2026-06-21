@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+Author ai-assistant
+Description "Environment for the cleaned-datasets backup exercise"
+
+%post
+    set -e
+
+    echo "Updating package lists and installing Python & system utilities..."
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tar \
+        gzip \
+        coreutils
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir --upgrade pip pytest
+
+    echo "Creating directory structure and sample cleaned CSV files..."
+    mkdir -p /home/user/datasets/cleaned
+
+    # iris_cleaned.csv
+    cat << 'EOF' > /home/user/datasets/cleaned/iris_cleaned.csv
+sepal_length,sepal_width,petal_length,petal_width,species
+5.1,3.5,1.4,0.2,setosa
+5.9,3.0,5.1,1.8,virginica
+EOF
+
+    # titanic_cleaned.csv
+    cat << 'EOF' > /home/user/datasets/cleaned/titanic_cleaned.csv
+survived,pclass,sex,age,fare
+1,1,female,38,71.2833
+0,3,male,34.5,7.8292
+EOF
+
+    # mnist_cleaned.csv
+    cat << 'EOF' > /home/user/datasets/cleaned/mnist_cleaned.csv
+pixel1,pixel2,pixel3,label
+0,0,0,7
+0,0,0,2
+EOF
+
+    echo "Fixing file and directory permissions..."
+    chmod 755 /home/user /home/user/datasets /home/user/datasets/cleaned
+    chmod 644 /home/user/datasets/cleaned/*.csv
+
+    echo "Initial container setup complete."
+
+%environment
+# Default to python3 when the user types 'python'
+export PYTHONIOENCODING=UTF-8
+alias python=python3
+
+%runscript
+echo "Container for the cleaned-datasets backup exercise."
+echo "You can now work on the task inside this Apptainer image."
+exec "$@"

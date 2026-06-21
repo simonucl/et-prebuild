@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #--------------------------------------------------
+    # Base packages and Python tooling
+    #--------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tar \
+        gzip \
+        coreutils
+
+    pip3 install --no-cache-dir pytest
+
+    #--------------------------------------------------
+    # Lab initial filesystem layout
+    #--------------------------------------------------
+    # Create the user home and initial source directory
+    mkdir -p /home/user/backup_source
+
+    # Populate required files with exact contents
+    printf "test"  > /home/user/backup_source/test.txt
+    printf "hello" > /home/user/backup_source/hello.txt
+    : > /home/user/backup_source/empty.dat   # create zero-byte file
+
+    # Ensure appropriate, non-restrictive permissions
+    chmod 755 /home/user
+    chmod 755 /home/user/backup_source
+    chmod 644 /home/user/backup_source/test.txt \
+              /home/user/backup_source/hello.txt \
+              /home/user/backup_source/empty.dat
+
+    # The directories /home/user/backups and /home/user/restore_test
+    # MUST NOT exist at start, so do NOT create them.
+
+%environment
+    # Expose Python user base bin directory (pip installs) if needed
+    export PATH="$PATH:$HOME/.local/bin"
+
+%runscript
+    echo "Container for backup-operator exercise."
+    echo "Run your commands inside an interactive shell:"
+    echo "    apptainer exec <image.sif> /bin/bash"

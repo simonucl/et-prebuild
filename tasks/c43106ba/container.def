@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update apt index and install Python & pip
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial project structure expected by the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/project/config
+
+    # model_config.yaml (initial state)
+    cat <<'EOF' > /home/user/project/config/model_config.yaml
+dataset:
+  path: "/data/train.csv"
+  batch_size: 32
+  shuffle: true
+EOF
+
+    # run_settings.toml (initial state)
+    cat <<'EOF' > /home/user/project/config/run_settings.toml
+[run]
+epochs = 10
+learning_rate = 0.001
+EOF
+
+    # Ensure the future learner (non-root) can modify the files
+    chmod -R a+rwx /home/user/project
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author someone@example.com
+    Description "Container for configuration-editing single-command exercise"

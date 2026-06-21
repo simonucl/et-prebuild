@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create an unprivileged user (UID 1000) with home directory /home/user
+    useradd -m -s /bin/bash user
+
+    # ------------------------------------------------------------------
+    # Prepare the initial file-system state expected by the test-suite
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/images/primary
+    mkdir -p /home/user/images/backup
+
+    # Create a 256 KiB (262 144 bytes) binary file for the primary image
+    dd if=/dev/zero of=/home/user/images/primary/golden.img bs=1024 count=256 status=none
+
+    # Make a separate physical copy for the backup image (different inode)
+    cp /home/user/images/primary/golden.img /home/user/images/backup/golden.img
+
+    # Ensure write permissions for any unprivileged user running inside the container
+    chmod 0777 /home/user/images/primary
+    chmod 0777 /home/user/images/backup
+
+    # Give ownership of /home/user to the created “user” account
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PATH="/home/user/.local/bin:${PATH}"

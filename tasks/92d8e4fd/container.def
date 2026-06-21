@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install Python and pytest (plus minimal build utilities)
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Create initial FinOps raw-usage directory structure and files
+    # ------------------------------------------------------------------
+    CLOUD_RAW_DIR="/home/user/cloud_usage/raw_logs"
+    mkdir -p "${CLOUD_RAW_DIR}"
+
+    # ---- compute_jan.csv ----
+    cat > "${CLOUD_RAW_DIR}/compute_jan.csv" <<'EOF'
+Service,InstanceType,Hours,HourlyCostUSD
+EC2,m5.large,200,0.096
+EC2,c5.xlarge,150,0.17
+Lambda,GB-Seconds,3000000,0.00001667
+EOF
+
+    # ---- storage_jan.csv ----
+    cat > "${CLOUD_RAW_DIR}/storage_jan.csv" <<'EOF'
+Service,GB-Months,CostPerGBMonthUSD
+S3 Standard,500,0.023
+S3 Glacier,200,0.004
+EOF
+
+    # ------------------------------------------------------------------
+    # 3. Ensure non-root container users can read the data
+    # ------------------------------------------------------------------
+    chmod 755 /home /home/user /home/user/cloud_usage /home/user/cloud_usage/raw_logs
+    chmod 644 "${CLOUD_RAW_DIR}/compute_jan.csv" "${CLOUD_RAW_DIR}/storage_jan.csv"
+
+%labels
+    chmod 755 /home/user
+
+    Author FinOpsTaskSetup
+    Description "Container prepared for FinOps analysis challenge – includes raw January 2024 usage CSVs and pytest."

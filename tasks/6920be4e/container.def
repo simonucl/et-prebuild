@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt and installing required packages..."
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        tar \
+        gzip \
+        ca-certificates
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating required directory structure and sample tarball..."
+    # Base working directory for the exercise
+    mkdir -p /home/user/backups
+    mkdir -p /home/user/restore_scratch
+
+    # Create some small sample files to include in the tarball
+    WORKDIR=/tmp/app_config_sample
+    mkdir -p "${WORKDIR}"
+    echo "sample_key=sample_value" > "${WORKDIR}/config.ini"
+    echo "<root><value>42</value></root>" > "${WORKDIR}/settings.xml"
+    echo "#!/bin/sh\necho \"Hello, World!\"" > "${WORKDIR}/start.sh"
+    chmod +x "${WORKDIR}/start.sh"
+
+    # Build the gzipped tarball (<500 KB) in the backups directory
+    tar -czf /home/user/backups/app_config_2024-06-01.tar.gz -C "${WORKDIR}" .
+
+    # Clean up the temporary working directory
+    rm -rf "${WORKDIR}"
+
+    # Ensure permissions allow the non-root user (the student) to work
+    chmod 0755 /home/user
+    chmod 0755 /home/user/backups
+    chmod 0777 /home/user/restore_scratch   # must be writable for extraction
+
+    echo "Container setup complete."
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python points to python3
+    export PYTHONIOENCODING=utf8
+    if [ -x /usr/bin/python3 ]; then
+        export PYTHONUSERBASE=/tmp/.python
+        export PATH=$PYTHONUSERBASE/bin:$PATH
+    fi
+
+%labels
+    Author="Apptainer Auto-Builder"
+    Description="Container for backup-restore timing exercise with pytest pre-installed"
+
+%help
+    This container provides the initial state for the backup-restore
+    performance-measurement exercise.  
+    Directories and files created:
+      • /home/user/backups/app_config_2024-06-01.tar.gz  (sample tarball)
+      • /home/user/restore_scratch                       (empty, writable)  
+    pytest is available for automated grading.

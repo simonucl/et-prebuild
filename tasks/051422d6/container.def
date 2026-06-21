@@ -1,0 +1,31 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Prepare initial filesystem state
+    mkdir -p /home/user/secure
+
+    cat >/home/user/secure/api_keys.txt <<'EOF'
+analytics:ABCD1234OLD
+data-collector:XYZ7890OLD
+monitoring:MON123OLD
+EOF
+
+    # Ensure write permissions for the unprivileged agent
+    chmod 777 /home/user/secure
+    chmod 666 /home/user/secure/api_keys.txt
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=utf-8

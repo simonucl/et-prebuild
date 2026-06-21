@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt and installing python3-pip..."
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates \
+        tzdata
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory structure expected by the tests
+    # ------------------------------------------------------------------
+    BASE=/home/user
+    SITE_ADMIN=${BASE}/site_admin
+    WWW=${SITE_ADMIN}/www
+
+    echo "Creating site_admin directory tree..."
+    mkdir -p "${WWW}/alice" "${WWW}/bob" "${WWW}/charlie"
+
+    # users.csv with exact required initial contents (4 lines, trailing newline)
+    cat > "${SITE_ADMIN}/users.csv" <<'EOF'
+username,status
+alice,active
+bob,active
+charlie,active
+EOF
+
+    # Minimal index.html files for existing users
+    echo "<h1>Welcome, alice!</h1>"   > "${WWW}/alice/index.html"
+    echo "<h1>Welcome, bob!</h1>"     > "${WWW}/bob/index.html"
+    echo "<h1>Welcome, charlie!</h1>" > "${WWW}/charlie/index.html"
+
+    # Make everything writable by non-root users who will run inside the container
+    chmod -R 777 "${BASE}"
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python and pip are on PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author task-preparer
+    Description "Environment for site administrator task – initial state only."
+
+%runscript
+    echo "Container for site administrator task."
+    echo "No default runtime action – please run your solution script or open a shell."

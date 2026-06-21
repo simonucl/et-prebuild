@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update apt cache and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the test suite
+    # -----------------------------------------------------------------
+
+    # Create the mandatory release directory (and parents) that must
+    # exist before the learner runs the task.
+    RELEASE_DIR="/home/user/www/releases/2023-01-15"
+    mkdir -p "${RELEASE_DIR}"
+
+    # (Optional) place a placeholder file so the directory is non-empty
+    echo "<html><body>Release placeholder</body></html>" > "${RELEASE_DIR}/index.html"
+
+    # Make sure the learner—who will run unprivileged—can write inside
+    # /home/user in order to create the symlink and log file.
+    chmod -R 0777 /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author      task-preparer
+    Description "Container prepared for the symlink deployment exercise"
+
+%runscript
+    echo "This container sets up the initial state for the symlink deployment exercise."
+    echo "Invoke your commands inside an interactive shell, e.g.:"
+    echo "  apptainer exec <image>.sif /bin/bash"

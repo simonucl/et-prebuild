@@ -1,0 +1,88 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author FinOps-Prep
+    Description "Base image for FinOps CLI alignment task – provides raw CSV data and pytest."
+
+%post
+    set -e
+
+    ############################
+    # 1) Install dependencies  #
+    ############################
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip install --no-cache-dir pytest
+
+    ##################################################
+    # 2) Create a non-privileged working UNIX user   #
+    ##################################################
+    # UID/GID 1000 is the conventional first user.
+    if ! id -u user >/dev/null 2>&1; then
+        groupadd -g 1000 user
+        useradd  -m -u 1000 -g 1000 -s /bin/bash user
+    fi
+
+    ##################################################
+    # 3) Set up directory skeleton for the exercise  #
+    ##################################################
+    BASEDIR=/home/user/finops
+    RAWDIR=${BASEDIR}/raw
+    WORKDIR=${BASEDIR}/work
+    OUTDIR=${BASEDIR}/output
+
+    mkdir -p "${RAWDIR}" "${WORKDIR}" "${OUTDIR}"
+
+    ###################################
+    # 4) Populate required CSV inputs #
+    ###################################
+    cat > "${RAWDIR}/usage_report.csv" <<'EOF'
+Service,ResourceID,HoursUsed,Region
+EC2,i-123456,720,us-east-1
+S3,bucket-abc,0,us-east-1
+RDS,db-654321,300,us-west-2
+EOF
+
+    cat > "${RAWDIR}/pricing.csv" <<'EOF'
+Service,PricePerHourUSD,Region,LastUpdated
+EC2,0.023,us-east-1,2023-09-01
+S3,0.000,us-east-1,2023-09-01
+RDS,0.250,us-west-2,2023-09-01
+EOF
+
+    ################################
+    # 5) Permissions & ownership   #
+    ################################
+    chown -R 1000:1000 /home/user
+    chmod 755 /home/user
+    chmod 755 "${BASEDIR}" "${RAWDIR}" "${WORKDIR}" "${OUTDIR}"
+    chmod 644 "${RAWDIR}"/*.csv
+
+%environment
+    # Ensure Python is available for pytest
+    export PYTHONUNBUFFERED=1
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    # Default runscript simply opens an interactive shell as non-root user.
+    exec sudo -u user -E /bin/bash "$@"
+
+%help
+    This container image provides the initial data and directory structure
+    for the FinOps column-alignment task.  It includes:
+      • Directories:
+          /home/user/finops/raw
+          /home/user/finops/work
+          /home/user/finops/output
+      • Source CSV files already placed in /home/user/finops/raw
+      • pytest installed system-wide for automated grading.
+
+    Students are expected to create:
+      /home/user/finops/output/aggregated_service_costs.tsv
+      /home/user/finops/output/aggregation_log.txt
+
+    Use classic Unix text-processing utilities (cut, paste, etc.) to solve
+    the assignment.

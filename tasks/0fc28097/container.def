@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # ------------------------------------------------------------------
+    # 1. System packages
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # ------------------------------------------------------------------
+    # 2. Python testing framework
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 3. Initial fixture for the exercise
+    # ------------------------------------------------------------------
+    # Create the expected directory structure
+    mkdir -p /home/user/api_tests
+
+    # Populate the three log files with the exact required contents
+    cat > /home/user/api_tests/api1.log <<'EOF'
+2023-07-01T12:00:00Z ERROR 500 INTERNAL_SERVER_ERROR /v1/users/123
+2023-07-01T12:00:02Z INFO 204 NO_CONTENT /v1/users/123
+EOF
+
+    cat > /home/user/api_tests/api2.log <<'EOF'
+2023-07-02T15:30:10Z ERROR 504 GATEWAY_TIMEOUT /v1/orders
+2023-07-02T15:31:10Z INFO 201 CREATED /v1/orders
+EOF
+
+    cat > /home/user/api_tests/deprecated.log <<'EOF'
+2023-06-30T10:00:00Z ERROR 410 GONE /v0/legacy
+EOF
+
+    # ------------------------------------------------------------------
+    # 4. Permissions
+    #    - Directory must be writable by the unprivileged runtime user so
+    #      that they can create error_report.log.
+    #    - Existing log files are read-only for everyone (0644).
+    # ------------------------------------------------------------------
+    chmod 1777 /home/user/api_tests          # sticky bit like /tmp
+    chmod 0644 /home/user/api_tests/*.log
+
+%labels
+    chmod 755 /home/user
+
+    Author integration-test-fixture
+
+%help
+    This container provides the initial filesystem state required for the
+    “API log aggregation” exercise.  It includes pytest for automated
+    verification.

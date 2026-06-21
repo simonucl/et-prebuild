@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Set up the required directory structure and files
+    mkdir -p /home/user/scripts
+
+    # /home/user/scripts/backup.sh
+    cat > /home/user/scripts/backup.sh <<'EOF'
+#!/bin/bash
+# Daily backup script
+password="letmein"
+tar -czf /tmp/backup.tgz /var/data
+EOF
+
+    # /home/user/scripts/deploy.sh
+    cat > /home/user/scripts/deploy.sh <<'EOF'
+#!/bin/bash
+# Deployment helper
+export DB_password="P@ssw0rd!"
+echo "Deployment complete"
+EOF
+
+    # /home/user/scripts/clean.sh
+    cat > /home/user/scripts/clean.sh <<'EOF'
+#!/bin/bash
+# Cleanup utility
+# (no secrets here)
+EOF
+
+    # Permissions: scripts executable, directory writable by non-root users
+    chmod 755 /home/user/scripts/*.sh
+    chmod -R a+rX /home/user
+    chmod a+w /home/user /home/user/scripts
+
+%labels
+    Author your_name_here
+
+%help
+Container prepared for the “security scan” CLI task.
+Contains:
+  • /home/user/scripts with three example shell scripts
+  • pytest installed for automated testing

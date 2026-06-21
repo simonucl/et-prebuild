@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author backup-task-initializer
+    Description "Initial filesystem for docs backup task with pytest pre-installed."
+
+%post
+    set -e
+
+    # Update and install Python + pip
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the evaluation framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the required initial project structure in /home/user
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/docs
+    mkdir -p /home/user/backups
+    mkdir -p /home/user/restore
+
+    # Create the three Markdown documentation files with exact contents
+    cat <<'EOF' > /home/user/docs/README.md
+# Documentation
+
+This is the README.
+EOF
+
+    cat <<'EOF' > /home/user/docs/architecture.md
+# Architecture
+
+System overview.
+EOF
+
+    cat <<'EOF' > /home/user/docs/user_guide.md
+# User Guide
+
+How to use the system.
+EOF
+
+    # Ensure every user inside the container can read/write these paths
+    chmod -R 777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%runscript
+    # Default entry gives an interactive shell unless overridden
+    exec /bin/bash "$@"

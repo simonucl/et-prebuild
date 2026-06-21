@@ -1,0 +1,32 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python plus essential tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-venv \
+        ca-certificates \
+        git \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the verification framework
+    python3 -m pip install --no-cache-dir pytest
+
+    # Create the backup directory structure and make it writable for any user
+    mkdir -p /home/user/backups
+    chmod -R 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure that the default python & pip point to Python 3
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+    export PYTHONIOENCODING=utf-8
+
+%runscript
+    echo "Container ready.  Use this shell to perform the backup/restore task."

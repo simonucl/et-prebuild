@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # 1) Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # 2) Create working directory structure and seed files
+    mkdir -p /home/user/iot_workdir/source/edge
+
+    # Firmware binary (exact 43-byte ASCII, no trailing LF)
+    printf 'The quick brown fox jumps over the lazy dog' \
+        > /home/user/iot_workdir/source/edge/firmware_v2.3.1.bin
+
+    # YAML configuration file
+    cat >/home/user/iot_workdir/source/edge/config.yaml <<'EOF'
+---
+version: "2.3.1"
+device: "EDGE-NODE-A1"
+features:
+  - gpio
+  - ble
+  - wifi
+...
+EOF
+
+    # License file
+    echo 'MIT License' > /home/user/iot_workdir/source/edge/LICENSE.txt
+
+    # 3) Permissions – allow the unprivileged runtime user to work under /home/user
+    chmod -R a+rwx /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author  "Container build script for IoT-edge firmware task"
+
+%help
+    This Apptainer image provides the starting filesystem state for the
+    IoT-edge firmware packaging exercise and includes pytest for validation.

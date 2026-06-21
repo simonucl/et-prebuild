@@ -1,0 +1,71 @@
+# syntax=docker/dockerfile:1
+FROM ubuntu:22.04
+
+# ---------------------------------------------------------------------
+# Base system packages
+# ---------------------------------------------------------------------
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked --mount=type=cache,target=/var/lib/apt,sharing=locked set -eux && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# ---------------------------------------------------------------------
+# Python testing framework
+# ---------------------------------------------------------------------
+RUN --mount=type=cache,target=/root/.cache/pip pip3 install --no-cache-dir pytest
+
+# ---------------------------------------------------------------------
+# Prepare the initial exercise filesystem
+# ---------------------------------------------------------------------
+RUN set -eux && \
+    mkdir -p /home/user/logs && \
+    chmod 0777 /home/user && \
+    chmod 0755 /home/user/logs
+
+RUN python3 - <<'PY'
+import pathlib, os
+
+log_dir = pathlib.Path("/home/user/logs")
+log_dir.mkdir(parents=True, exist_ok=True)
+
+files = {
+    log_dir / "web-2023-09-10.log": (
+        b"2023-09-10T10:15:21Z INFO  Request OK            client_ip=192.168.0.10\n"
+        b"2023-09-10T10:17:50Z ERROR Failed login          client_ip=192.168.0.10\n"
+        b"2023-09-10T11:05:52Z ERROR Timeout               client_ip=10.0.0.5\n"
+        b"2023-09-10T12:45:03Z ERROR Session aborted       client_ip=192.168.0.10\n"
+    ),
+    log_dir / "web-2023-09-11.log": (
+        b"2023-09-11T09:25:42Z ERROR Database err          client_ip=192.168.0.10\n"
+        b"2023-09-11T10:00:01Z INFO  Request OK            client_ip=192.168.0.20\n"
+    ),
+    log_dir / "web-2023-09-12.log": (
+        b"2023-09-12T08:14:22Z ERROR Service overload      client_ip=10.0.0.5\n"
+        b"2023-09-12T09:00:42Z ERROR Upsstream reset        client_ip=172.16.1.9\n"
+    ),
+    log_dir / "web-2023-09-13.log": (
+        b"2023-09-13T07:55:11Z INFO  Healthcheck OK        client_ip=127.0.0.1\n"
+    ),
+}
+
+for path, data in files.items():
+    with path.open("wb") as f:
+        f.write(data)
+    path.chmod(0o644)
+PY
+
+# ---------------------------------------------------------------------
+# Environment configuration
+# ---------------------------------------------------------------------
+RUN chmod 755 /home/user
+ENV PYTHONUNBUFFERED=1
+
+# ---------------------------------------------------------------------
+# Apptainer runscript (informational)
+# ---------------------------------------------------------------------
+# Apptainer container for the log-analysis exercise.
+# No default runtime action is defined.

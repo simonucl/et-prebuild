@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pytest
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        locales
+    pip install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #############
+    # File tree #
+    #############
+
+    # 1. Create the required directory hierarchy
+    mkdir -p /home/user/project/translations
+
+    # Ensure the prescribed permissions
+    chmod 0755 /home/user
+    chmod 0755 /home/user/project
+    chmod 0755 /home/user/project/translations
+
+    # 2. Create the legacy ISO-8859-1 German resource file
+    #    We write the content in UTF-8 first, then iconv -> ISO-8859-1
+    cat > /tmp/messages_de_utf8 <<'EOF'
+greeting=Grüß Gott
+farewell=Auf Wiedersehen
+thanks=Vielen Dank
+EOF
+
+    # Convert to ISO-8859-1 and move into place
+    iconv -f UTF-8 -t ISO-8859-1 /tmp/messages_de_utf8 \
+        > /home/user/project/translations/messages_de.properties
+
+    # Set correct permissions
+    chmod 0644 /home/user/project/translations/messages_de.properties
+
+    # Clean up temporary file
+    rm -f /tmp/messages_de_utf8
+
+    # 3. The conversion log must be absent or empty at initial state.
+    #    We choose to leave it absent.
+
+%environment
+    chmod 755 /home/user
+
+    # No changes to HOME – Apptainer will bind the caller's $HOME automatically.
+    export LC_ALL=C.UTF-8
+
+%runscript
+    exec "$@"

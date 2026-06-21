@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #-----------------------------------------------------------------------#
+    # 1. Basic OS packages + Python tooling                                 #
+    #-----------------------------------------------------------------------#
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    #-----------------------------------------------------------------------#
+    # 2. Create initial filesystem state for the exercise                   #
+    #-----------------------------------------------------------------------#
+    mkdir -p /home/user/network_logs
+
+    # Write the canonical ping_results.log with exact UNIX newlines.
+    cat <<'EOF' > /home/user/network_logs/ping_results.log
+[2023-10-01 12:00:01] 192.168.1.1 SUCCESS
+[2023-10-01 12:00:02] 10.0.0.1 FAILED
+[2023-10-01 12:00:03] 192.168.1.1 SUCCESS
+[2023-10-01 12:00:04] 10.0.0.1 FAILED
+[2023-10-01 12:00:05] 172.16.0.1 FAILED
+[2023-10-01 12:00:06] 10.0.0.1 FAILED
+[2023-10-01 12:00:07] 172.16.0.1 FAILED
+[2023-10-01 12:00:08] 192.168.1.1 SUCCESS
+[2023-10-01 12:00:09] 10.0.0.2 FAILED
+[2023-10-01 12:00:10] 10.0.0.2 FAILED
+[2023-10-01 12:00:11] 192.168.1.2 SUCCESS
+EOF
+
+    #-----------------------------------------------------------------------#
+    # 3. Permissions                                                        #
+    #   - The student runs as an unprivileged user inside the container.    #
+    #   - Grant write access to the directory so they can add the report.   #
+    #-----------------------------------------------------------------------#
+    chmod 0777 /home/user/network_logs
+    chmod 0644 /home/user/network_logs/ping_results.log
+
+%runscript
+    chmod 755 /home/user
+
+    # Default runscript: merely execute the given command
+    exec "$@"
+
+%labels
+    Author      OpenAI ChatGPT
+    Description Container for "unreachable ping" exercise with initial data.

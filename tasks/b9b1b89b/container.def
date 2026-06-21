@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        gnupg \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # -----------------------------------------------------------------------------
+    # Ensure base user home exists
+    mkdir -p /home/user
+
+    # Root directory for the exercise
+    mkdir -p /home/user/mobile_build/config
+    mkdir -p /home/user/mobile_build/logs
+
+    # Set required permissions (0700) on directories
+    chmod 700 /home/user/mobile_build
+    chmod 700 /home/user/mobile_build/config
+    chmod 700 /home/user/mobile_build/logs
+
+    # Create the pre-existing INI file with the given contents
+    cat <<'EOF' > /home/user/mobile_build/config/app_build.ini
+[build]
+build_flavor=production
+min_sdk=21
+target_sdk=34
+
+[version]
+version_name=2.3.5
+version_code=235
+EOF
+
+    # Restrict INI file permissions
+    chmod 600 /home/user/mobile_build/config/app_build.ini
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author android_build_prep_example

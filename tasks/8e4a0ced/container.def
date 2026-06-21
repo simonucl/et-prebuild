@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+  Author edge-computing-setup
+  Description "Base image for IoT firmware-update exercise. Provides Python 3 and pytest, but intentionally leaves the exercise workspace empty."
+
+%post
+  set -eux
+
+  # Basic build tools
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      python3 \
+      python3-pip \
+      ca-certificates
+
+  # Install pytest for the grading infrastructure
+  pip3 install --no-cache-dir pytest
+
+  # Create expected home directory for the learner.
+  # Do NOT create any of the task’s solution files/directories.
+  mkdir -p /home/user
+  chmod 0755 /home/user
+  # Attempt to give a reasonable UID/GID ownership; ignore errors if UID 1000
+  # does not exist in this minimal image.
+  chown -R 1000:1000 /home/user || true
+
+  # Clean up apt caches to keep the image small
+  apt-get clean
+  rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+  # Ensure Python and pip are on the PATH
+  export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+  echo "This container prepares the environment for the IoT firmware-update exercise."
+  echo "Open a shell with:  apptainer exec <image>.sif /bin/bash"

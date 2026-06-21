@@ -1,0 +1,30 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip ca-certificates && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Create a non-root user `user`
+    useradd -m -u 1000 -s /bin/bash user
+
+    # Set up the required directory structure and empty CSV stubs
+    DATASET_BASE="/home/user/datasets"
+    mkdir -p "${DATASET_BASE}/raw_data" "${DATASET_BASE}/processed_data"
+
+    touch "${DATASET_BASE}/raw_data/dataset_node1.csv" \
+          "${DATASET_BASE}/raw_data/dataset_node2.csv" \
+          "${DATASET_BASE}/raw_data/dataset_node3.csv"
+
+    # Ensure ownership for non-root operations
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

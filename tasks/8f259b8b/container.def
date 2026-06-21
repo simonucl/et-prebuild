@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest for the test harness
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ----------------------------------------------------------------------------
+    # Create the required initial filesystem layout and placeholder files
+    # ----------------------------------------------------------------------------
+    ARTIFACT_RELEASE_DIR="/home/user/artifact_storage/releases"
+    ARTIFACT_INDEX_DIR="/home/user/artifact_manager/index"
+    ARTIFACT_DEBUG_DIR="/home/user/artifact_manager/debug"
+
+    # Create directories
+    mkdir -p "${ARTIFACT_RELEASE_DIR}" \
+             "${ARTIFACT_INDEX_DIR}" \
+             "${ARTIFACT_DEBUG_DIR}"
+
+    # Create empty (0-byte) placeholder binaries
+    touch "${ARTIFACT_RELEASE_DIR}/appserver-2.4.1.bin"
+    touch "${ARTIFACT_RELEASE_DIR}/dbdriver-1.3.0.bin"
+    touch "${ARTIFACT_RELEASE_DIR}/utils-0.9.8.bin"
+
+    # Populate repository.index with exactly two lines and a trailing newline
+    printf 'appserver-2.4.1.bin\ndbdriver-1.3.0.bin\n' \
+        > "${ARTIFACT_INDEX_DIR}/repository.index"
+
+    # Ensure sensible permissions (0755 for dirs, 0644 for files)
+    chmod 0755 "${ARTIFACT_RELEASE_DIR}" "${ARTIFACT_INDEX_DIR}" "${ARTIFACT_DEBUG_DIR}"
+    chmod 0644 "${ARTIFACT_RELEASE_DIR}/"*.bin "${ARTIFACT_INDEX_DIR}/repository.index"
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default $HOME; no overrides needed
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

@@ -1,0 +1,28 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip
+
+    # Python test framework
+    pip3 install --no-cache-dir pytest
+
+    # Exercise workspace skeleton
+    mkdir -p /home/user/observability
+    # Make sure the future, non-privileged learner can create and edit files
+    chmod -R 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author timezone-locale-setup
+    Description "Starter container for the locale/time-zone configuration exercise"

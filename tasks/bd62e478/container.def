@@ -1,0 +1,30 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # Set up required directory and file
+    mkdir -p /home/user/provisioning
+    printf 'APP_ENV=production\nMAX_CONNECTIONS=200\n' > /home/user/provisioning/infra.env
+
+    # Ensure non-root users can modify the directory and file during the exercise
+    chmod 0777 /home/user/provisioning
+    chmod 0666 /home/user/provisioning/infra.env
+
+%environment
+    chmod 755 /home/user
+
+    # No environment overrides needed; inherit caller's environment.
+    :
+
+%runscript
+    exec "$@"

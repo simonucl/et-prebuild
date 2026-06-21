@@ -1,0 +1,48 @@
+FROM ubuntu:22.04
+
+# Install Python and pytest
+RUN set -e && \
+    apt-get update -y && \
+    apt-get install -y python3 python3-pip && \
+    pip3 install --no-cache-dir pytest
+
+# Prepare initial directory tree
+RUN mkdir -p /home/user/project/logs
+
+# Create access.log fixture
+RUN cat > /home/user/project/logs/access.log <<'EOF'
+127.0.0.1 - - [10/Jul/2023:22:55:36 +0000] "GET /index.html HTTP/1.1" 200 1043 "-" "Mozilla/5.0"
+192.168.1.10 - - [10/Jul/2023:22:56:01 +0000] "GET /nonexistent.html HTTP/1.1" 404 512 "-" "Mozilla/5.0"
+172.16.0.2 - - [10/Jul/2023:22:56:05 +0000] "GET /missing.png HTTP/1.1" 404 512 "-" "Mozilla/5.0"
+10.0.0.5 - - [10/Jul/2023:22:56:10 +0000] "POST /api/v1/users HTTP/1.1" 500 2560 "-" "curl/7.68.0"
+192.168.1.10 - - [10/Jul/2023:22:56:21 +0000] "GET /typo.html HTTP/1.1" 404 512 "-" "Mozilla/5.0"
+10.0.0.5 - - [10/Jul/2023:22:56:23 +0000] "GET /server-error HTTP/1.1" 500 2048 "-" "Mozilla/5.0"
+172.16.0.2 - - [10/Jul/2023:22:56:30 +0000] "GET /another-missing.html HTTP/1.1" 404 512 "-" "Mozilla/5.0"
+203.0.113.9 - - [10/Jul/2023:22:56:40 +0000] "GET /redirect HTTP/1.1" 301 234 "-" "Mozilla/5.0"
+192.168.1.10 - - [10/Jul/2023:22:57:01 +0000] "GET /old-page HTTP/1.1" 301 234 "-" "Mozilla/5.0"
+10.0.0.5 - - [10/Jul/2023:22:57:10 +0000] "GET /server-error HTTP/1.1" 500 2048 "-" "Mozilla/5.0"
+192.168.1.10 - - [10/Jul/2023:22:57:21 +0000] "GET /contact.html HTTP/1.1" 200 1345 "-" "Mozilla/5.0"
+10.0.0.5 - - [10/Jul/2023:22:57:44 +0000] "POST /api/v1/users HTTP/1.1" 500 2560 "-" "curl/7.68.0"
+192.0.2.44 - - [10/Jul/2023:22:58:00 +0000] "GET /server-error HTTP/1.1" 500 2048 "-" "Mozilla/5.0"
+10.0.0.5 - - [10/Jul/2023:22:58:10 +0000] "GET /server-error HTTP/1.1" 500 2048 "-" "Mozilla/5.0"
+172.16.0.2 - - [10/Jul/2023:22:58:11 +0000] "GET /redirect HTTP/1.1" 301 234 "-" "Mozilla/5.0"
+203.0.113.9 - - [10/Jul/2023:22:58:20 +0000] "GET /login HTTP/1.1" 500 1234 "-" "Mozilla/5.0"
+203.0.113.9 - - [10/Jul/2023:22:58:25 +0000] "GET /login HTTP/1.1" 500 1234 "-" "Mozilla/5.0"
+203.0.113.9 - - [10/Jul/2023:22:58:30 +0000] "GET /purchase HTTP/1.1" 500 1456 "-" "Mozilla/5.0"
+198.51.100.13 - - [10/Jul/2023:22:58:40 +0000] "GET /admin HTTP/1.1" 500 1820 "-" "Mozilla/5.0"
+203.0.113.9 - - [10/Jul/2023:22:58:50 +0000] "GET /api/v1/users HTTP/1.1" 500 2560 "-" "curl/7.68.0"
+203.0.113.25 - - [10/Jul/2023:22:59:01 +0000] "GET /api/v1/users HTTP/1.1" 500 2560 "-" "curl/7.68.0"
+203.0.113.9 - - [10/Jul/2023:22:59:10 +0000] "GET /server-error HTTP/1.1" 500 2048 "-" "Mozilla/5.0"
+192.168.1.10 - - [10/Jul/2023:22:59:30 +0000] "GET /still-missing.html HTTP/1.1" 404 512 "-" "Mozilla/5.0"
+10.0.0.5 - - [10/Jul/2023:22:59:45 +0000] "GET /lost.html HTTP/1.1" 404 512 "-" "Mozilla/5.0"
+EOF
+
+# Permissions
+RUN chmod 644 /home/user/project/logs/access.log && \
+    chmod 777 /home/user || true && \
+    chmod 777 /home/user/project || true && \
+    chmod 777 /home/user/project/logs
+
+# Metadata (labels section)
+# Author: Container prep for log-processing task
+# Description: Sets up initial fixture (access.log) and installs pytest

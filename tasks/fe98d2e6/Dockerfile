@@ -1,0 +1,57 @@
+# Author: ChatGPT
+# Description: Base image for “AWS EC2 cost for first week of June 2023” task. Provides the canonical raw logs and pytest.
+
+FROM ubuntu:22.04
+
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+ENV PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+
+RUN set -e && \
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    mkdir -p /home/user/cloud_costs/raw
+
+RUN cat > /home/user/cloud_costs/raw/2023-06-01.log << 'EOF'
+2023-06-01T01:15:30Z,EC2,us-east-1,0.120
+2023-06-01T02:45:10Z,S3,us-east-1,0.005
+2023-06-01T03:30:00Z,EC2,us-west-2,0.200
+EOF
+
+RUN cat > /home/user/cloud_costs/raw/2023-06-02.log << 'EOF'
+2023-06-02T13:00:00Z,EC2,us-east-1,0.150
+2023-06-02T15:30:00Z,EC2,us-east-1,0.200
+2023-06-02T16:00:00Z,S3,us-east-1,0.010
+EOF
+
+RUN cat > /home/user/cloud_costs/raw/2023-06-03.log << 'EOF'
+2023-06-03T23:59:59Z,EC2,us-east-1,0.300
+EOF
+
+RUN cat > /home/user/cloud_costs/raw/2023-06-04.log << 'EOF'
+2023-06-04T00:00:01Z,EC2,us-east-1,0.050
+2023-06-04T12:00:00Z,BigQuery,us-central1,2.500
+EOF
+
+RUN cat > /home/user/cloud_costs/raw/2023-06-05.log << 'EOF'
+2023-06-05T08:15:00Z,EC2,us-east-1,0.400
+2023-06-05T10:00:00Z,EC2,us-east-2,0.080
+EOF
+
+RUN cat > /home/user/cloud_costs/raw/2023-06-06.log << 'EOF'
+2023-06-06T14:00:00Z,S3,us-east-1,0.015
+2023-06-06T18:45:00Z,EC2,us-east-1,0.250
+EOF
+
+RUN cat > /home/user/cloud_costs/raw/2023-06-07.log << 'EOF'
+2023-06-07T23:59:00Z,EC2,us-east-1,0.500
+2023-06-07T23:59:30Z,EC2,us-east-1,0.100
+EOF
+
+RUN chmod 777 /home/user/cloud_costs && \
+    chmod 755 /home/user/cloud_costs/raw && \
+    chmod 644 /home/user/cloud_costs/raw/*.log
+
+CMD echo "Container for AWS EC2 Cost Analysis exercise." && \
+    echo "You are now inside the container. Proceed with your solution steps."

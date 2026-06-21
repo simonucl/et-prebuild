@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # ------------------------------------------------------------------
+    # 1. Install required software
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip python3-setuptools python3-wheel \
+        iproute2 procps coreutils util-linux
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Python testing framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Create non-root user “user”
+    # ------------------------------------------------------------------
+    if ! id -u 1000 >/dev/null 2>&1; then
+        groupadd -g 1000 user
+        useradd  -m -u 1000 -g 1000 -s /bin/bash user
+    fi
+
+    # ------------------------------------------------------------------
+    # 3. Seed repository data under /opt/binaries
+    # ------------------------------------------------------------------
+    mkdir -p /opt/binaries/archives
+    chmod 755 /opt/binaries /opt/binaries/archives
+
+    # Generate placeholder binaries with adequate size
+    fallocate -l 40M /opt/binaries/widget-1.0.0.tar.gz
+    fallocate -l 25M /opt/binaries/gadget-2.5.1.zip
+    fallocate -l 12M /opt/binaries/libfoo.so
+    fallocate -l 60M /opt/binaries/archives/legacy.bin
+
+    # World-readable permissions
+    chmod 644 /opt/binaries/widget-1.0.0.tar.gz \
+              /opt/binaries/gadget-2.5.1.zip \
+              /opt/binaries/libfoo.so \
+              /opt/binaries/archives/legacy.bin
+    chmod -R o+r /opt/binaries
+
+    # ------------------------------------------------------------------
+    # 4. Ensure home directory ownership
+    # ------------------------------------------------------------------
+    chown -R 1000:1000 /home/user
+
+    # NOTE: /home/user/diagnostics is intentionally **not** created so that
+    #       the student must create it, satisfying the test conditions.
+
+%environment
+    chmod 755 /home/user
+
+    # Default environment is sufficient; no overrides required.
+
+%runscript
+    # Start an interactive shell by default
+    exec /bin/bash "$@"

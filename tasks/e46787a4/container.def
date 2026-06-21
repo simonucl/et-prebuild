@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the required directory structure and initial files
+    mkdir -p /home/user/project
+
+    # VERSION file with trailing newline
+    printf "1.2.3\n" > /home/user/project/VERSION
+
+    # CHANGELOG.md with exact initial contents (note the blank line after header)
+    cat <<'EOF' > /home/user/project/CHANGELOG.md
+# Changelog
+
+## [1.2.3] - 2023-06-15
+### Added
+- Initial release of the documentation set.
+EOF
+
+    # Ensure permissions allow the unprivileged runtime user to modify the files
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Maintainer="container-builder"
+    Description="Environment for documentation version-bump task with initial project state and pytest installed"
+
+%environment
+    # Ensure Python uses UTF-8 by default
+    export PYTHONUTF8=1

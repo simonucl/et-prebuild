@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eu
+
+    echo "Updating package index and installing required packages..."
+    apt-get update -qq
+    # Install coreutils explicitly to guarantee cut/paste; also install pip & pytest
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        coreutils \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating initial directory structure and seed files..."
+    # Create directories with correct permissions
+    install -d -m 0755 /home/user/releases/logs
+
+    # environments.csv
+    cat > /home/user/releases/environments.csv <<'EOF'
+env,owner
+prod,alice
+staging,bob
+qa,charlie
+EOF
+
+    # versions.txt
+    cat > /home/user/releases/versions.txt <<'EOF'
+prod v2.3.1
+staging v2.3.1-rc
+qa v2.3.0
+EOF
+
+    # Ensure proper permissions for the files
+    chmod 0644 /home/user/releases/environments.csv /home/user/releases/versions.txt
+
+    echo "Container setup complete."
+
+%labels
+    chmod 755 /home/user
+
+    Author="Release-Manager Exercise Setup"
+    Description="Environment for the release-manager text-processing task with pytest installed."
+
+%help
+This container provides the starting filesystem and tools (cut, paste, pytest)
+required for the “release-manager” exercise.

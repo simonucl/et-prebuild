@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python & tools
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        tar \
+        gzip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test-runner
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the grading tests
+    # ------------------------------------------------------------------
+
+    # Create user home hierarchy
+    mkdir -p /home/user/credentials
+    mkdir -p /home/user/backup
+
+    # Populate credential files with the required contents
+    cat > /home/user/credentials/db_creds.txt <<'EOF'
+username=db_user
+password=S3cur3P@ssw0rd
+EOF
+
+    cat > /home/user/credentials/api_key.txt <<'EOF'
+API_KEY=ABCDEF1234567890
+EOF
+
+    # Set directory and file permissions
+    chmod 755 /home/user /home/user/credentials /home/user/backup
+    chmod 644 /home/user/credentials/db_creds.txt
+    chmod 644 /home/user/credentials/api_key.txt
+
+%labels
+    Author "Apptainer setup for security-backup task"
+
+%help
+    This container provides the initial environment for the credential-backup
+    exercise.  The credential files are pre-populated under /home/user/credentials
+    and pytest is available for automated grading.

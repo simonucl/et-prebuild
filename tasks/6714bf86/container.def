@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    # Install Python and pytest
+    apt-get update -y && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+    pip3 install --no-cache-dir pytest
+
+    # Prepare initial project state
+    mkdir -p /home/user/projects/ci
+    cat > /home/user/projects/ci/pipeline.yml <<'EOF'
+version: "1.0"
+jobs:
+  build:
+    steps:
+      - run: echo "Building"
+EOF
+
+    # Permissions
+    chmod 644 /home/user/projects/ci/pipeline.yml
+    chmod 755 /home/user
+    chmod 755 /home/user/projects
+    chmod 755 /home/user/projects/ci
+
+%labels
+    Maintainer "CI Prototype Container"
+
+%help
+    This container provides the initial filesystem state and tooling
+    (including pytest) required for the CI prototype automation task.

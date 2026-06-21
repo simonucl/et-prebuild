@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Ensure required packages are present
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        locales
+
+    # Generate and configure the desired locale
+    sed -i 's/^# *\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen
+    locale-gen en_US.UTF-8
+
+    # Install pytest for the exercise test harness
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected home structure for the learner
+    mkdir -p /home/user
+    chmod 0755 /home/user
+
+    # Clean up APT caches to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Expose a predictable locale to all shell sessions
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+
+%labels
+    Author="Apptainer Exercise Generator"
+    Description="Base image for the tz-locale report task. Initial state is clean; pytest pre-checks will verify."

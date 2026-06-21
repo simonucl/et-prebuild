@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package index and install required utilities
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        iputils-ping \
+        iproute2 \
+        netbase \
+        ca-certificates
+
+    # Install pytest
+    pip3 install --no-cache-dir pytest
+
+    # Create non-root user “user” with home directory /home/user
+    useradd -m -s /bin/bash user
+
+    # Ensure correct ownership of the home directory
+    chown -R user:user /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure user-level Python tools (if any) are found first
+    export PATH="/home/user/.local/bin:$PATH"
+
+%labels
+    Author      "Container build system"
+    Description "Baseline container for the Network Diagnostics task. Includes Python, pytest, and required networking tools."

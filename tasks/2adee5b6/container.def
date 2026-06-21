@@ -1,0 +1,87 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic OS packages
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip python3-venv zip unzip ca-certificates build-essential
+
+    # Upgrade pip and add pytest for the grading harness
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare project structure under /home/user/dev
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/dev
+    cd /home/user/dev
+
+    # 1) Virtual environment
+    python3 -m venv .venv_tools
+
+    # 2) Install the single required third-party package inside the venv
+    . .venv_tools/bin/activate
+    pip install --no-cache-dir tqdm==4.66.4
+    deactivate
+
+    # 3) Create tools directory and the compress.py script
+    mkdir -p tools output
+    cat > tools/compress.py <<'PYEOF'
+import sys
+import os
+import zipfile
+from tqdm import tqdm
+
+def main() -> None:
+    if len(sys.argv) != 3:
+        sys.stderr.write("Usage: python compress.py <input_file> <output_zip>\n")
+        sys.exit(1)
+
+    infile, outfile = sys.argv[1], sys.argv[2]
+
+    with zipfile.ZipFile(outfile, "w", zipfile.ZIP_DEFLATED) as zf:
+        bar = tqdm(total=1)
+        zf.write(infile, arcname=os.path.basename(infile))
+        bar.update(1)
+        bar.close()
+
+    print(f"Finished: {os.path.abspath(outfile)}")
+
+if __name__ == "__main__":
+    main()
+PYEOF
+    chmod 755 tools/compress.py
+
+    # 4) Sample input file
+    printf 'Lorem ipsum dolor sit amet.\n' > testdata.txt
+
+    # 5) Run compress.py once to generate the required archive
+    /home/user/dev/.venv_tools/bin/python tools/compress.py \
+        testdata.txt output/testdata.zip
+
+    # 6) Create setup.log with exact required lines (trailing \n included)
+    cat > setup.log <<'LOGEOF'
+VENV_SETUP: OK
+PACKAGE_TQDM: OK
+ZIP_CREATED: OK
+LOGEOF
+
+    # 7) Ensure non-root users can read/write as tests run unprivileged
+    chmod -R a+rwX /home/user/dev
+
+%labels
+    chmod 755 /home/user
+
+    Author  "AI Assistant"
+    Description "Utility tools environment with isolated Python venv"
+
+%help
+    This container comes with:
+      • /home/user/dev/.venv_tools  – Python virtual environment (tqdm 4.66.4)
+      • /home/user/dev/tools/compress.py – simple compression utility
+      • /home/user/dev/testdata.txt – sample input
+      • /home/user/dev/output/testdata.zip – pre-built output archive
+      • /home/user/dev/setup.log – status log matching specification

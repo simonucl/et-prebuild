@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update apt index and install Python and pip
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the test-suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial FinOps workspace
+    # ------------------------------------------------------------------
+    FINOPS_DIR="/home/user/finops"
+    mkdir -p "${FINOPS_DIR}"
+
+    # 1. cost_policy.yaml  (initial starter content)
+    cat > "${FINOPS_DIR}/cost_policy.yaml" <<'YAML'
+environments:
+  dev:
+    monthly_budget: 300
+  prod:
+    monthly_budget: 1200
+YAML
+
+    # 2. subscription.toml  (initial starter content)
+    cat > "${FINOPS_DIR}/subscription.toml" <<'TOML'
+[features]
+spot_instances = false
+commitment_discounts = false
+rightsizing = false
+
+[limits]
+max_instances = 50
+max_cores = 200
+TOML
+
+    # Ensure correct permissions (0644) for both files
+    chmod 0644 "${FINOPS_DIR}/cost_policy.yaml" "${FINOPS_DIR}/subscription.toml"
+
+    # Do NOT create update_log.txt; the student will generate it later.
+
+%labels
+    chmod 755 /home/user
+
+    Author finops-scenario
+
+%help
+    Container for FinOps automation exercise.
+    Provides the initial YAML and TOML configuration files under /home/user/finops
+    and includes pytest for automated grading.

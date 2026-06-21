@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ############################
+    # Install required packages
+    ############################
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python-is-python3 \
+        sqlite3
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ############################
+    # Python packages for testing
+    ############################
+    pip install --no-cache-dir pytest
+
+    ############################
+    # Create the initial filesystem state
+    ############################
+    # Ensure the user’s home directory exists
+    mkdir -p /home/user
+
+    # Create the logs directory and sample log file
+    mkdir -p /home/user/logs
+    cat > /home/user/logs/app.log <<'EOF'
+2024-04-01 10:15:32 INFO  Application started
+2024-04-01 10:16:45 ERROR Failed to connect to database
+2024-04-01 10:17:02 WARN  Retrying connection
+2024-04-01 10:17:10 INFO  Connected successfully
+2024-04-01 10:18:21 ERROR Timeout during query
+2024-04-01 10:19:01 INFO  Request completed
+2024-04-01 10:20:11 INFO  Shutdown complete
+EOF
+
+    # Set permissive permissions so the runtime user (non-root) can create new files
+    chmod 0777 /home/user/logs
+    chmod 0644 /home/user/logs/app.log
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure /usr/local/bin (where pip installs) is on PATH
+    export PATH="/usr/local/bin:$PATH"
+
+%runscript
+    exec "$@"
+
+%labels
+    Author devops@task
+    Description "Base container for log-processing task with initial log file and pytest installed."

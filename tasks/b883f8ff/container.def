@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python 3 and development essentials
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the assessment framework
+    pip3 install --no-cache-dir pytest
+
+    # Create a writable home directory for the student
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author      Automated Build
+    Description Minimal environment for ETL scheduling exercise with pytest pre-installed
+
+%environment
+    # Ensure Python and pip are on PATH (they already are, but this clarifies intent)
+    export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
+%runscript
+    exec /bin/bash

@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update apt index and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        build-essential
+
+    # Install pytest for the exercise's test runner
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial dataset expected by the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data/experiment
+
+    cat > /home/user/data/experiment/requirements_raw.txt <<'EOF'
+numpy==1.23.5
+pandas==1.5.3
+scipy==1.9.3
+numpy==1.23.5
+matplotlib==3.6.2
+EOF
+
+    # Ensure correct permissions – world-writable so the unprivileged agent
+    # (whose UID/GID are unknown at build time) can create new files.
+    chmod 644 /home/user/data/experiment/requirements_raw.txt
+    chmod -R 777 /home/user/data
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure `python3` and `pip3` are in PATH (they already should be)
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for the requirements-cleanup exercise."
+    echo "Open a shell (apptainer exec) to begin working."
+
+%test
+    # Placeholder (tests are supplied externally)
+    true

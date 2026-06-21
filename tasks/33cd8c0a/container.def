@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #------------------------------------------------------------------
+    # 1. System packages and Python tooling
+    #------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    #------------------------------------------------------------------
+    # 2. Create an unprivileged account that owns /home/user
+    #    (UID/GID 1000 is the common default on many systems)
+    #------------------------------------------------------------------
+    groupadd -g 1000 user || true
+    useradd  -m -u 1000 -g 1000 -s /bin/bash user || true
+
+    #------------------------------------------------------------------
+    # 3. Populate the immutable source tree that the tests expect
+    #------------------------------------------------------------------
+    mkdir -p /home/user/data_source/docs
+    mkdir -p /home/user/data_source/media
+    mkdir -p /home/user/data_source/configs
+
+    # docs/
+    printf 'Project Documentation v1.0\n' > /home/user/data_source/docs/readme.txt
+    printf '# User Guide\n'                      > /home/user/data_source/docs/guide.md
+
+    # media/  (pretend binaries; simple placeholders are enough)
+    printf 'fakejpgdata1\n' > /home/user/data_source/media/photo1.jpg
+    printf 'fakepngdata2\n' > /home/user/data_source/media/photo2.png
+
+    # configs/
+    printf 'port=8080\n' > /home/user/data_source/configs/app.conf
+
+    #------------------------------------------------------------------
+    # 4. Optional (empty) backup root directory — **NOT** the run-specific one
+    #------------------------------------------------------------------
+    mkdir -p /home/user/backup_archive
+
+    #------------------------------------------------------------------
+    # 5. Ownership & permissions so the runtime (non-root) user can write
+    #------------------------------------------------------------------
+    chown -R 1000:1000 /home/user
+    chmod 0777 /home/user
+    chmod 0777 /home/user/backup_archive
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and user executables are easily found
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author="Task setup: Backup Administrator Scenario"
+    Description="Container prepared for the backup-archive symbolic-link task with pytest preinstalled."

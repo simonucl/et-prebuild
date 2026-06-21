@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # --------------------------------------------------------------------
+    # 1. Install required software
+    # --------------------------------------------------------------------
+    apt-get update && \
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            time && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------
+    # 2. Prepare initial workspace expected by the tests
+    # --------------------------------------------------------------------
+    mkdir -p /home/user/mobile_build
+
+    cat >/home/user/mobile_build/dummy_build.sh <<'EOF'
+#!/usr/bin/env bash
+# simple dummy build
+sleep 1
+echo "Dummy build finished"
+EOF
+
+    chmod 755 /home/user/mobile_build/dummy_build.sh
+
+    # Make the build directory writable for the unprivileged runtime user
+    chmod 777 /home/user/mobile_build
+
+%runscript
+    echo "Apptainer image for the 'mobile build benchmark' exercise."
+    echo "Open a shell in the container and follow the task instructions."

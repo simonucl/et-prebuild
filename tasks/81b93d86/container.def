@@ -1,0 +1,88 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Basic tooling
+    # ------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tzdata \
+        && rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Create non-root user “user”
+    # ------------------------------------------------------------------
+    useradd -m -s /bin/bash user || true   # in case uid already exists
+    # Ensure the home directory exists even if user already existed
+    mkdir -p /home/user
+    chown -R user:user /home/user
+
+    # ------------------------------------------------------------------
+    # 3. Construct initial experiment directory tree & files
+    # ------------------------------------------------------------------
+    EXP_BASE="/home/user/experiments"
+    mkdir -p "${EXP_BASE}"
+
+    # Helper for run directories
+    make_run () {
+        local RUN="$1"; shift
+        mkdir -p "${RUN}/logs"
+    }
+
+    # ---------------- run_2023-08-01 ----------------
+    RUN1="${EXP_BASE}/run_2023-08-01"
+    make_run "${RUN1}"
+
+    # Logs
+    printf 'Epoch 1: loss 0.123\n'          > "${RUN1}/logs/train.log"
+    printf 'Val accuracy 0.95\n'            > "${RUN1}/logs/val.log"
+    # Metrics
+    printf '{"loss": 0.123, "accuracy": 0.95}\n' > "${RUN1}/metrics.json"
+    # Checkpoints
+    printf 'CKPT1' > "${RUN1}/model_epoch=01.ckpt"
+    printf 'CKPT2' > "${RUN1}/model_epoch=02.ckpt"
+
+    # ---------------- run_2023-08-02 ----------------
+    RUN2="${EXP_BASE}/run_2023-08-02"
+    make_run "${RUN2}"
+
+    printf 'Epoch 1: loss 0.321\n'          > "${RUN2}/logs/train.log"
+    printf 'Val accuracy 0.90\n'            > "${RUN2}/logs/val.log"
+    printf '{"loss": 0.321, "accuracy": 0.90}\n' > "${RUN2}/metrics.json"
+    printf 'CKPT3' > "${RUN2}/model_epoch=03.ckpt"
+    printf 'CKPT4' > "${RUN2}/model_epoch=04.ckpt"
+
+    # ---------------- run_2023-08-03 ----------------
+    RUN3="${EXP_BASE}/run_2023-08-03"
+    make_run "${RUN3}"
+
+    printf 'Epoch 1: loss 0.555\n'          > "${RUN3}/logs/train.log"
+    printf 'Val accuracy 0.88\n'            > "${RUN3}/logs/val.log"
+
+    # ------------------------------------------------------------------
+    # 4. Permissions: give non-root users write access
+    # ------------------------------------------------------------------
+    chmod -R a+rwX /home/user
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python installed by pip is available
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%labels
+    Author MLOps-Setup
+    Description Initial state container for checkpoint-archiving exercise
+
+%runscript
+    echo "Container built for the checkpoint-archiving exercise."
+    echo "Switch to /home/user/experiments and begin your work."

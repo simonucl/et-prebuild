@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # -------------------------------------------------------------------
+    # Install Python and pytest (needed for exercise verification)
+    # -------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # -------------------------------------------------------------------
+    # Prepare initial filesystem state for the “MyApp” exercise
+    # -------------------------------------------------------------------
+    # Create base home directory
+    mkdir -p /home/user
+
+    # 1. User’s .bashrc (must end with a newline and contain no target vars)
+    echo '# .bashrc for user' > /home/user/.bashrc
+    echo >> /home/user/.bashrc   # ensure trailing newline
+
+    # 2. Application directories and files
+    mkdir -p /home/user/myapp/bin
+    mkdir -p /home/user/myapp/conf
+    mkdir -p /home/user/bin      # must exist but remain empty
+
+    # start.sh with executable permissions and exact content
+    cat > /home/user/myapp/bin/start.sh <<'EOF'
+#!/bin/bash
+echo "Starting MyApp"
+EOF
+    chmod 0755 /home/user/myapp/bin/start.sh
+
+    # app.conf with the three required lines
+    cat > /home/user/myapp/conf/app.conf <<'EOF'
+# MyApp Main configuration
+log_level=INFO
+max_threads=4
+EOF
+
+    # -------------------------------------------------------------------
+    # Permissions: make everything inside /home/user accessible to any user
+    # -------------------------------------------------------------------
+    chmod -R a+rX /home/user
+    chmod -R u+w /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author "Apptainer Task Preparer"
+
+%help
+    Container providing the initial state for the “MyApp” configuration-management
+    exercise. pytest is pre-installed so test suites can run immediately.

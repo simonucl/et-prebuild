@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # 1. Install Python tooling and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel
+    pip3 install --no-cache-dir pytest
+
+    # 2. Create required directory structure and log files
+    mkdir -p /home/user/project/logs
+
+    # app.log
+    cat > /home/user/project/logs/app.log <<'EOF'
+INFO Application started
+WARN Cache miss
+ERROR Failed to load config
+INFO Shutdown complete
+EOF
+
+    # db.log
+    cat > /home/user/project/logs/db.log <<'EOF'
+INFO Connection established
+ERROR Query timeout
+ERROR Could not commit
+INFO Connection closed
+EOF
+
+    # auth.log
+    cat > /home/user/project/logs/auth.log <<'EOF'
+INFO User login
+WARN Password attempt
+ERROR Invalid token
+ERROR Session expired
+ERROR Permission denied
+INFO Logout
+EOF
+
+    # Ensure expected permissions (readable by all regular users)
+    chmod 755 /home/user
+    chmod -R 755 /home/user/project
+    chmod 644 /home/user/project/logs/*.log
+
+%runscript
+    echo "Container for ERROR line–count task.  Use an interactive shell:"
+    echo "  apptainer exec <container.sif> /bin/bash"
+%help
+    This Apptainer image provides the initial filesystem state for the
+    ERROR-count task.  Three log files are placed under
+    /home/user/project/logs/, and pytest is installed for automated grading.

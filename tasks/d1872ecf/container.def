@@ -1,0 +1,73 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author      you
+    Description Initial filesystem for deployment changelog exercise with pytest installed
+
+%post
+    set -e
+
+    # Update APT and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------------------
+    # Create the required directory structure and seed files that exist *before*
+    # the student (agent) starts performing their tasks.
+    # ------------------------------------------------------------------------------
+
+    BASE=/home/user
+    mkdir -p "${BASE}/deployment/releases"
+    mkdir -p "${BASE}/deployment/config"
+
+    # Release v1.0.0
+    mkdir -p "${BASE}/deployment/releases/v1.0.0"
+    cat > "${BASE}/deployment/releases/v1.0.0/NOTES.md" <<'EOF'
+FEATURE: Add login functionality
+FEATURE: Add logout functionality
+FIX: Correct typo in README
+EOF
+
+    # Release v1.1.0
+    mkdir -p "${BASE}/deployment/releases/v1.1.0"
+    cat > "${BASE}/deployment/releases/v1.1.0/NOTES.md" <<'EOF'
+FEATURE: Add password reset
+EOF
+
+    # Release v1.2.0
+    mkdir -p "${BASE}/deployment/releases/v1.2.0"
+    cat > "${BASE}/deployment/releases/v1.2.0/NOTES.md" <<'EOF'
+FEATURE: Improve UI
+FIX: Fix crash on launch
+FEATURE: Add dark mode
+FIX: Memory leak fix
+FEATURE: Optimize database queries
+EOF
+
+    # Seed application configuration file
+    cat > "${BASE}/deployment/config/app.conf" <<'EOF'
+# Application configuration
+environment=staging
+# the version key will be added/updated by the agent
+EOF
+
+    # Ensure everything is readable by the non-root test user (if any)
+    chmod -R a+rX "${BASE}/deployment"
+
+%runscript
+    chmod 755 /home/user
+
+    echo "Container for deployment changelog exercise. No default runscript."
+
+%test
+    echo "Build-time test: verify pytest is importable"
+    python3 - <<'PY'
+import pytest, sys, textwrap, inspect
+print("pytest version:", pytest.__version__)
+PY

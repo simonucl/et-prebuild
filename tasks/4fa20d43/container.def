@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python & pip
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the initial filesystem layout and files for the exercise
+    mkdir -p /home/user/app/config
+
+    # Populate service.conf with the exact initial contents
+    cat > /home/user/app/config/service.conf <<'EOF'
+# Service configuration
+service_name=inventory
+endpoint=old.cloud.internal
+port=8080
+EOF
+
+    # Ensure permissions allow the non-root runtime user to modify the files
+    chmod 777 /home/user/app
+    chmod 777 /home/user/app/config
+    chmod 666 /home/user/app/config/service.conf
+
+%environment
+    chmod 755 /home/user
+
+    # Keep environment minimal; do not override HOME as per instructions
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author="Apptainer exercise preparer"
+    Description="Container image for the inventory service migration task with pytest installed."

@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tar \
+        gzip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the required initial backup tree and snapshot archive
+    # ------------------------------------------------------------------
+    # Paths
+    BACKUP_BASE="/home/user/backup_server/home_snapshots"
+    TMP_BUILD="/tmp/projectA"
+
+    # Create backup directory
+    mkdir -p "${BACKUP_BASE}"
+    chmod 755 /home /home/user /home/user/backup_server "${BACKUP_BASE}"
+
+    # Create temporary build directory for the archive contents
+    mkdir -p "${TMP_BUILD}"
+
+    # File 1: projectA/file1.txt  -> "Alpha\n" (6 bytes)
+    printf "Alpha\n" > "${TMP_BUILD}/file1.txt"
+
+    # File 2: projectA/file2.txt  -> "Beta\n"  (5 bytes)
+    printf "Beta\n"  > "${TMP_BUILD}/file2.txt"
+
+    # File 3: projectA/notes.md   -> 41-byte two-line markdown
+    printf "# Project A Notes\nRestored successfully.\n" > "${TMP_BUILD}/notes.md"
+
+    # Create the compressed tar archive with a single top-level directory "projectA"
+    tar -C /tmp -czf "${BACKUP_BASE}/projectA_2023-08-01.tar.gz" projectA
+
+    # Ensure world-readable permissions
+    chmod 644 "${BACKUP_BASE}/projectA_2023-08-01.tar.gz"
+
+    # Clean up temporary build directory
+    rm -rf "${TMP_BUILD}"
+
+%labels
+    chmod 755 /home/user
+
+    Author restore-task-preparer
+    Description "Environment for restore test – contains backup snapshot and pytest"
+
+%environment
+    # Ensure Python and pip are on PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for restore-test. Run your commands or open a shell."

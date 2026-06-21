@@ -1,0 +1,71 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic tooling needed by the assignment & the test-runner
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        jq \
+        ca-certificates
+    pip3 install --no-cache-dir pytest jsonschema
+
+    # ------------------------------------------------------------------
+    # Create the working directory and populate the required seed files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/build
+
+    # artifacts.json ----------------------------------------------------
+    cat >/home/user/build/artifacts.json <<'EOF'
+[
+  {
+    "name": "libwidget",
+    "version": "1.2.3",
+    "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  {
+    "name": "libgizmo",
+    "version": "4.5.6",
+    "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  {
+    "name": "app-thing",
+    "version": "0.9.1",
+    "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+  }
+]
+EOF
+
+    # artifact_schema.json ---------------------------------------------
+    cat >/home/user/build/artifact_schema.json <<'EOF'
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["name", "version", "sha256"],
+    "properties": {
+      "name":    { "type": "string", "minLength": 1 },
+      "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+      "sha256":  { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+    },
+    "additionalProperties": false
+  }
+}
+EOF
+
+    # ------------------------------------------------------------------
+    # Make sure the student (non-root) user can freely work in /home/user
+    # ------------------------------------------------------------------
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and user-installed binaries (like from pip) are found
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"

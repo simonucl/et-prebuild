@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip rsync
+    pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the directory layout expected by the tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/remote_dataset
+    mkdir -p /home/user/ml_project/data
+    mkdir -p /home/user/ml_project/logs
+
+    # ------------------------------------------------------------------
+    # Populate the remote dataset with the exact byte-sizes required
+    # ------------------------------------------------------------------
+    cat > /home/user/remote_dataset/train.csv <<'EOF'
+id,text,label
+1,Hello world,0
+2,Another row!,1
+3,hey,0
+EOF
+
+    cat > /home/user/remote_dataset/test.csv <<'EOF'
+id,text
+1,Hello sync
+2,Another!
+EOF
+
+    cat > /home/user/remote_dataset/README.md <<'EOF'
+# Remote Dataset v1
+This dataset contains dummy records for sync test.
+End.
+OK
+EOF
+
+    # ------------------------------------------------------------------
+    # Local placeholder file that must later be removed (27 bytes)
+    # ------------------------------------------------------------------
+    printf 'placeholder to delete soon!' > /home/user/ml_project/data/OLD_FILES_DO_NOT_USE.txt
+
+    # ------------------------------------------------------------------
+    # Set permissions so the non-root runtime user can read/write
+    # ------------------------------------------------------------------
+    chmod -R 755 /home/user/remote_dataset
+    chmod -R 777 /home/user/ml_project
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C
+    export LANG=C
+
+%labels
+    Author ChatGPT
+    Description "Apptainer image for rsync synchronisation task (includes pytest and pre-staged dataset)"

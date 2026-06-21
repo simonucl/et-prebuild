@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update and install Python plus pytest
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the initial project directory structure
+    mkdir -p /home/user/project/locale
+
+    # Populate the Russian PO file with the specified content
+    cat > /home/user/project/locale/ru.po <<'EOF'
+msgid ""
+msgstr ""
+"Project-Id-Version: SAMPLE 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: src/main.c:10
+msgid "File not found"
+msgstr ""
+
+#: src/main.c:20
+msgid "Save changes?"
+msgstr "Сохранить изменения?"
+
+#: src/main.c:30
+msgid "Are you sure you want to quit?"
+msgstr ""
+
+#: src/main.c:40
+msgid "Preferences"
+msgstr "Настройки"
+EOF
+
+    # Ensure the student can write inside /home/user/project
+    chmod -R 0777 /home/user/project
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for the localization diagnostics task."

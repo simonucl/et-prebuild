@@ -1,0 +1,63 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required tools
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        rsync \
+        --no-install-recommends
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the exercise
+    # ------------------------------------------------------------------
+    # Create the user’s home hierarchy
+    mkdir -p /home/user/app_configs
+    mkdir -p /home/user/remote_host
+    # Do NOT create /home/user/sync_reports/ – it must not exist yet.
+
+    # Populate /home/user/app_configs/ with the three required files
+    cat >/home/user/app_configs/database.yml <<'EOF'
+adapter: postgresql
+encoding: utf8
+pool: 5
+EOF
+
+    cat >/home/user/app_configs/redis.conf <<'EOF'
+maxmemory 256mb
+appendonly yes
+EOF
+
+    cat >/home/user/app_configs/app.env <<'EOF'
+RAILS_ENV=production
+SECRET_KEY_BASE=abc123xyz
+EOF
+
+    # Permissions:
+    #  - Source files: readable by everyone (644)
+    #  - app_configs directory: executable & readable (755)
+    #  - remote_host directory: writable so the unprivileged agent can create
+    #    new sub-directories/files during synchronisation (777 simplifies this)
+    chmod 644 /home/user/app_configs/database.yml \
+              /home/user/app_configs/redis.conf \
+              /home/user/app_configs/app.env
+    chmod 755 /home/user/app_configs
+    chmod 777 /home/user
+    chmod 777 /home/user/remote_host
+
+%environment
+    # Ensure Python and rsync are in PATH
+    PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Container image pre-provisioned for the sync automation task with initial directory structure and pytest installed."

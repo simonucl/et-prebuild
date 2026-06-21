@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package list and install required system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        procps \
+        ca-certificates \
+        curl
+
+    # Install pytest for the grader’s test-suite
+    pip3 install --no-cache-dir pytest
+
+    # Create a non-privileged account expected by the assignment
+    # UID/GID 1000 is conventional but ignore errors if they already exist
+    groupadd -g 1000 user || true
+    useradd  -m -d /home/user -s /bin/bash -u 1000 -g 1000 user || true
+
+    # Ensure /home/user exists and is writable by any user inside the container
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up apt caches to keep the image small
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure user-installed Python tools are easily found
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%runscript
+    # By default just execute the passed command
+    exec "$@"
+
+%labels
+    Author "Container prepared for process-inventory snapshot task"
+    Description "Ubuntu 22.04 base with pytest and required utilities, ready for student execution."

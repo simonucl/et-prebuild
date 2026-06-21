@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python 3, pip and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ----------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ----------------------------------------------------------------
+    # Create the user home and logs directory
+    mkdir -p /home/user/logs
+
+    # Create the raw audit log with the exact required content
+    cat >/home/user/logs/app.log <<'EOF'
+2023-07-21 10:33:45,123 [INFO] [user-service] User 'alice' logged in from 10.0.0.12 (session:abc123)
+2023-07-21 11:12:07,456 [INFO] [user-service] User 'bob' logged in from 10.0.0.15 (session:def456)
+2023-07-21 12:55:22,789 [INFO] [user-service] User 'charlie' logged in from 10.0.0.18 (session:ghi789)
+EOF
+
+    # Ensure the directory is writable by the runtime user
+    chmod 0777 /home/user/logs
+
+    # Do NOT create /home/user/logs/login_summary.log; the learner will.
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are in the PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+
+%labels
+    Author DevOps-Challenge-Prep
+    Description "Container for login audit log parsing task"
+
+%help
+    This Apptainer image provides the initial state and dependencies
+    for the login audit log parsing exercise.  A raw log is placed in
+    /home/user/logs/app.log.  Participants must generate
+    /home/user/logs/login_summary.log from it.  Pytest is installed so
+    the automated grader can verify both the initial and final states.

@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Prepare directory skeleton and seed raw CSV files
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/data/raw
+    mkdir -p /home/user/data/processed
+    mkdir -p /home/user/benchmark
+
+    # dataset1.csv  (newline-terminated)
+    cat > /home/user/data/raw/dataset1.csv <<'EOF'
+id,name,value
+1,Alice,10
+2,Bob,NA
+3,Charlie,30
+3,Charlie,30
+EOF
+
+    # dataset2.csv  (newline-terminated)
+    cat > /home/user/data/raw/dataset2.csv <<'EOF'
+id,score
+1,95
+2,88
+2,88
+3,NA
+4,76
+EOF
+
+    # Give non-root container users write permission where needed
+    chmod -R 0777 /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author cleaned-csv task setup
+    Description Container seeded with raw CSVs and directory layout for the cleaning assignment.
+
+%environment
+    # Ensure Python is available
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for CSV-cleaning assignment."
+    echo "You are inside the runtime environment. Refer to the project briefing for instructions."

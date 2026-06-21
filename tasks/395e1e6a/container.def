@@ -1,0 +1,68 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package lists and install Python with pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the required initial directory structure and seed files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/old_service/conf
+    mkdir -p /home/user/migration_logs
+
+    # Create initial configuration files inside old_service/conf
+    cat >/home/user/old_service/conf/a.conf <<'EOF'
+alpha=1
+beta=2
+EOF
+
+    cat >/home/user/old_service/conf/b.conf <<'EOF'
+gamma=3
+delta=4
+EOF
+
+    cat >/home/user/old_service/conf/c.conf <<'EOF'
+[service]
+port=8080
+EOF
+
+    # Ensure permissions allow an unprivileged runtime user to work freely
+    chmod -R a+rwX /home/user
+
+    # ------------------------------------------------------------------
+    # Sanity-check: new_service and backup_old_conf MUST NOT exist yet
+    # ------------------------------------------------------------------
+    rm -rf /home/user/new_service || true
+    rm -rf /home/user/backup_old_conf || true
+
+%environment
+    chmod 755 /home/user
+
+    # Expose Python in the PATH for convenience
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    # Default command: drop into a shell
+    exec /bin/bash "$@"
+
+%help
+    Container image for the “configuration migration” exercise.
+
+    Initial state created:
+      • /home/user/old_service/conf/ with a.conf, b.conf, c.conf
+      • /home/user/migration_logs/ (empty)
+
+    Directories **not** present until the learner creates them:
+      • /home/user/new_service/
+      • /home/user/backup_old_conf/
+      • /home/user/migration_logs/symlink_audit.log
+
+    Pytest is pre-installed for automated grading.

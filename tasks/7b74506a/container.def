@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install essential tools
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        grep \
+        ca-certificates \
+        curl \
+        less
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # Create the canonical home directory for the student
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Optional: create a non-root user entry (not strictly required for tests,
+    # but useful if the runtime environment decides to switch users)
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -d /home/user -s /bin/bash user
+    fi
+
+    # Clean up apt cache to keep the image light
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure Python and pip from /usr/bin are preferred
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    # Default action when the container is executed without arguments
+    exec /bin/bash "$@"
+
+%labels
+    Author observability-container
+    Description "Base image for the Observability Docs assignment with pytest installed."

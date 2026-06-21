@@ -1,0 +1,36 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Install Python and pytest
+    apt-get update -y && \
+        apt-get install -y --no-install-recommends python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the text-corpus preparation task
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data/raw
+
+    # Create sample1.txt with exact required lines
+    printf 'Hello world\nMachine learning is fun\nAI\n' \
+        > /home/user/data/raw/sample1.txt
+
+    # Create sample2.txt with exact required lines
+    printf 'AI\nHello world\nDeep learning\n' \
+        > /home/user/data/raw/sample2.txt
+
+    # Ensure the student (non-root) user can write inside /home/user/data
+    chmod -R 777 /home/user/data
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author        text-corpus-task
+    Version       1.0
+    Description   "Initial state for tiny text-corpus preparation optimisation task."

@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # Prepare initial repository layout
+    mkdir -p /home/user/cicd/config
+
+    cat > /home/user/cicd/config/build_settings.ini <<'EOF'
+[pipeline]
+name = core-build
+version = 1.4.3-beta
+runner = docker
+
+[artifacts]
+bucket = ci-build-artifacts
+retention_days = 14
+
+EOF
+
+    chmod 644 /home/user/cicd/config/build_settings.ini
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8

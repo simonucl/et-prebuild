@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest (used by the grading system)
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the assignment
+    # ------------------------------------------------------------------
+    # Create /home/user if it does not yet exist
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Create the directory that will hold the SQL export
+    mkdir -p /home/user/db_exports
+    chmod 755 /home/user/db_exports
+
+    # Create an empty SQL file (0-byte) as required
+    : > /home/user/db_exports/optimized_queries.sql
+    chmod 644 /home/user/db_exports/optimized_queries.sql
+
+%labels
+    Author          DB-Checksum-Task Build System
+    Description     Base image providing the initial state for the SQL checksum verification assignment.
+
+%help
+This container supplies the starting filesystem state for the “SQL checksum
+verification” exercise.  It pre-installs Python, pip, and pytest and ships an
+empty /home/user/db_exports/optimized_queries.sql file ready for the student
+to verify.

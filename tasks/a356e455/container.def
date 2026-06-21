@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the “translation log summary”
+    # exercise.
+    # ------------------------------------------------------------------
+    # Directory layout: /home/user/projects/app/locale/
+    mkdir -p /home/user/projects/app/locale
+
+    # Create the pre-existing log file with exact required content.
+    cat > /home/user/projects/app/locale/translation_update.log <<'EOF'
+[INFO] 2023-11-10 10:00:00 Added translation key: welcome_message
+[WARNING] 2023-11-10 10:01:00 Missing translation for key: goodbye_message
+[INFO] 2023-11-10 10:02:00 Updated translation key: help_message
+[ERROR] 2023-11-10 10:03:00 Duplicate translation key: welcome_message
+[INFO] 2023-11-10 10:04:00 Added translation key: new_feature_message
+EOF
+
+    # Ensure accessibility for the unprivileged runtime user.
+    chmod 644 /home/user/projects/app/locale/translation_update.log
+    chmod -R a+rx /home/user/projects
+
+%labels
+    chmod 755 /home/user
+
+    Author translation-log-task-builder

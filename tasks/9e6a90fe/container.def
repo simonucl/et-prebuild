@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+  Author AI
+  Description "Base image for SSH-key onboarding task. Installs Python, pytest and ssh-keygen; prepares writable /home/user."
+
+%post
+  set -e
+
+  # Update package index and install required packages
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        openssh-client \
+        ca-certificates
+
+  # Install pytest for the grader
+  pip3 install --no-cache-dir pytest
+
+  # Create an empty, writable home directory for the future user actions
+  mkdir -p /home/user
+  chmod 0777 /home/user
+
+  # Clean up APT caches to keep the image lean
+  apt-get clean
+  rm -rf /var/lib/apt/lists/*
+
+%runscript
+    chmod 755 /home/user
+
+  exec "$@"
+
+%help
+  This container supplies:
+  - ssh-keygen (from openssh-client) so students can create keys
+  - pytest for the automated grading suite
+
+  The workspace /home/user is writable and initially empty of any artefacts
+  required by the assignment.

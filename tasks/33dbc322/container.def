@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package lists and install required system packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        procps \
+        ca-certificates
+
+    # Install pytest for the validation test-suite
+    pip3 install --no-cache-dir pytest
+
+    # Create a non-privileged user named 'user' with home directory /home/user
+    if ! id -u user >/dev/null 2>&1; then
+        groupadd -g 1000 user
+        useradd  -m -u 1000 -g 1000 -s /bin/bash user
+    fi
+
+    # Ensure /home/user exists with correct permissions
+    mkdir -p /home/user
+    chown 1000:1000 /home/user
+    chmod 755 /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Minimal PATH; do not override HOME so Apptainer can bind host $HOME if desired
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%runscript
+    echo "Container for the dummy restore task. Launch an interactive shell with 'apptainer exec -u user <image> /bin/bash' or run your commands directly."

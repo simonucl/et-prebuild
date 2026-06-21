@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates \
+        tzdata
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem layout required by the exercise.
+    # ------------------------------------------------------------------
+    # Create the /home/user hierarchy
+    mkdir -p /home/user/provision/output
+    chmod 755 /home/user
+    chmod 755 /home/user/provision
+    chmod 755 /home/user/provision/output
+
+    # Populate servers_raw.txt with the exact required content
+    cat > /home/user/provision/servers_raw.txt << 'EOF'
+DB01
+web01
+app02
+web01
+app01
+db01
+WEB02
+app02
+EOF
+
+    # Ensure correct permissions
+    chmod 644 /home/user/provision/servers_raw.txt
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author inventory-builder setup
+    Description Base environment for the “inventory-builder” exercise.

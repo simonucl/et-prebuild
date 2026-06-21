@@ -1,0 +1,32 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package lists and install required system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        procps
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the upcoming automated tests
+    python3 -m pip install --no-cache-dir pytest
+
+    # Prepare the expected directory structure
+    mkdir -p /home/user/experiments
+    # Make sure any user that runs inside the container can write here
+    chmod -R 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure a sane PATH inside the container
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%runscript
+    echo "Apptainer container ready for the Linux process-management exercise."
+    echo "Follow the assignment instructions inside this environment."

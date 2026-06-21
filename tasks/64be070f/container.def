@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic utilities and Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        dnsutils \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem layout for the exercise
+    # ------------------------------------------------------------------
+    # Ensure /home/user hierarchy exists
+    mkdir -p /home/user
+
+    # 1. /home/user/data directory and CSV file
+    mkdir -p /home/user/data
+    chmod 755 /home/user/data
+
+    cat > /home/user/data/domains.csv <<'EOF'
+domain
+example.com
+iana.org
+EOF
+    chmod 644 /home/user/data/domains.csv
+
+    # 2. /home/user/output directory (initially empty)
+    mkdir -p /home/user/output
+    chmod 755 /home/user/output
+
+%environment
+    # Minimal locale settings for predictable tool behaviour
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%runscript
+    echo "Container for the 'domain -> IPv4' resolution task."
+    echo "Use standard Linux tools inside the container to complete the exercise."

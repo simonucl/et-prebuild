@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install required packages
+    apt-get -y update
+    apt-get -y install --no-install-recommends \
+        python3 \
+        python3-pip \
+        tzdata \
+        ca-certificates
+
+    # Install pytest for the validation suite
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected home directory
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Make sure the target file does not exist in the pristine image
+    rm -f /home/user/uk-time.log
+
+    # Clean up APT cache to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=UTF-8
+
+%labels
+    Author="Apptainer Task Preparer"
+    Description="Base image for UK time-zone logging task with pytest pre-installed."

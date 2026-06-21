@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update apt and install python/pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip
+
+    # Install pytest for the verification test-suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create required directory structure and populate initial data file
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data
+    mkdir -p /home/user/output
+
+    # Make the output directory writable by any user (the agent will not
+    # have root privileges when it runs inside the container).
+    chmod 0777 /home/user/output
+
+    # ------------------------------------------------------------------
+    # Create the CSV file with the exact required contents.
+    # Every line is explicitly newline-terminated.
+    # ------------------------------------------------------------------
+cat << 'EOF' > /home/user/data/sales.csv
+order_id,customer,email,amount
+1001,Alice Smith,alice.smith@example.com,39.95
+1002,Bob Jones,bjones@STATE.EDU,15.00
+1003,Carla Ruiz,carla@college.edu,22.50
+1004,David Zhang,dzhang@corp.com,85.00
+1005,Eva Adams,evadams@school.edu,13.20
+1006,Fred Grant,grantf@business.org,44.10
+1007,Gina Hall,gina.hall@university.EDU,19.99
+1008,Henry Ito,henry@random.net,33.33
+1009,Ivy Keller,ivy.keller@tech.com,72.00
+1010,Jack Lee,jlee@liberalarts.edu,18.75
+EOF
+
+    # Ensure readable by everyone
+    chmod 0644 /home/user/data/sales.csv
+
+%environment
+    chmod 755 /home/user
+
+    # No environment overrides needed, but ensure Python is accessible
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author example
+    Description "Container for filtering .edu customers from sales.csv task."
+
+%help
+    This container provides the initial state for the ".edu customer filter"
+    exercise.  It contains:
+      • /home/user/data/sales.csv  – source data (header + 10 rows)
+      • /home/user/output/         – empty, writable directory for results
+    pytest is installed so that the supplied test-suite can be executed.

@@ -1,0 +1,38 @@
+FROM ubuntu:22.04
+
+# Author: Auto-generated definition for incident-log task
+# Description: Contains prepared log files and pytest for assessment.
+# Runscript: echo "Container for incident-log task. Execute your solution steps after entering the shell."
+
+RUN set -e && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /home/user/app/logs
+
+RUN cat <<'EOF' >/home/user/app/logs/app.log
+2023-07-30 04:01:22 INFO Application started
+2023-07-30 04:02:10 ERROR NullPointerException in ModuleX
+2023-07-30 04:03:55 WARN  Disk space low
+2023-07-30 04:04:01 ERROR Failed to load configuration
+2023-07-30 04:05:30 ERROR OutOfMemoryError in Worker-12
+EOF
+
+RUN cat <<'EOF' >/home/user/app/logs/db.log
+2023-07-30 04:02:11 INFO  Connection pool initialized
+2023-07-30 04:02:15 ERROR Lost connection to replica-2
+2023-07-30 04:02:17 ERROR Automatic failover engaged
+EOF
+
+RUN cat <<'EOF' >/home/user/app/logs/access.log
+127.0.0.1 - - [30/Jul/2023:04:00:01 +0000] "GET /healthz HTTP/1.1" 200 12
+127.0.0.1 - - [30/Jul/2023:04:00:11 +0000] "GET /metrics HTTP/1.1" 200 231
+EOF
+
+RUN chmod -R a+rX /home/user && chmod 755 /home/user
+
+LABEL Author="Auto-generated definition for incident-log task"
+LABEL Description="Contains prepared log files and pytest for assessment."

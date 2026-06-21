@@ -1,0 +1,78 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update apt indices and install required system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        tar \
+        gzip \
+        coreutils
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the non-privileged user “user” with home directory /home/user
+    # ------------------------------------------------------------------
+    groupadd -r user
+    useradd  -m -r -g user user
+
+    # ------------------------------------------------------------------
+    # Set up the initial infrastructure tree
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/infrastructure/configs
+    mkdir -p /home/user/infrastructure/scripts
+    mkdir -p /home/user/infrastructure/tmp
+
+    # configs/app.conf  (18 bytes in sample)
+    cat >/home/user/infrastructure/configs/app.conf <<'EOF'
+port=8080
+threads=4
+mode=production
+EOF
+
+    # configs/db.conf  (32 bytes in sample)
+    cat >/home/user/infrastructure/configs/db.conf <<'EOF'
+host=localhost
+port=5432
+user=infra
+EOF
+
+    # scripts/deploy.sh  (35 bytes in sample)
+    cat >/home/user/infrastructure/scripts/deploy.sh <<'EOF'
+#!/bin/bash
+echo "Deploying..."
+EOF
+    chmod +x /home/user/infrastructure/scripts/deploy.sh
+
+    # tmp/cache.tmp  (7 bytes in sample)
+    echo "scratch" >/home/user/infrastructure/tmp/cache.tmp
+
+    # ------------------------------------------------------------------
+    # Permissions and ownership
+    # ------------------------------------------------------------------
+    # Make sure everything is world-readable/executable (0755 dirs, 0644 files)
+    chmod -R a+rX /home/user/infrastructure
+
+    # Ensure ownership belongs to user:user
+    chown -R user:user /home/user/infrastructure
+    chown    user:user /home/user
+
+    # ------------------------------------------------------------------
+    # Guarantee that /home/user/backup_archives does NOT exist yet
+    # ------------------------------------------------------------------
+    rm -rf /home/user/backup_archives || true
+
+%environment
+    chmod 755 /home/user
+
+    # Keep a sane PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author="Apptainer setup for backup strategy task"

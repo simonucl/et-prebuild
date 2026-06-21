@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ---------------------------------------------------------------------
+    # Install Python tooling and pytest
+    # ---------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Seed the backup log required by the exercise
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/backup/logs
+
+    cat <<'EOF' > /home/user/backup/logs/backup_20230815.log
+[2023-08-15 00:01:02] INFO  Starting backup job id=42
+[2023-08-15 00:01:05] INFO  Scanning files to backup
+[2023-08-15 00:03:12] WARN  File /var/data/tmp/cache.dat skipped (permission denied)
+[2023-08-15 00:05:55] ERROR Unable to open /var/data/important.db (I/O error)
+[2023-08-15 00:06:10] INFO  Retrying missing files
+[2023-08-15 00:07:25] WARN  Checksum mismatch ignored for /var/data/old.log
+[2023-08-15 00:08:30] ERROR Failed to write to backup destination (disk full)
+[2023-08-15 00:10:00] INFO  Backup job ended
+EOF
+
+    chmod 644 /home/user/backup/logs/backup_20230815.log
+
+%labels
+    chmod 755 /home/user
+
+    Author backup-integrity-exercise

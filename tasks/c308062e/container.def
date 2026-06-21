@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3 \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Set-up workspace expected by the tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/projects/i18n/backups
+
+    # Create and seed the SQLite database
+    sqlite3 /home/user/projects/i18n/app_translations.db <<'SQL'
+    PRAGMA journal_mode = WAL;
+    CREATE TABLE translations (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        language   TEXT NOT NULL,
+        key        TEXT NOT NULL,
+        value      TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    );
+
+    INSERT INTO translations (id, language, key, value, updated_at) VALUES
+        (1, 'en', 'welcome_message',  'Welcome',    '2023-01-10 12:00:00'),
+        (2, 'fr', 'welcome_message',  'Bienvenue',  '2023-01-10 12:00:00'),
+        (3, 'de', 'welcome_message',  'Willkommen', '2023-01-10 12:00:00'),
+        (4, 'fr', 'help_link',        'Aide',       '2023-01-15 09:00:00'),
+        (5, 'de', 'deprecated_notice','Veraltet',   '2023-01-20 15:00:00');
+    SQL
+
+    # ------------------------------------------------------------------
+    # Permissions
+    # ------------------------------------------------------------------
+    # The student must be able to modify the live DB and write into backups/
+    chmod 0666 /home/user/projects/i18n/app_translations.db
+    chmod 0777 /home/user/projects/i18n/backups
+
+    # Make sure /home/user exists and is reachable
+    chmod 0755 /home/user
+
+    # Clean up APT cache
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author  ChatGPT – Apptainer setup for localisation task

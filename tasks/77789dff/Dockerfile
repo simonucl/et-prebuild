@@ -1,0 +1,151 @@
+# syntax=docker/dockerfile:1
+FROM ubuntu:22.04
+
+# Labels from Apptainer definition
+LABEL Author="Apptainer Task Generator"
+
+# ------------------------------------------------------------------
+# 1. Base packages and Python tooling
+# ------------------------------------------------------------------
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked --mount=type=cache,target=/var/lib/apt,sharing=locked --mount=type=cache,target=/root/.cache/pip set -eux && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------------------------
+# 2. Create required directory hierarchy and artefacts
+# ------------------------------------------------------------------
+RUN set -eux && \
+    mkdir -p /home/user/builds/android/app1 && \
+    mkdir -p /home/user/builds/android/app2 && \
+    mkdir -p /home/user/builds/ios/app1 && \
+    mkdir -p /home/user/builds/ios/app2_small && \
+    mkdir -p /home/user/output && \
+    dd if=/dev/zero of=/home/user/builds/android/app1/build_a.bin bs=1 count=12288 status=none && \
+    dd if=/dev/zero of=/home/user/builds/android/app2/build_b.bin bs=1 count=4096  status=none && \
+    dd if=/dev/zero of=/home/user/builds/ios/app1/build_c.bin     bs=1 count=10240 status=none && \
+    dd if=/dev/zero of=/home/user/builds/ios/app2_small/build_d.bin bs=1 count=2048 status=none
+
+# ------------------------------------------------------------------
+# 3. Permissions
+# ------------------------------------------------------------------
+RUN set -eux && \
+    chmod -R 755 /home/user && \
+    chmod 777 /home/user/output
+
+# ------------------------------------------------------------------
+# 4. Embedded pytest suite so that the grader can verify the baseline
+# ------------------------------------------------------------------
+RUN set -eux && \
+    mkdir -p /opt/tests
+
+RUN cat > /opt/tests/test_initial_state.py << 'PYEOF'
+import os
+import stat
+import pytest
+
+HOME = "/home/user"
+BUILDS_ROOT = os.path.join(HOME, "builds")
+OUTPUT_DIR = os.path.join(HOME, "output")
+
+EXPECTED_BUILD_CONTENT = {
+    "android/app1": ("build_a.bin", 12288),
+    "android/app2": ("build_b.bin", 4096),
+    "ios/app1":     ("build_c.bin", 10240),
+    "ios/app2_small": ("build_d.bin", 2048),
+}
+
+THRESHOLD = 9000
+
+
+def rel_to_abs(rel_path: str) -> str:
+    return os.path.join(BUILDS_ROOT, rel_path)
+
+
+def dir_size_bytes(abs_dir: str) -> int:
+    total = 0
+    for root, _dirs, files in os.walk(abs_dir, followlinks=False):
+        for f in files:
+            fp = os.path.join(root, f)
+            try:
+                st = os.lstat(fp)
+            except FileNotFoundError:
+                continue
+            if stat.S_ISREG(st.st_mode):
+                total += st.st_size
+    return total
+
+
+def test_build_root_exists():
+    assert os.path.isdir(BUILDS_ROOT), (
+        f"Required directory '{BUILDS_ROOT}' is missing."
+    )
+
+
+@pytest.mark.parametrize("rel_dir, info", EXPECTED_BUILD_CONTENT.items())
+def test_expected_directory_and_file_exist(rel_dir, info):
+    artifact_name, expected_size = info
+    abs_dir = rel_to_abs(rel_dir)
+    abs_file = os.path.join(abs_dir, artifact_name)
+
+    assert os.path.isdir(abs_dir), (
+        f"Expected directory '{abs_dir}' is missing."
+    )
+    assert os.path.isfile(abs_file), (
+        f"Expected file '{abs_file}' is missing."
+    )
+
+    actual_size = os.path.getsize(abs_file)
+    assert actual_size == expected_size, (
+        f"File '{abs_file}' should be {expected_size} bytes but is "
+        f"{actual_size} bytes."
+    )
+
+
+@pytest.mark.parametrize("rel_dir, info", EXPECTED_BUILD_CONTENT.items())
+def test_directory_cumulative_size(rel_dir, info):
+    _, expected_artifact_size = info
+    abs_dir = rel_to_abs(rel_dir)
+    total_size = dir_size_bytes(abs_dir)
+
+    assert total_size == expected_artifact_size, (
+        f"Cumulative size of directory '{abs_dir}' should be "
+        f"{expected_artifact_size} bytes but is {total_size} bytes."
+    )
+
+    is_large = total_size > THRESHOLD
+    should_be_large = rel_dir in {"android/app1", "ios/app1"}
+    assert is_large == should_be_large, (
+        f"Directory '{abs_dir}' expected to be "
+        f"{'>' if should_be_large else '<='} {THRESHOLD} bytes but "
+        f"its calculated size is {total_size} bytes."
+    )
+
+
+def test_output_directory_exists_and_writable():
+    assert os.path.isdir(OUTPUT_DIR), (
+        f"Output directory '{OUTPUT_DIR}' is missing."
+    )
+    assert os.access(OUTPUT_DIR, os.W_OK), (
+        f"Output directory '{OUTPUT_DIR}' is not writable."
+    )
+PYEOF
+
+# ------------------------------------------------------------------
+# Environment configuration (from %environment)
+# ------------------------------------------------------------------
+RUN chmod 755 /home/user
+
+ENV PYTHONUNBUFFERED=1 \
+    LC_ALL=C.UTF-8 \
+    LANG=C.UTF-8 \
+    HOME=/home/user
+
+# ------------------------------------------------------------------
+# Help / runscript information
+# Container for the CI-workspace clean-up task.
+# Pytest suites located in /opt/tests.
+# ------------------------------------------------------------------

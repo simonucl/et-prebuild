@@ -1,0 +1,38 @@
+# Author: automation-workflow-template
+# Description: Environment for filtering Apache logs using a one-liner command.
+# Help:
+# This container sets up the initial state required for the exercise
+# where the user must create /home/user/logs/errors_only.log containing
+# only HTTP 5xx entries from webserver_access.log using a single command.
+
+FROM ubuntu:22.04
+
+RUN set -e && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /home/user/logs && chmod 0777 /home/user/logs
+
+RUN cat <<'EOF' >/home/user/logs/webserver_access.log
+127.0.0.1 - - [10/Oct/2022:13:55:36 +0000] "GET /index.html HTTP/1.1" 200 1024 "-" "Mozilla/5.0"
+192.168.1.10 - - [10/Oct/2022:14:00:01 +0000] "POST /login HTTP/1.1" 302 512 "-" "Mozilla/5.0"
+10.0.0.5 - - [10/Oct/2022:14:02:16 +0000] "GET /doesnotexist HTTP/1.1" 404 256 "-" "Mozilla/5.0"
+127.0.0.1 - - [10/Oct/2022:14:05:45 +0000] "GET /api/data HTTP/1.1" 500 128 "-" "curl/7.68.0"
+203.0.113.55 - - [10/Oct/2022:14:06:12 +0000] "PUT /api/update HTTP/1.1" 503 64 "-" "Python-requests/2.25.1"
+192.0.2.44 - - [10/Oct/2022:14:07:30 +0000] "DELETE /api/delete HTTP/1.1" 204 0 "-" "Mozilla/5.0"
+198.51.100.23 - - [10/Oct/2022:14:08:59 +0000] "GET /reports HTTP/1.1" 504 32 "-" "Mozilla/5.0"
+203.0.113.77 - - [10/Oct/2022:14:10:42 +0000] "GET /admin HTTP/1.1" 403 128 "-" "Mozilla/5.0"
+192.168.1.15 - - [10/Oct/2022:14:12:03 +0000] "POST /submit HTTP/1.1" 201 256 "-" "curl/7.68.0"
+10.1.1.1 - - [10/Oct/2022:14:13:27 +0000] "GET /status HTTP/1.1" 502 16 "-" "Mozilla/5.0"
+EOF
+
+RUN chmod 0644 /home/user/logs/webserver_access.log && chmod 755 /home/user
+
+ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+
+CMD echo "Container ready. Read the assignment instructions and begin."

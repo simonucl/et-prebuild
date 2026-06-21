@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package index and install Python & pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the forthcoming autograder
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial project structure required by the assignment
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/project/env
+
+    # Create configuration files with the exact content specified
+    printf 'version=1.0\n' > /home/user/project/app.conf
+    printf 'host=localhost\nport=5432\n' > /home/user/project/db.conf
+    printf 'DEBUG=true\n'   > /home/user/project/env/dev.env
+    printf 'DEBUG=false\n'  > /home/user/project/env/prod.env
+
+    # Make the directory tree world-writable so the unprivileged
+    # learner UID (unknown at build time) can freely create archives,
+    # logs, etc. during the exercise.
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Preserve the default HOME that Apptainer sets; no override needed.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author="Apptainer Task Generator"
+    Description="Container for point-in-time backup exercise. Provides initial project files and pytest."

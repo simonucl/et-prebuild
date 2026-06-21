@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------ #
+    # Basic tooling                                                      #
+    # ------------------------------------------------------------------ #
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------ #
+    # Prepare initial repository state for the exercise                  #
+    # ------------------------------------------------------------------ #
+    mkdir -p /home/user/infrastructure-tools/service-monitor
+
+    # VERSION file with original version number
+    printf "1.4.2\n" \
+        > /home/user/infrastructure-tools/service-monitor/VERSION
+
+    # CHANGELOG.md starting with the 1.4.2 section
+    cat > /home/user/infrastructure-tools/service-monitor/CHANGELOG.md <<'EOF'
+## [1.4.2] - 2023-09-10
+### Fixed
+- Roll-up of minor Grafana alert regressions (#125)
+
+## [1.4.1] - 2023-08-21
+…
+EOF
+
+    # Pre-existing audit log (can be empty for now)
+    touch /home/user/version_update.log
+
+    # ------------------------------------------------------------------ #
+    # Relax permissions so the non-root runner inside the container can  #
+    # modify the files during the exercise                               #
+    # ------------------------------------------------------------------ #
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure predictable locale
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8

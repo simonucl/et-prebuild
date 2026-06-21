@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # ------------------------------------------------------------------
+    # Install required packages: GnuPG for encryption, coreutils
+    # (provides sha256sum) and pytest for the future test-runner.
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        gnupg \
+        coreutils \
+        python3 \
+        python3-pip
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem expected by the exercise tests.
+    # ------------------------------------------------------------------
+    # Create directory structure
+    mkdir -p /home/user/etl/input
+    mkdir -p /home/user/etl/encrypted
+
+    # Create the plaintext CSV fixture (with final newline)
+    cat > /home/user/etl/input/customer_snapshot.csv <<'EOF'
+customer_id,name,signup_date
+101,Alice,2023-01-02
+102,Bob,2023-01-10
+103,Charlie,2023-01-15
+EOF
+
+    # Permissions:
+    #   - Make sure the user who runs the container (mapped from host)
+    #     can read the plaintext and write to the encrypted directory.
+    chmod 755 /home/user
+    chmod 755 /home/user/etl
+    chmod 755 /home/user/etl/input
+    chmod 777 /home/user/etl/encrypted    # writable & initially empty
+
+%environment
+    # Ensure PATH contains standard locations (Apptainer normally keeps this,
+    # but we declare it explicitly for safety).
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author customer-snapshot-exercise
+    Description "Environment for the customer snapshot encryption + audit-log task."
+
+%help
+    This container provides the initial filesystem state required for the
+    “Customer Snapshot Encryption & Audit-Log” exercise.
+    - Plaintext CSV is located at /home/user/etl/input/customer_snapshot.csv
+    - /home/user/etl/encrypted is empty and writable for output files.
+    Tools installed: gpg, sha256sum, pytest.

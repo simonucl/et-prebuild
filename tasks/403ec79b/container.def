@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author On-call Sysadmin Exercise
+    Description Container prepared for “host count” one-liner task
+
+%post
+    #!/bin/bash
+    set -eux
+
+    # Update APT index and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest so that the test harness is available at runtime
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare filesystem layout expected by the exercise
+    # ------------------------------------------------------------------
+
+    # Create /home/user/servers with permissive permissions so the
+    # unprivileged runtime user can write to it regardless of UID/GID.
+    mkdir -p /home/user/servers
+    chmod -R a+rwx /home/user
+
+    # Create the pre-populated host inventory file with EXACT content
+    cat > /home/user/servers/hosts.lst <<'EOF'
+host-a
+host-b
+host-c
+host-d
+host-e
+host-f
+host-g
+EOF
+    # Ensure the inventory file is writable by any user
+    chmod a+rw /home/user/servers/hosts.lst
+
+    # NOTE: Do NOT create /home/user/servers/hosts.count here; that is the
+    # file the learner must generate during the exercise.
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal sensible locale and PATH
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

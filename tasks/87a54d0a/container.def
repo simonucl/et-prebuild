@@ -1,0 +1,27 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python package manager
+    apt-get update -y
+    apt-get install -y python3-pip
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # Prepare the required home directory for the learner
+    mkdir -p /home/user
+    # Give broad write permissions so whichever UID runs the container can work there
+    chmod 0777 /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Maintainer network-disk-audit exercise
+    Description Base image for “Disk Usage Audit” task – provides pytest and writable /home/user.
+
+%runscript
+    echo "Container for Disk Usage Audit task is ready."
+    echo "Your workspace is /home/user"

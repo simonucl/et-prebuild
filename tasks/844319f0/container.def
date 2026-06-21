@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author build-task-generator
+    Description "Environment for nightly-build digest extraction task"
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the automated tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/builds
+
+    cat > /home/user/builds/artifact_manifest.csv <<'EOF'
+build_id,artifact_name,version,checksum
+101,core-lib,1.0.0,2873acb
+102,ui-assets,1.0.1,9fbc211
+103,service-bin,2.0.0,17ab899
+EOF
+
+    # Allow the non-root user running inside the container to read/write
+    chmod -R a+rw /home/user/builds
+
+%environment
+    chmod 755 /home/user
+
+    # Helpful default; do not override $HOME so that Apptainer keeps host value
+    export PYTHONUNBUFFERED=1
+
+%runscript
+    echo "Nightly-build digest task container. Execute your commands with 'apptainer exec ...'."
+    exec "$@"

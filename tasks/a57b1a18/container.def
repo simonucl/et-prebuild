@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt repositories and installing required packages ..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-venv \
+        jq \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest (used by the automated grader) ..."
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    echo "Creating initial directory structure for the API regression-test exercise ..."
+    BASE_DIR="/home/user/projects/api-test"
+    mkdir -p "${BASE_DIR}/input"
+    mkdir -p "${BASE_DIR}/output"     # must exist but remain empty
+    mkdir -p "${BASE_DIR}/schema"     # schema dir exists, file not yet
+
+    echo "Populating input JSON files ..."
+    cat > "${BASE_DIR}/input/user1.json" <<'EOF'
+{
+  "id": 101,
+  "name": "Alice Smith",
+  "email": "alice@example.com",
+  "isActive": true
+}
+EOF
+
+    cat > "${BASE_DIR}/input/user2.json" <<'EOF'
+{
+  "id": 102,
+  "name": "Bob Jones",
+  "isActive": false
+}
+EOF
+
+    echo "Adjusting permissions so that any non-root user can work in the directory ..."
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and jq are on the PATH (they already are, but this is explicit)
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author="ChatGPT"
+    Description="Environment for automated regression-test exercise (API JSON validation)"
+    Stage="initial-state ready for student"
+
+%help
+    This Apptainer image provides the initial filesystem state and all tools
+    (Python, pip, pytest, jq) that students need to complete the “API regression-test”
+    assignment.  The directory /home/user/projects/api-test contains the prepared
+    input files and an empty output directory; the schema file is intentionally
+    absent so that students can create it as part of their solution.

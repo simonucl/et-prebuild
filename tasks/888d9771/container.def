@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial project layout and starter files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/projects/webapp/utils
+
+    # /home/user/projects/webapp/app.py
+    cat >/home/user/projects/webapp/app.py <<'PY'
+# main application
+import os
+def run():
+    os.system("ls -la")  # insecure
+    print("Hello")
+    eval("2+2")  # insecure
+PY
+
+    # /home/user/projects/webapp/utils/helpers.py
+    cat >/home/user/projects/webapp/utils/helpers.py <<'PY'
+import subprocess
+def dangerous(cmd):
+    subprocess.call(cmd, shell=True)  # insecure
+def safe():
+    print("safe")
+PY
+
+    # /home/user/projects/webapp/README.md
+    cat >/home/user/projects/webapp/README.md <<'MD'
+This is just a sample README file for the webapp project.
+MD
+
+    # ------------------------------------------------------------------
+    # Permissions
+    # ------------------------------------------------------------------
+    # Ensure the future student (non-root user) can create new directories
+    # such as /home/user/security_reports.
+    chmod 0777 /home/user
+
+    # Readable project files; no need for write permissions here.
+    chmod -R a+rX /home/user/projects
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip locations are on PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Container with starter project for security scan task, plus pytest installed."

@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Ensure package list is up-to-date and install essentials
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        locales \
+        tzdata
+
+    # Generate the required locale
+    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+    locale-gen en_US.UTF-8
+    update-locale LANG=en_US.UTF-8
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # Prepare the exercise workspace
+    mkdir -p /home/user
+    chmod 0777 /home/user      # writable by the unprivileged learner
+
+    # Clean up apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure the locale is always set for every shell session
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+
+%labels
+    Author exercise-prep-bot
+    Description "Environment for timezone conversion exercise"
+
+%help
+    This container provides a clean environment for the timezone conversion
+    exercise.  It supplies:
+      • /home/user directory (initially empty)
+      • Locale en_US.UTF-8
+      • tzdata for timezone computations
+      • pytest for the assessment harness

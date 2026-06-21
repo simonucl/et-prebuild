@@ -1,0 +1,68 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #-------------------------------------------------------------------
+    # Base tools and Python environment
+    #-------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip python3-setuptools python3-dev \
+        iputils-ping net-tools procps \
+        ca-certificates curl
+    pip3 install --no-cache-dir pytest
+
+    #-------------------------------------------------------------------
+    # Create non-privileged user and required directory layout
+    #-------------------------------------------------------------------
+    # Add user “user” if it does not already exist (idempotent during rebuilds)
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -s /bin/bash user
+    fi
+
+    # Prepare deployment directory and seed devices.txt
+    DEPLOY_DIR="/home/user/iot_deployment"
+    mkdir -p "${DEPLOY_DIR}"
+
+    cat > "${DEPLOY_DIR}/devices.txt" <<'EOF'
+127.0.0.1
+192.0.2.1
+EOF
+
+    # Permissions: world-readable file, directories accessible
+    chmod 0755 /home/user
+    chmod 0755 "${DEPLOY_DIR}"
+    chmod 0644 "${DEPLOY_DIR}/devices.txt"
+    chown -R user:user /home/user
+
+    #-------------------------------------------------------------------
+    # Clean up APT caches to shrink image
+    #-------------------------------------------------------------------
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and common utilities are on the PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    # Default action: start an interactive shell
+    exec /bin/bash "$@"
+
+%labels
+    Author edge-engineering-prep
+    Description "Container for IoT gateway diagnostic-bundle exercise (pytest included)."
+
+%help
+    This Apptainer image provides the starting environment for the
+    “IoT gateway diagnostic-bundle” assignment.
+
+    • /home/user/iot_deployment/devices.txt is pre-populated.
+    • /home/user/iot_deployment/diagnostics/ does NOT exist yet.
+    • pytest is installed for the grading harness.
+
+    Run `apptainer exec <image> /bin/bash` to enter the container.

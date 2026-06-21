@@ -1,0 +1,45 @@
+FROM ubuntu:22.04
+
+# Help text from Apptainer %help
+# This container sets up the starting state for the "event_type frequency"
+# data-science exercise. It pre-installs pytest for automated grading and
+# seeds /home/user/data/raw/events.csv with the required raw event log.
+
+RUN set -e && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates && \
+    pip3 install --no-cache-dir pytest && \
+    mkdir -p /home/user/data/raw && \
+    chmod -R 0777 /home/user
+
+RUN cat > /home/user/data/raw/events.csv << 'EOF'
+id,user,event_type,timestamp
+1,user01,login,2023-01-01T08:01:00Z
+2,user02,view,2023-01-01T08:02:00Z
+3,user03,purchase,2023-01-01T08:03:00Z
+4,user04,logout,2023-01-01T08:04:00Z
+5,user05,view,2023-01-01T08:05:00Z
+6,user06,click,2023-01-01T08:06:00Z
+7,user07,view,2023-01-01T08:07:00Z
+8,user08,login,2023-01-01T08:08:00Z
+9,user09,purchase,2023-01-01T08:09:00Z
+10,user10,login,2023-01-01T08:10:00Z
+11,user11,purchase,2023-01-01T08:11:00Z
+12,user12,view,2023-01-01T08:12:00Z
+13,user13,logout,2023-01-01T08:13:00Z
+14,user14,click,2023-01-01T08:14:00Z
+15,user15,login,2023-01-01T08:15:00Z
+16,user16,purchase,2023-01-01T08:16:00Z
+17,user17,logout,2023-01-01T08:17:00Z
+18,user18,view,2023-01-01T08:18:00Z
+19,user19,login,2023-01-01T08:19:00Z
+20,user20,view,2023-01-01T08:20:00Z
+21,user21,unknown,2023-01-01T08:21:00Z
+EOF
+
+RUN chmod 0666 /home/user/data/raw/events.csv
+
+ENV HOME=/home/user

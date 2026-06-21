@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python, pip, and build essentials
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip ca-certificates && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    #------------------------------------------------------------------
+    # Create non-root user `user` with home directory /home/user
+    #------------------------------------------------------------------
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -s /bin/bash user
+    fi
+
+    #------------------------------------------------------------------
+    # Set up initial filesystem state required by the exercise
+    #------------------------------------------------------------------
+    MICRO_DIR="/home/user/microservices"
+    install -d -m 0755 "${MICRO_DIR}"
+
+    # Create the starter services.txt file with required contents
+    cat > "${MICRO_DIR}/services.txt" <<'EOF'
+auth
+api
+front
+EOF
+
+    # Ensure correct ownership so the unprivileged user can access everything
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure user-level Python packages (if any) are on PATH
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%runscript
+    #!/bin/bash
+    # Default runscript: execute whatever the caller supplied
+    exec "$@"

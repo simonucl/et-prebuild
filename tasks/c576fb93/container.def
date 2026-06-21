@@ -1,0 +1,83 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ---------------------------------------------------------------------
+    # Basic tooling
+    # ---------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ---------------------------------------------------------------------
+    # Prepare initial directory structure and log files
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/mobile_ci/logs
+
+    # ----- build_2024-06-01.log ------------------------------------------
+    cat > /home/user/mobile_ci/logs/build_2024-06-01.log <<'EOF'
+=== BUILD START ===
+JobID: 1001
+Variant: debug
+Timestamp: 2024-06-01T10:15:00Z
+Status: SUCCESS
+=== BUILD END ===
+
+=== BUILD START ===
+JobID: 1002
+Variant: release
+Timestamp: 2024-06-01T11:00:00Z
+Status: FAILURE
+Reason: Unit tests failed
+=== BUILD END ===
+EOF
+
+    # ----- build_2024-06-02.log ------------------------------------------
+    cat > /home/user/mobile_ci/logs/build_2024-06-02.log <<'EOF'
+=== BUILD START ===
+JobID: 1003
+Variant: debug
+Timestamp: 2024-06-02T09:05:00Z
+Status: FAILURE
+Reason: Gradle compilation error
+=== BUILD END ===
+
+=== BUILD START ===
+JobID: 1004
+Variant: release
+Timestamp: 2024-06-02T14:20:00Z
+Status: SUCCESS
+=== BUILD END ===
+EOF
+
+    # ----- build_2024-06-03.log ------------------------------------------
+    cat > /home/user/mobile_ci/logs/build_2024-06-03.log <<'EOF'
+=== BUILD START ===
+JobID: 1005
+Variant: release
+Timestamp: 2024-06-03T08:40:00Z
+Status: FAILURE
+Reason: Lint violations
+=== BUILD END ===
+EOF
+
+    # ---------------------------------------------------------------------
+    # Make sure the student (non-root) user can modify everything
+    # ---------------------------------------------------------------------
+    chmod -R 0777 /home/user/mobile_ci
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author      MobileBuildEng
+    Description "Apptainer image that sets up initial Android CI log files and installs pytest."

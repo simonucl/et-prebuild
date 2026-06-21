@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python, pip and other utilities required by the tests
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        gzip \
+        tar \
+        coreutils
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Create a regular, non-privileged user “user” with home /home/user
+    # (the test-suite refers to this path explicitly)
+    # ---------------------------------------------------------------------
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g 1000 user
+
+    # ---------------------------------------------------------------------
+    # Prepare the deterministic initial data set expected by the tests
+    # ---------------------------------------------------------------------
+    install -d -o user -g user /home/user/production_data
+
+    cat << 'EOF' > /home/user/production_data/customers.csv
+id,name,email
+1,Alice,alice@example.com
+2,Bob,bob@example.com
+3,Charlie,charlie@example.com
+EOF
+
+    cat << 'EOF' > /home/user/production_data/orders.csv
+order_id,customer_id,product,quantity
+1001,1,Keyboard,2
+1002,2,Mouse,1
+1003,3,Monitor,1
+EOF
+
+    cat << 'EOF' > /home/user/production_data/README.md
+# Production Data
+This directory contains the CSV exports used by the sales team.
+EOF
+
+    # Ensure correct permissions (readable by the non-root test user)
+    chown -R user:user /home/user/production_data
+    chmod 644 /home/user/production_data/*
+
+    # Do NOT create /home/user/backups – it must be absent initially
+%environment
+    chmod 755 /home/user
+
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author  backup-task-setup
+    Description  "Initial state for deterministic backup task – includes production_data and pytest."

@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update && \
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            ca-certificates && \
+        rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare required repository structure and files for the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/repo/binaries
+
+    # Make /home/user and the repository writable for the unprivileged user
+    chmod 0777 /home/user
+    chmod 0777 /home/user/repo
+    chmod 0777 /home/user/repo/binaries
+
+    # Create the three binary placeholder files with exact contents
+    printf 'dummy jar content\n'               > /home/user/repo/binaries/lib1.jar
+    printf 'malicious windows executable\n'    > /home/user/repo/binaries/app.exe
+    printf 'tgz archive placeholder\n'         > /home/user/repo/binaries/package.tar.gz
+
+    # Set the required permission bits
+    chmod 0644 /home/user/repo/binaries/lib1.jar
+    chmod 0666 /home/user/repo/binaries/app.exe
+    chmod 0644 /home/user/repo/binaries/package.tar.gz
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author "Security Scan Exercise"
+    Description "Container image pre-populated with a binary repository and pytest for automated assessment."

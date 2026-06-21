@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest (plus essential utilities)
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        coreutils
+    pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem layout expected by the exercise
+    # ------------------------------------------------------------------
+
+    # Ensure base directory exists and is writable by any unprivileged user
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # 1. Legacy helper script
+    mkdir -p /home/user/legacy_scripts
+    cat > /home/user/legacy_scripts/find_disabled_accounts.sh <<'EOF'
+#!/usr/bin/env bash
+# Simple legacy helper to list disabled usernames
+if [ ! -f "$1" ]; then
+    echo "usage: $0 <path-to-account-db>" >&2
+    exit 1
+fi
+while IFS=: read -r user status; do
+    if [ "$status" = "disabled" ]; then
+        printf '%s\n' "$user"
+    chmod 755 /home/user
+
+    fi
+done < "$1"
+exit 0
+EOF
+    chmod 0755 /home/user/legacy_scripts/find_disabled_accounts.sh
+
+    # 2. Accounts database file
+    mkdir -p /home/user/legacy_data
+    cat > /home/user/legacy_data/accounts.txt <<'EOF'
+john:active
+alice:disabled
+bob:disabled
+zoe:active
+charlie:disabled
+dave:active
+EOF
+    chmod 0644 /home/user/legacy_data/accounts.txt
+
+    # NOTE: The reports directory must NOT exist initially; do not create it.
+
+%environment
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author task-setup
+    Description Container for disabled-accounts reporting exercise
+
+%runscript
+    echo "Container for the disabled-accounts reporting exercise."
+    echo "Invoke an interactive shell to begin:  apptainer exec <image> /bin/bash"

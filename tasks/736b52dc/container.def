@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        jq \
+        ca-certificates \
+        --no-install-recommends
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest via pip (latest stable)
+    pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial filesystem state expected by the grading tests
+    # ------------------------------------------------------------------
+
+    # Ensure /home/user exists
+    mkdir -p /home/user
+
+    # 1. raw_data directory and its JSON-Lines file
+    mkdir -p /home/user/raw_data
+    cat > /home/user/raw_data/people_raw.json <<'EOF'
+{"id": 1, "name": "Alice", "age": 34}
+{"id": 2, "name": "Bob", "age": 28}
+{"id": 3, "name": "Charlie"}
+{"name": "Faythe", "age": 29}
+{"id": 4, "name": "Dana", "age": 45}
+{"id": 5, "name": "Evan", "age": 31}
+EOF
+
+    # 2. Make sure clean_data and logs directories DO NOT exist
+    #    (they will be created by the student/agent at runtime)
+    rm -rf /home/user/clean_data /home/user/logs
+
+    # ------------------------------------------------------------------
+    # Set permissions: directories 755, files 644
+    # ------------------------------------------------------------------
+    chmod 755 /home/user
+    chmod 755 /home/user/raw_data
+    chmod 644 /home/user/raw_data/people_raw.json
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author YourName
+    Description "Container for JSON-lines cleaning task with pytest and jq pre-installed."
+
+%help
+    This Apptainer image provides the initial environment for the data-cleaning
+    assignment.  It includes:
+      • /home/user/raw_data/people_raw.json  (the source JSON-Lines file)
+      • jq, python3, pip, and pytest pre-installed.
+    The clean_data and logs directories are intentionally absent and should be
+    created by the student during the task.

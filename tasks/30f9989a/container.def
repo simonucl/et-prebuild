@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # ------------------------------------------------------------------
+    # Install Python tooling and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create directory structure and required files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/dba_dns_check
+
+    # 1. host_targets.lst
+    cat << 'EOF' > /home/user/dba_dns_check/host_targets.lst
+db-primary.internal
+db-replica.internal
+analytics-db.internal
+EOF
+
+    # 2. run_check.sh  (executable)
+    cat << 'EOF' > /home/user/dba_dns_check/run_check.sh
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOST_FILE="$SCRIPT_DIR/host_targets.lst"
+OUTPUT_FILE="$SCRIPT_DIR/dns_check_report.log"
+TIMESTAMP="2023-01-01T00:00:00Z"
+
+# Always overwrite the report log
+: > "$OUTPUT_FILE"
+
+while IFS= read -r host; do
+  [[ -z "$host" ]] && continue
+  ips=$(getent ahosts "$host" 2>/dev/null | awk '{print $1}' | sort -u | paste -sd " " || true)
+  if [[ -z "$ips" ]]; then
+    echo "$TIMESTAMP $host UNRESOLVED" >> "$OUTPUT_FILE"
+  else
+    echo "$TIMESTAMP $host $ips" >> "$OUTPUT_FILE"
+  fi
+done < "$HOST_FILE"
+
+exit 0
+EOF
+    chmod +x /home/user/dba_dns_check/run_check.sh
+
+    # 3. Generate the initial dns_check_report.log
+    /home/user/dba_dns_check/run_check.sh
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%runscript
+    echo "DNS audit harness container. Files are located in /home/user/dba_dns_check."
+
+%labels
+    Author="GPT-4 Apptainer Builder"

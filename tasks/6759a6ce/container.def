@@ -1,0 +1,26 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python tooling and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the /home/user directory exists (clean, empty)
+    mkdir -p /home/user
+    chmod 0755 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure user-installed Python binaries (if any) are on PATH
+    export PATH="$PATH:/home/user/.local/bin"
+
+%runscript
+    exec "$@"

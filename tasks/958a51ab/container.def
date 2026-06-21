@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Basic tooling: Python + pip (for pytest which the autograder needs)
+    # ------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        locales \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Create the initial directory tree and legacy ISO-8859-1 file
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/support/input
+
+    # Write the exact 30-byte legacy file (ISO-8859-1 encoded)
+    python3 - <<'PY'
+import os, binascii, pathlib, textwrap
+
+legacy_bytes = bytes.fromhex(
+    "43 61 66 E9 20 4D FC 6E 73 74 65 72 20 2D 20 "
+    "72 E9 75 6E 69 6F 6E 20 E0 20 31 34 68 2E 0A"
+)
+path = pathlib.Path("/home/user/support/input/legacy_notes.txt")
+path.write_bytes(legacy_bytes)
+PY
+
+    # ------------------------------------------------------------------
+    # 3. Permissions
+    #    Directories:  0755  (read/traverse for everyone; write for owner)
+    #    File:         0644  (readable by everyone; write for owner)
+    #    Additionally make /home/user and /home/user/support writable
+    #    so the runtime (non-root) user can create new artefacts.
+    # ------------------------------------------------------------------
+    chmod 0755 /home/user
+    chmod -R 0755 /home/user/support
+    chmod 0644 /home/user/support/input/legacy_notes.txt
+    chmod 0777 /home/user/support        # allow write access for the exercise
+
+    # ------------------------------------------------------------------
+    # 4. Clean up
+    # ------------------------------------------------------------------
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Basic UTF-8 environment so Python behaves predictably
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PYTHONIOENCODING=utf-8
+
+# No %runscript needed for this educational image.

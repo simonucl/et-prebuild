@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt repositories and installing required packages..."
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -qq
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3 \
+        ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Setting up project directory and seed files..."
+    # Ensure the /home/user hierarchy exists with open permissions
+    mkdir -p /home/user/my_project
+    chmod 0755 /home/user
+    chmod 0755 /home/user/my_project
+
+    # Create main.py (23 bytes)
+    cat >/home/user/my_project/main.py <<'EOF'
+print("Hello, World!")
+EOF
+
+    # Create utils.py (28 bytes)
+    cat >/home/user/my_project/utils.py <<'EOF'
+def add(a, b): return a + b
+EOF
+
+    # Create README.md (49 bytes: two lines, newline-terminated)
+    cat >/home/user/my_project/README.md <<'EOF'
+# My Project
+This is a sample project structure.
+EOF
+
+    # Set read permissions for all users
+    chmod 0644 /home/user/my_project/main.py \
+               /home/user/my_project/utils.py \
+               /home/user/my_project/README.md
+
+%labels
+    chmod 755 /home/user
+
+    Author "Container builder for SQLite catalogue exercise"
+
+%help
+    This container provides the initial filesystem layout for the
+    “SQLite catalogue” exercise.  It already contains the tiny project
+    located at /home/user/my_project with three files whose exact byte
+    sizes are required by the automated grading suite.  Python (with
+    pytest) and the sqlite3 CLI tool are pre-installed so that learners
+    can complete the task entirely from the terminal.
+
+%runscript
+    echo "Container for SQLite catalogue exercise."
+    echo "Switch to /home/user/my_project and follow the assignment instructions."

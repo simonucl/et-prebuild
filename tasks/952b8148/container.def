@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    #!/bin/bash
+    set -e
+
+    # Basic OS deps and Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem for the capacity-planner exercise
+    # ------------------------------------------------------------------
+    CAPPLAN_DIR="/home/user/projects/capplan"
+    mkdir -p "${CAPPLAN_DIR}"
+
+    # resources.yaml (two original server records, no cache01 yet)
+    cat > "${CAPPLAN_DIR}/resources.yaml" <<'YAML'
+servers:
+  - name: db01
+    cpu: 4
+    memory: 16
+  - name: web01
+    cpu: 2
+    memory: 8
+YAML
+
+    # thresholds.toml with original numeric values
+    cat > "${CAPPLAN_DIR}/thresholds.toml" <<'TOML'
+[cpu]
+warning = 70
+critical = 90
+
+[memory]
+warning = 75
+critical = 95
+TOML
+
+    # planner.log must NOT exist at build time.
+
+    # Ensure every non-root user can read/write the exercise tree.
+    chmod -R 0777 /home/user/projects
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=UTF-8
+
+%labels
+    Author "Apptainer build script"
+    Description "Capacity-planner exercise environment with pytest pre-installed"

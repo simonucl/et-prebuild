@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare the initial legacy dataset expected by the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/important_data/reports
+    mkdir -p /home/user/important_data/scripts
+
+    # README.md – 104 bytes
+    printf 'Project Important Data\n======================\nThis directory contains confidential reports and scripts.\n' \
+        > /home/user/important_data/README.md
+
+    # reports/quarter1.txt – 43 bytes
+    printf 'Revenue: 10000\nExpenses: 5000\nProfit: 5000\n' \
+        > /home/user/important_data/reports/quarter1.txt
+
+    # reports/quarter2.txt – 43 bytes
+    printf 'Revenue: 12000\nExpenses: 6000\nProfit: 6000\n' \
+        > /home/user/important_data/reports/quarter2.txt
+
+    # scripts/cleanup.sh – 52 bytes
+    printf '#!/bin/bash\n# Cleanup temporary files\nrm -rf /tmp/*\n' \
+        > /home/user/important_data/scripts/cleanup.sh
+    chmod a+x /home/user/important_data/scripts/cleanup.sh
+
+    # Ensure directories and files are readable by any unprivileged user
+    chmod -R a+rX /home/user/important_data
+
+    # Grant write permissions on /home/user so the student can create /home/user/backups
+    chmod 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author      "Prepared by Apptainer build script"
+    Description "Ubuntu 22.04 image for backup-routine exercise with pytest and initial data set up."

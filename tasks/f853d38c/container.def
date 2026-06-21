@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Basic system utilities
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        curl \
+        python3-pip
+
+    # Python testing framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create a non-root user that will match the host user inside the
+    # runtime container (commonly UID 1000).  This guarantees that the
+    # pre-provisioned files are readable/writable by the invoking user.
+    # ------------------------------------------------------------------
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g 1000 -s /bin/bash user
+
+    # ------------------------------------------------------------------
+    # Pre-existing resources required by the assignment
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/mock_api
+    mkdir -p /home/user/compliance
+
+    # Health-check JSON file
+    echo '{"status":"ok"}' > /home/user/mock_api/health.json
+
+    # Permissions exactly as described
+    chmod 0755 /home/user/mock_api
+    chmod 0644 /home/user/mock_api/health.json
+    chmod 0755 /home/user/compliance
+
+    # Ensure proper ownership for non-root runtime
+    chown -R 1000:1000 /home/user/mock_api /home/user/compliance
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure user-level Python utilities (if any) are on PATH
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%runscript
+    # Default entrypoint: open an interactive shell
+    exec /bin/bash "$@"

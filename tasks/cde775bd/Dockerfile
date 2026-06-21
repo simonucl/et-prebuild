@@ -1,0 +1,48 @@
+FROM ubuntu:22.04
+
+# ------------------------------------------------------------------
+# Basic tooling
+# ------------------------------------------------------------------
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install \
+        python3 \
+        python3-pip
+
+# ------------------------------------------------------------------
+# Python testing tools
+# ------------------------------------------------------------------
+RUN pip3 install --no-cache-dir pytest
+
+# ------------------------------------------------------------------
+# Create initial directory structure and seed data
+# ------------------------------------------------------------------
+RUN set -e && \
+    BASE=/home/user && \
+    IMG_DIR=${BASE}/datasets/raw_images && \
+    LAB_DIR=${BASE}/datasets/raw_labels && \
+    LOG_DIR=${BASE}/compression_logs && \
+    mkdir -p "${IMG_DIR}" "${LAB_DIR}" "${LOG_DIR}" && \
+    # -------- raw_images --------
+    printf 'dummy image data\n'        > "${IMG_DIR}/cat_01.jpg" && \
+    printf 'dummy image data\n'        > "${IMG_DIR}/cat_02.jpg" && \
+    printf 'dummy image data\n'        > "${IMG_DIR}/dog_01.jpg" && \
+    printf 'dummy image data\n'        > "${IMG_DIR}/dog_02.jpg" && \
+    printf 'dummy license text\n'      > "${IMG_DIR}/LICENSE.txt" && \
+    printf 'temporary ignore file\n'   > "${IMG_DIR}/ignore_me.tmp" && \
+    # -------- raw_labels --------
+    printf 'cat label\n'  > "${LAB_DIR}/cat_01.txt" && \
+    printf 'cat label\n'  > "${LAB_DIR}/cat_02.txt" && \
+    printf 'dog label\n'  > "${LAB_DIR}/dog_01.txt" && \
+    printf 'dog label\n'  > "${LAB_DIR}/dog_02.txt" && \
+    printf 'temporary notes\n' > "${LAB_DIR}/notes.tmp" && \
+    # ------------------------------------------------------------------
+    # Permissions: directories 755, regular files 644
+    # ------------------------------------------------------------------
+    chmod 755 "${BASE}" "${BASE}/datasets" "${IMG_DIR}" "${LAB_DIR}" "${LOG_DIR}" && \
+    find "${BASE}/datasets" -type f -exec chmod 644 {} \; && \
+    # Attempt to hand over ownership to uid 1000 (common non-root user).
+    # Ignore if uid 1000 does not exist at build time.
+    chown -R 1000:1000 "${BASE}" || true
+
+# Keep Python output unbuffered for clarity
+ENV PYTHONUNBUFFERED=1

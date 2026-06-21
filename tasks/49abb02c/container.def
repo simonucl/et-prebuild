@@ -1,0 +1,28 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # -------------------------------------------------------------------------
+    # Prepare initial filesystem state for the “avian flu dataset” exercise
+    # -------------------------------------------------------------------------
+    # Create raw_data directory and the required CSV files
+    mkdir -p /home/user/raw_data
+
+    echo "id,country,date,cases"   > /home/user/raw_data/avian_flu_cases.csv
+    echo "source,contact,email"    > /home/user/raw_data/avian_flu_metadata.csv
+
+    # Ensure all users (including the unprivileged learner) can read/write/move
+    # the files and directories they need to manipulate.
+    chmod -R a+rwX /home/user
+
+%runscript
+    chmod 755 /home/user
+
+    exec /bin/bash

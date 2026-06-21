@@ -1,0 +1,84 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating APT and installing Python tooling..."
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    echo "Preparing initial filesystem for the exercise..."
+
+    # Ensure /home/user exists and is writable by whoever runs the container
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Create sample-app directory structure
+    mkdir -p /home/user/sample-app/logs
+
+    # ------------------------------------------------------------------
+    # /home/user/sample-app/config.yaml
+    # ------------------------------------------------------------------
+    cat > /home/user/sample-app/config.yaml <<'EOF'
+app:
+  name: Sample App
+  version: "1.2.3"
+server:
+  port: 8080
+logging:
+  level: INFO
+EOF
+
+    # ------------------------------------------------------------------
+    # /home/user/sample-app/env_vars
+    # ------------------------------------------------------------------
+    cat > /home/user/sample-app/env_vars <<'EOF'
+PATH=/usr/local/bin:/usr/bin:/bin
+JAVA_HOME=/usr/lib/jvm/default-java
+SAMPLE_APP_OPTS=-Xmx256m
+EOF
+
+    # ------------------------------------------------------------------
+    # /home/user/sample-app/logs/app.log
+    # ------------------------------------------------------------------
+    cat > /home/user/sample-app/logs/app.log <<'EOF'
+2023-10-02 10:40:01 INFO Starting Sample App version 1.2.3
+2023-10-02 10:40:05 INFO Listening on port 8080
+2023-10-02 10:41:33 WARN Cache miss for key user:42
+2023-10-02 10:42:07 ERROR Failed to connect to database
+EOF
+
+    # ------------------------------------------------------------------
+    # /home/user/sample-app/status.txt
+    # ------------------------------------------------------------------
+    cat > /home/user/sample-app/status.txt <<'EOF'
+● sample-app.service - Sample App Service
+   Loaded: loaded (/etc/systemd/system/sample-app.service; enabled; vendor preset: enabled)
+   Active: active (running) since Mon 2023-10-02 10:40:00 UTC; 2h 05min ago
+ Main PID: 1234 (java)
+    Tasks: 14 (limit: 4915)
+   Memory: 150.7M
+   CGroup: /system.slice/sample-app.service
+           ├─ 1234 /usr/bin/java -jar /opt/sample-app.jar
+EOF
+
+    # Permissions: allow read for everyone, write only for owner (root)
+    find /home/user/sample-app -type f -exec chmod 0644 {} \;
+    find /home/user/sample-app -type d -exec chmod 0755 {} \;
+
+%labels
+    chmod 755 /home/user
+
+    Author diagnostic_bundle_task
+    Description "Environment for the 'sample-app' support-bundle exercise."
+
+%help
+This container provides the initial filesystem state for the “sample-app” support-bundle exercise.
+Python and pytest are pre-installed for automated grading.

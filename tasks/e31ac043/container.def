@@ -1,0 +1,75 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install required software
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        gnupg                         \
+        python3                       \
+        python3-pip                   \
+        locales
+    pip3 install --no-cache-dir pytest
+
+    # Generate locale so Python / tools are happy with UTF-8
+    sed -i 's/^# *\(en_US.UTF-8\)/\1/' /etc/locale.gen
+    locale-gen
+
+    # ------------------------------------------------------------------
+    # 2. Create exercise directory structure and message file
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/work/integration
+
+    # message.txt — exactly three lines plus trailing LF
+    cat > /home/user/work/integration/message.txt <<'EOF'
+POST /v1/payments
+X-Correlation-ID: 123e4567-e89b-12d3-a456-426614174000
+{"amount":42}
+EOF
+
+    # ------------------------------------------------------------------
+    # 3. Generate partner key, export it, sign the message
+    # ------------------------------------------------------------------
+    export GNUPGHOME=/tmp/integration-gnupg
+    mkdir -p "${GNUPGHOME}"
+    chmod 700 "${GNUPGHOME}"
+
+    # Create a key pair without passphrase (batch, non-interactive)
+    gpg --batch --pinentry-mode loopback --passphrase '' \
+        --quick-gen-key "Partner API <partner@example.com>" default default never
+
+    # Create detached signature (binary; ASCII armour not required here)
+    gpg --batch --yes -u "Partner API <partner@example.com>" \
+        --output /home/user/work/integration/message.txt.sig \
+        --detach-sign /home/user/work/integration/message.txt
+
+    # Export public key (ASCII-armoured)
+    gpg --armor --output /home/user/work/integration/partner_pub.asc \
+        --export "Partner API <partner@example.com>"
+
+    # Clean up the temporary key-ring
+    rm -rf "${GNUPGHOME}"
+
+    # Ensure world-readable files so the non-root runtime user can read them
+    chmod 644 /home/user/work/integration/*
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+
+%labels
+    Author Integration-Developer Exercise
+    Description Container for detached-signature verification + symmetric encryption task.
+
+%help
+    This Apptainer image provides the starting files for the
+    “Integration-developer scenario – detached signature verification and
+    subsequent symmetric encryption” exercise.  Use gpg to import the partner
+    key, verify the signature, and then symmetrically encrypt the message as
+    described in the assignment.

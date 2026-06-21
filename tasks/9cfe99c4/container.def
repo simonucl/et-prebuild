@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update APT and install required system packages
+    apt-get update
+    # python3-venv is needed for some pip wheels that expect venv; rsync for task itself
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        rsync \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial incident-response source data
+    # ------------------------------------------------------------------
+    # Base directory for the user inside the container
+    mkdir -p /home/user
+
+    # Create source directory tree
+    mkdir -p /home/user/incident_data_source/images
+    mkdir -p /home/user/incident_data_source/logs
+
+    # Populate images
+    printf 'a'   > /home/user/incident_data_source/images/incident_pic1.jpg
+    printf 'abc' > /home/user/incident_data_source/images/incident_pic2.png
+
+    # Populate logs
+    printf 'hello' > /home/user/incident_data_source/logs/app.log
+    printf 'test'  > /home/user/incident_data_source/logs/error.log
+
+    # Set directory permissions (read/execute for all, write for owner)
+    chmod 755 /home/user
+    chmod 755 /home/user/incident_data_source
+    chmod 755 /home/user/incident_data_source/images
+    chmod 755 /home/user/incident_data_source/logs
+
+    # Set file permissions (read for all, write for owner)
+    chmod 644 /home/user/incident_data_source/images/incident_pic1.jpg
+    chmod 644 /home/user/incident_data_source/images/incident_pic2.png
+    chmod 644 /home/user/incident_data_source/logs/app.log
+    chmod 644 /home/user/incident_data_source/logs/error.log
+
+%environment
+    # Ensure Python and rsync are in the PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author incident-response-task-preparer
+    Description "Container with initial data and tools for the incident-response synchronisation task."
+
+%help
+    This container image provides the exact initial file system state
+    required for the “incident-response” synchronisation exercise.

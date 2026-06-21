@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial project layout that the agent will work with
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/websvc/incidents
+
+    # package.json (initial version 2.5.3)
+    cat > /home/user/websvc/package.json <<'EOF'
+{
+  "name": "websvc",
+  "version": "2.5.3",
+  "description": "Example microservice",
+  "main": "index.js"
+}
+EOF
+
+    # CHANGELOG.md with existing history only
+    cat > /home/user/websvc/CHANGELOG.md <<'EOF'
+## [2.5.3] - 2024-04-07
+### Added
+- Introduce tracing headers
+
+## [2.5.2] - 2024-03-11
+### Fixed
+- Patch dependency vulnerabilities
+EOF
+
+    # Placeholder for the incident report referenced in the task
+    touch /home/user/websvc/incidents/2024-05-17_cpu_spike.txt
+
+    # Ensure agent (non-root) can modify everything under /home/user
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author setup-script
+    Description "Apptainer image for semantic version bump task"
+
+%environment
+    # No overrides; retain caller's $HOME

@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required system packages
+    apt-get update && apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3 \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem layout under /home/user/ci_cd_poc
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/ci_cd_poc
+
+    # Create the SQLite database with the required initial state
+    sqlite3 /home/user/ci_cd_poc/pipelines.db <<'EOF'
+CREATE TABLE builds (
+    id INTEGER PRIMARY KEY,
+    status TEXT,
+    started_at TEXT
+);
+
+INSERT INTO builds (id, status, started_at) VALUES
+    (1, 'success', '2023-01-01T10:00:00Z'),
+    (2, 'failed',  '2023-01-02T11:00:00Z'),
+    (3, 'success', '2023-01-03T12:00:00Z');
+EOF
+
+    # Ensure non-root users can read & write the directory and DB file
+    chmod 777 /home/user/ci_cd_poc
+    chmod 666 /home/user/ci_cd_poc/pipelines.db
+
+%labels
+    chmod 755 /home/user
+
+    Author  Automated Container Prep
+    Description  Initial state for CI/CD SQLite assignment with pytest installed

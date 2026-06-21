@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial project structure expected by the tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/my_app/scripts
+
+    # Empty, world-writable scripts
+    touch /home/user/my_app/deploy.sh
+    chmod 777 /home/user/my_app/deploy.sh
+
+    touch /home/user/my_app/scripts/cleanup.sh
+    chmod 777 /home/user/my_app/scripts/cleanup.sh
+
+    # Normal build script (not world-writable)
+    cat << 'EOF' > /home/user/my_app/scripts/build.sh
+#!/bin/bash
+echo "Building project"
+EOF
+    chmod 755 /home/user/my_app/scripts/build.sh
+
+    # Ensure directory permissions for the user
+    chmod 755 /home/user
+    chmod 755 /home/user/my_app
+    chmod 755 /home/user/my_app/scripts
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Container for security-permissions sweep task with pytest installed."

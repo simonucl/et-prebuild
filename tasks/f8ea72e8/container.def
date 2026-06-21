@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # --------------------------------------------------------------------- #
+    # Basic tooling and Python environment (needed for the test-suite)
+    # --------------------------------------------------------------------- #
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        gzip \
+        coreutils
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # --------------------------------------------------------------------- #
+    # Create non-root user “user” (UID/GID 1000) with /home/user as $HOME
+    # --------------------------------------------------------------------- #
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g 1000 -s /bin/bash user
+
+    # --------------------------------------------------------------------- #
+    # Prepare the initial workspace expected by the autograder
+    # --------------------------------------------------------------------- #
+    ASSETS_DIR=/home/user/webapp/assets
+    mkdir -p "${ASSETS_DIR}"
+
+    # 1) main.js  – 100 identical lines
+    for i in $(seq 1 100); do
+        printf "console.log('hello performance');\n"
+    done > "${ASSETS_DIR}/main.js"
+
+    # 2) style.css – 100 identical lines
+    for i in $(seq 1 100); do
+        printf "body { margin: 0; padding: 0; }\n"
+    done > "${ASSETS_DIR}/style.css"
+
+    # Set correct ownership and permissions (rw-r--r--)
+    chown -R 1000:1000 /home/user
+    chmod 0644 "${ASSETS_DIR}/main.js" "${ASSETS_DIR}/style.css"
+
+    # --------------------------------------------------------------------- #
+    # IMPORTANT: Do NOT create /home/user/performance or any .gz files here.
+    # --------------------------------------------------------------------- #
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default $HOME; only ensure /usr/local/bin (pip) is on PATH
+    export PATH="/usr/local/bin:$PATH"
+
+%labels
+    Author      ExampleDeveloper
+    Description "Environment for the gzip-compression reporting task"
+
+%help
+    This container provides the initial state required for the
+    “compression report” assignment.  The original JavaScript and CSS
+    files are present, while the compressed files and report log are
+    purposefully absent.  Pytest is installed for automated grading.

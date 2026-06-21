@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author      devsecops-task-setup
+    Description Image pre-populated with INI files for remediation exercise
+
+%post
+    set -eux
+
+    # Refresh package lists and install Python & pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Ensure a non-root user named "user" (UID 1000) exists so that
+    # file ownership aligns with the expectations of the test-harness.
+    # ------------------------------------------------------------------
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 user
+    fi
+
+    # ------------------------------------------------------------------
+    # Create the required directory structure and seed the INI files
+    # with the exact initial content expected by the test suite.
+    # ------------------------------------------------------------------
+    install -d -m 0755 /home/user/policy/configs
+    install -d -m 0755 /home/user/policy/reports
+
+    cat > /home/user/policy/configs/app1.ini << 'EOF'
+[security]
+enforce_tls=false
+
+[logging]
+level=DEBUG
+EOF
+
+    cat > /home/user/policy/configs/app2.ini << 'EOF'
+[security]
+enforce_tls=true
+
+[logging]
+level=INFO
+EOF
+
+    # Correct permissions and ownership
+    chmod 0644 /home/user/policy/configs/app1.ini /home/user/policy/configs/app2.ini
+    chown -R user:user /home/user/policy
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal PATH; do NOT alter HOME so that Apptainer handles it.
+    export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
+%runscript
+    echo "Container for DevSecOps INI remediation task. Invoke your tooling as needed."

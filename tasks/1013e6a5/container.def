@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial directory structure and template file
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/templates/optimization
+
+    cat > /home/user/templates/optimization/solver_template.conf <<'EOF'
+# Solver Configuration Template
+algorithm=template
+learning_rate=0.01
+max_iterations=200
+tolerance=1e-6
+EOF
+
+    # Ensure the student can write inside /home/user
+    chmod -R a+rwX /home/user
+
+    # Clean up APT cache to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author task-preparer

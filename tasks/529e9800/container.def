@@ -1,0 +1,71 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1.  System packages
+    # ------------------------------------------------------------------
+    apt-get update
+    # Python 3, pip, rsync (handy for the student), and basic utils
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        rsync \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # 2.  PyPI packages
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 3.  Prepare initial directory tree and files
+    # ------------------------------------------------------------------
+    # Local working tree
+    mkdir -p /home/user/config_manager/workdir
+
+    cat >/home/user/config_manager/workdir/app.conf <<'EOF'
+version=1.0
+EOF
+
+    cat >/home/user/config_manager/workdir/db.conf <<'EOF'
+host=localhost
+port=5432
+EOF
+
+    # Remote (authoritative) tree
+    mkdir -p /home/user/remote_configs
+
+    cat >/home/user/remote_configs/app.conf <<'EOF'
+version=1.1
+EOF
+
+    cat >/home/user/remote_configs/db.conf <<'EOF'
+host=localhost
+port=5432
+EOF
+
+    cat >/home/user/remote_configs/cache.conf <<'EOF'
+enabled=true
+EOF
+
+    # ------------------------------------------------------------------
+    # 4.  Permissions
+    # ------------------------------------------------------------------
+    # Make sure the future non-root runtime user can read/write the local tree
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to override; keep default user environment.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author "Apptainer Setup Script"
+    Description "Environment for the configuration-manager synchronisation task with pytest pre-installed."

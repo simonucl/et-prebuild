@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update apt repositories and install Python with pip
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the forthcoming test suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial project state expected by the automated tests
+    # ------------------------------------------------------------------
+
+    # Create the docs directory structure
+    mkdir -p /home/user/docs
+
+    # Ensure the directory is writable by any unprivileged user
+    chmod 0777 /home/user/docs
+
+    # Create the three required, empty Markdown files
+    : > /home/user/docs/faq.md
+    : > /home/user/docs/introduction.md
+    : > /home/user/docs/usage-guide.md
+
+    # Set sane permissions: readable by everyone, writable by owner/root
+    chmod 0644 /home/user/docs/*.md
+
+%labels
+    chmod 755 /home/user
+
+    Author    "ChatGPT Task Preparer"
+    Description "Container with initial state for checksum generation task."
+
+%runscript
+    echo "This container sets up the initial state for the checksum task."
+    echo "Use 'apptainer exec' with your own command to work inside the container."

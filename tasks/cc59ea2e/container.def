@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package index and install Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the automated grading suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial on-disk state expected by the grading tests
+    # ------------------------------------------------------------------
+
+    # Create the incidents directory with strict permissions
+    mkdir -p /home/user/incidents
+    chmod 700 /home/user/incidents
+
+    # ------------------------------------------------------------------
+    # Payload files (exact byte content, NO trailing newline)
+    # ------------------------------------------------------------------
+    printf 'test' > /home/user/incidents/update1.txt
+    printf 'abc'  > /home/user/incidents/update2.txt
+
+    # ------------------------------------------------------------------
+    # Vendor-supplied SHA-256 sidecar files (each ends with exactly one NL)
+    # ------------------------------------------------------------------
+    printf '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08  update1.txt\n' \
+        > /home/user/incidents/update1.txt.sha256
+
+    printf '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08  update2.txt\n' \
+        > /home/user/incidents/update2.txt.sha256
+
+    # Ensure ownership is root:root (default inside container)
+    chown -R root:root /home/user/incidents
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special required; keep default environment so HOME binds correctly.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    # Default runscript does nothing; container is only for assessment.
+    echo "Apptainer image for checksum verification task."
+    echo "Invoke your solution scripts or open a shell as needed."

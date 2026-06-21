@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # System packages for Python development
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-venv \
+        python3-pip \
+        ca-certificates \
+        curl
+
+    # Global pytest (needed by the grading framework)
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    # ----------------------------------------------------------------------------
+    # Prepare required directory structure under /home/user
+    # ----------------------------------------------------------------------------
+    mkdir -p /home/user/devops_debug/logs
+
+    # ----------------------------------------------------------------------------
+    # Create the virtual environment and install the exact package versions
+    # ----------------------------------------------------------------------------
+    python3 -m venv /home/user/devops_debug/venv
+    /home/user/devops_debug/venv/bin/pip install --no-cache-dir --upgrade pip
+    /home/user/devops_debug/venv/bin/pip install --no-cache-dir \
+        requests==2.28.1 \
+        boto3==1.34.59
+
+    # ----------------------------------------------------------------------------
+    # Produce verification artefacts
+    # ----------------------------------------------------------------------------
+    printf "requests==2.28.1\nboto3==1.34.59\n" \
+        > /home/user/devops_debug/logs/active_packages.log
+
+    # Empty flag file (0-byte)
+    : > /home/user/devops_debug/logs/setup_complete.flag
+
+    # ----------------------------------------------------------------------------
+    # Permissions: readable by any unprivileged user inside the container
+    # ----------------------------------------------------------------------------
+    chmod -R a+rX /home/user/devops_debug
+
+%labels
+    chmod 755 /home/user
+
+    Author DevOps-Container-Builder
+    Description "Container pre-configured for CI testing: minimal venv with pinned packages and verification files."
+
+%help
+This Apptainer image contains a prepared environment for the “DevOps debug minimal
+Python-package setup” exercise.
+
+• Virtual environment: /home/user/devops_debug/venv
+• Installed packages: requests==2.28.1, boto3==1.34.59
+• Verification files:
+    – /home/user/devops_debug/logs/active_packages.log
+    – /home/user/devops_debug/logs/setup_complete.flag

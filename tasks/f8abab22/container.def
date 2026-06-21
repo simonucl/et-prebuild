@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update base system and install required packages
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial directory / file structure for the exercise
+    # ------------------------------------------------------------------
+    # Base directories
+    mkdir -p /home/user/db_backups/archive
+
+    # Placeholder *.sql.gz files in the parent directory
+    echo "placeholder text" > /home/user/db_backups/prod_full_2023-12-31.sql.gz
+    echo "placeholder text" > /home/user/db_backups/prod_inc_2024-01-01.sql.gz
+    echo "placeholder text" > /home/user/db_backups/prod_inc_2024-01-02.sql.gz
+
+    # Existing file already in the archive
+    touch /home/user/db_backups/archive/prod_full_2023-12-30.sql.gz
+
+    # readme.txt with exact required content (including trailing newline)
+    printf "Backups are dumped nightly.\n" > /home/user/db_backups/readme.txt
+
+    # backup_move.log with the two historical lines
+    printf "2024-02-15_10:00:00 moved 2 files\n2024-02-16_10:00:00 moved 1 files\n" \
+        > /home/user/db_backups/backup_move.log
+
+    # ------------------------------------------------------------------
+    # Ensure the on-call engineer (non-root runtime user) can modify files
+    # ------------------------------------------------------------------
+    chmod -R 777 /home/user/db_backups
+
+%environment
+    chmod 755 /home/user
+
+    # Expose user-level Python utilities (e.g., pytest) if installed via pip --user
+    export PATH="$PATH:/home/user/.local/bin"
+
+%labels
+    Author db-reliability-task
+    Description "Initial state for backup move & log exercise (pytest ready)"

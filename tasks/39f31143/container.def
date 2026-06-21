@@ -1,0 +1,85 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update base system and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        tar \
+        gzip \
+        acl
+
+    # Install pytest for the test-suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create an unprivileged user “user” with home directory /home/user
+    # ------------------------------------------------------------------
+    # The numeric UID/GID is fixed to 1000 (common default on many systems);
+    # ownership is not graded, but having a regular user account available
+    # makes it easier for the agent to work in an unprivileged context.
+    #
+    # If UID 1000 is already taken inside the container, useradd will pick
+    # the next free UID automatically.
+    #
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -s /bin/bash user
+    fi
+
+    # Make sure /home/user has the expected permissions (0755)
+    chmod 0755 /home/user
+
+    # ------------------------------------------------------------------
+    # Prepare the legacy release tarball hierarchy
+    # ------------------------------------------------------------------
+    OLD_RELEASES_DIR="/home/user/old_releases"
+    mkdir -p "${OLD_RELEASES_DIR}"
+    chmod 0755 "${OLD_RELEASES_DIR}"
+
+    # Work in a temporary build location
+    WORKDIR="/tmp/release_v1_build"
+    mkdir -p "${WORKDIR}/release_v1/bin" "${WORKDIR}/release_v1/src"
+
+    # Create the legacy files with the exact required contents
+    printf 'Legacy License\n'                         > "${WORKDIR}/release_v1/LICENSE"
+    printf '# Release v1\n'                           > "${WORKDIR}/release_v1/README.md"
+    printf '#!/bin/sh\necho ok\n'                     > "${WORKDIR}/release_v1/bin/run.sh"
+    printf 'int main(){return 0;}\n'                  > "${WORKDIR}/release_v1/src/main.c"
+
+    # Ensure required permissions: 0755 for dirs, 0644 for files
+    find "${WORKDIR}/release_v1" -type d -exec chmod 0755 {} +
+    find "${WORKDIR}/release_v1" -type f -exec chmod 0644 {} +
+
+    # Build the gzip-compressed tarball
+    TAR_PATH="${OLD_RELEASES_DIR}/release_v1.tar.gz"
+    tar -C "${WORKDIR}" -czf "${TAR_PATH}" release_v1
+
+    # Set tarball permissions to 0644
+    chmod 0644 "${TAR_PATH}"
+
+    # Clean up the temporary workspace
+    rm -rf "${WORKDIR}"
+
+    # ------------------------------------------------------------------
+    # Ensure the future build_logs directory does NOT exist
+    # (tests expect it to be absent initially)
+    # ------------------------------------------------------------------
+    if [ -d /home/user/build_logs ]; then
+        rm -rf /home/user/build_logs
+    fi
+
+%environment
+    chmod 755 /home/user
+
+    # Put Python on the PATH for convenience (already should be, but explicit)
+    export PATH=$PATH:/usr/local/bin
+
+%runscript
+    exec "$@"
+
+%labels
+    Author  AI-Apptainer-Builder
+    Description  "Environment pre-loaded with a legacy release tarball for QA sanity-check tasks."

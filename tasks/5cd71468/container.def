@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists
+    apt-get update
+
+    # Basic Python tooling
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create the base user directory expected by the assignment.
+    # We intentionally leave /home/user/firewall absent so the tests start clean.
+    mkdir -p /home/user
+    chmod 0777 /home/user   # Allow the non-root sandbox user to write here.
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are available
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Apptainer Task Prep"
+    Description="Environment for firewall rule task with pytest installed."
+
+%help
+    This container provides a clean Ubuntu 22.04 environment with pytest
+    pre-installed and write access to /home/user for completing the assignment
+    that manages /home/user/firewall/mock_rules.conf.

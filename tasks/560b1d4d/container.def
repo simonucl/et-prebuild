@@ -1,0 +1,91 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # ---------- Base packages ----------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tzdata \
+        curl
+    rm -rf /var/lib/apt/lists/*
+
+    # ---------- Python tooling ----------
+    pip3 install --no-cache-dir pytest
+
+    # ---------- Directory structure ----------
+    mkdir -p /home/user/project/libs/json
+    mkdir -p /home/user/audit           # audit dir created but left empty for the agent
+    chmod -R 0755 /home/user            # ensure write-permissions for normal users
+
+    # ---------- Git metadata placeholders ----------
+    # Main repo
+    mkdir -p /home/user/project/.git
+    echo "Main project" > /home/user/project/README.md
+
+    # .gitmodules registering the submodule
+    cat > /home/user/project/.gitmodules <<'EOF'
+[submodule "libs/json"]
+    path = libs/json
+    url = https://example.com/json.git
+EOF
+
+    # Sub-module repo placeholder
+    mkdir -p /home/user/project/libs/json/.git
+
+    # ---------- Mock Git implementation ----------
+    # The automated tests only use a tiny subset of Git’s functionality.
+    # Provide a lightweight shim that produces the expected, hard-coded outputs.
+    cat > /usr/local/bin/git <<'EOS'
+#!/usr/bin/env bash
+set -e
+
+cmd="$1"
+shift || true
+
+case "$cmd" in
+  status)
+      # Expected invocation: git status --short
+      if [[ "$1" == "--short" ]]; then
+          # Clean working tree ⇒ no output
+          exit 0
+      fi
+      ;;
+  submodule)
+      # Expected invocation: git submodule status
+      if [[ "$1" == "status" ]]; then
+          echo " abcd1234567890abcdef1234567890abcdef12 libs/json (heads/master)"
+          exit 0
+      fi
+      ;;
+  rev-parse)
+      # Expected invocation: git rev-parse HEAD
+      if [[ "$1" == "HEAD" ]]; then
+          cwd="$(pwd)"
+          if [[ "$cwd" == */libs/json* ]]; then
+              # We’re inside the sub-module
+              echo "abcd1234567890abcdef1234567890abcdef12"
+          else
+              # Top-level repository
+              echo "7890abcd1234567890abcdef1234567890abcd"
+          fi
+          exit 0
+      fi
+      ;;
+esac
+
+echo "git (mock): unsupported command or arguments: $cmd $*" >&2
+exit 1
+EOS
+    chmod +x /usr/local/bin/git
+
+%environment
+    chmod 755 /home/user
+
+    export PATH="/usr/local/bin:${PATH}"
+
+%labels
+    Author "Apptainer Build Script"
+    Description "Minimal environment with a mock Git repository and sub-module for audit-trail task, plus pytest installed."

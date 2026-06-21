@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python 3, pip and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Create non-privileged user `user`
+    useradd -m -s /bin/bash user
+
+    # Set up initial directory structure and access log
+    LOG_DIR="/home/user/logs"
+    mkdir -p "${LOG_DIR}"
+
+    cat > "${LOG_DIR}/webserver_access.log" <<'EOF'
+203.0.113.1 - - [15/Feb/2023:08:57:03 +0000] "GET /index.html HTTP/1.1" 200 1024
+198.51.100.2 - - [15/Feb/2023:09:10:44 +0000] "GET /about HTTP/1.1" 200 850
+192.0.2.3 - - [14/Feb/2023:23:59:59 +0000] "GET / HTTP/1.1" 200 600
+203.0.113.1 - - [15/Feb/2023:09:12:15 +0000] "POST /login HTTP/1.1" 302 517
+198.51.100.2 - - [15/Feb/2023:09:13:47 +0000] "GET /dashboard HTTP/1.1" 200 2048
+203.0.113.1 - - [15/Feb/2023:09:14:23 +0000] "GET /index.html HTTP/1.1" 200 1024
+203.0.113.1 - - [15/Feb/2023:09:20:55 +0000] "GET /products HTTP/1.1" 200 4096
+192.0.2.3 - - [15/Feb/2023:09:22:07 +0000] "GET /contact HTTP/1.1" 404 256
+198.51.100.2 - - [15/Feb/2023:09:30:18 +0000] "GET /pricing HTTP/1.1" 200 1536
+203.0.113.5 - - [16/Feb/2023:07:00:01 +0000] "GET /old-page HTTP/1.1" 301 245
+203.0.113.1 - - [15/Feb/2023:10:01:33 +0000] "GET /blog HTTP/1.1" 200 11200
+198.51.100.9 - - [15/Feb/2023:11:22:10 +0000] "GET /random HTTP/1.1" 200 100
+203.0.113.7 - - [13/Feb/2023:17:45:22 +0000] "GET /archive HTTP/1.1" 200 640
+192.0.2.3 - - [15/Feb/2023:12:00:00 +0000] "GET /contact HTTP/1.1" 404 256
+203.0.113.1 - - [15/Feb/2023:12:15:45 +0000] "GET /cart HTTP/1.1" 200 768
+EOF
+
+    # Ensure regular permissions and ownership
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python and pip are in PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author "Automated build for log-analysis task"
+
+%runscript
+    echo "Container for log-analysis task. Execute your commands inside the shell:"
+    echo "  apptainer exec <container>.sif /bin/bash"

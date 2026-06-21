@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the test-runner that will validate the container
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the directory structure and populate the required CSV files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data
+
+    # sales_q1.csv
+    cat > /home/user/data/sales_q1.csv <<'EOF'
+date,product,units_sold,unit_price
+2023-01-05,Widget,10,25.00
+2023-02-10,Gadget,5,15.00
+2023-03-15,Widget,20,25.00
+2023-03-18,Doodad,7,12.50
+EOF
+
+    # sales_q2.csv
+    cat > /home/user/data/sales_q2.csv <<'EOF'
+date,product,units_sold,unit_price
+2023-04-02,Gadget,8,15.00
+2023-04-10,Widget,15,25.00
+2023-05-12,Doodad,10,12.50
+2023-06-22,Widget,5,25.00
+EOF
+
+    # Ensure non-root users have read (and directory traversal) access
+    chmod 755 /home/user
+    chmod 755 /home/user/data
+    chmod 644 /home/user/data/sales_q1.csv /home/user/data/sales_q2.csv
+
+%environment
+    # Ensure Python 3 is the default python command for convenience
+    export PATH=/usr/local/bin:$PATH
+    if ! command -v python >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
+        alias python=python3
+    fi
+
+%runscript
+    echo "This container provides the initial workspace for the task."
+    echo "Enter the container with:"
+    echo "  apptainer shell <image>.sif"
+    echo "or execute commands directly with:"
+    echo "  apptainer exec <image>.sif <your-command>"
+    echo
+    echo "Required CSV data is located in /home/user/data."
+    exec "$@"

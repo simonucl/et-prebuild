@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial on-disk workspace expected by the assessment suite
+    # ------------------------------------------------------------------
+
+    # Create base directory structure under /home/user
+    mkdir -p /home/user/production_data/docs
+    mkdir -p /home/user/production_data/images
+    mkdir -p /home/user/production_data/config
+
+    # Populate the four required files with exact content
+    echo "Daily sales report" > /home/user/production_data/docs/report.txt
+    echo "PNG_PLACEHOLDER"    > /home/user/production_data/images/logo.png
+    printf 'env=prod\nversion=1.2.0\n' > /home/user/production_data/config/app.conf
+    printf 'host=localhost\nport=5432\n' > /home/user/production_data/config/db.conf
+
+    # Ensure permissions are user-writable (container runtime user is non-root)
+    chmod -R 0777 /home/user
+
+    # Clean up apt caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author="Container build for backup-engineer task"
+    Description="Provides pre-populated /home/user/production_data directory plus pytest"
+
+%environment
+    # No environment overrides needed; keep defaults.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

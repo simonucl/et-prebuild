@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python & pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        build-essential
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the evaluation framework
+    pip3 install --no-cache-dir pytest
+
+    # Create a non-root user that the agent will use
+    useradd -m -s /bin/bash user
+
+    # Set up the initial filesystem state expected by the tests
+    mkdir -p /home/user/status
+    touch /home/user/status/uptime.log
+
+    # Ensure correct ownership and permissions
+    chown -R user:user /home/user/status
+    chmod 0755 /home/user/status
+    chmod 0644 /home/user/status/uptime.log
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%runscript
+    # Default runscript does nothing; users/CI will execute their own commands or pytest
+    exec "$@"
+
+%labels
+    Author someone@example.com
+    Description "Container for uptime log checksum task with pytest installed."

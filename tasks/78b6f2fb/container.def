@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package index and install Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip python3-setuptools python3-wheel
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create the working directory expected by the assignment
+    mkdir -p /home/user
+    chmod 0755 /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python user base binary directory is in PATH
+    export PATH="$PATH:${HOME}/.local/bin"
+
+%runscript
+    exec /bin/bash
+
+%labels
+    Author="Generated for firewall rule task"
+    Description="Container prepared for Linux firewall rule exercise with pytest installed."
+
+%help
+    This Apptainer container provides the environment for the firewall rule
+    creation task. Pytest is installed, and /home/user exists for the student
+    to work in.

@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest (required by the grading framework)
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare working directory and helper script for the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user
+    # Make sure every non-root user can create the required log file later
+    chmod 0777 /home/user
+
+    # Create the CPU-intensive helper script exactly as specified
+    cat > /home/user/db_long_query.sh << 'EOF'
+#!/usr/bin/env bash
+# Simulates a CPU-intensive long query.
+while true; do :; done
+EOF
+    chmod 0755 /home/user/db_long_query.sh
+
+%labels
+    chmod 755 /home/user
+
+    Author "Container Build Automation"
+    Description "Environment for CPU-scheduling priority task with pytest pre-installed"
+
+%runscript
+    echo "This container is intended for the CPU-scheduling priority exercise."
+    echo "Invoke an interactive shell or run your solution script as needed."
+
+%environment
+    # Keep default environment; no HOME override per instructions
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package index and install Python + pip
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the automated checker
+    pip3 install --no-cache-dir pytest
+
+    # Create the normal, unprivileged user “user” with UID 1000
+    useradd -m -u 1000 -s /bin/bash user
+
+    # Prepare the log directory and the expected auth.log file
+    mkdir -p /home/user/logs
+
+    cat > /home/user/logs/auth.log <<'EOF'
+May 15 10:22:34 server sshd[12345]: Failed password for invalid user admin from 192.168.1.10 port 51122 ssh2
+May 15 10:23:01 server sshd[12346]: Failed password for root from 203.0.113.5 port 42311 ssh2
+May 15 10:24:07 server sshd[12347]: Accepted password for user1 from 192.0.2.7 port 38712 ssh2
+May 15 10:25:12 server sshd[12348]: Failed password for root from 203.0.113.5 port 42319 ssh2
+May 15 10:26:14 server sshd[12349]: Failed password for invalid user test from 198.51.100.55 port 53345 ssh2
+May 15 10:27:18 server sshd[12350]: Failed password for invalid user admin from 192.168.1.10 port 51159 ssh2
+May 15 10:28:30 server sshd[12351]: Accepted password for user2 from 203.0.113.8 port 42229 ssh2
+May 15 10:29:02 server sshd[12352]: Failed password for root from 203.0.113.8 port 42235 ssh2
+EOF
+
+    # Ensure appropriate ownership and permissions
+    chown -R 1000:1000 /home/user
+    chmod 755 /home/user
+    chmod 755 /home/user/logs
+    chmod 644 /home/user/logs/auth.log
+
+%environment
+    # Make sure Python and user-local binaries are reachable
+    export PATH="/home/user/.local/bin:$PATH"
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author example@example.com
+    Description "Container for SSH incident-response counting exercise."
+
+%runscript
+    echo "This container is intended for the SSH incident-response exercise."
+    echo "Open a shell with:  apptainer exec <image>.sif /bin/bash"

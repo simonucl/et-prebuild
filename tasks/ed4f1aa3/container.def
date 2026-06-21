@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python 3 and pytest
+    apt-get update
+    apt-get install -y python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial documentation directory structure and files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/projects/manual
+
+    # intro.md  (31 bytes)
+    cat > /home/user/projects/manual/intro.md <<'EOF'
+## Intro
+A brief introduction.
+EOF
+
+    # install.md  (31 bytes)
+    cat > /home/user/projects/manual/install.md <<'EOF'
+## Install
+Use `make install`.
+EOF
+
+    # usage.md  (22 bytes)
+    cat > /home/user/projects/manual/usage.md <<'EOF'
+## Usage
+Run `./app`.
+EOF
+
+    # Ensure the files are readable by the unprivileged user
+    chmod -R a+rX /home/user
+
+    # Do NOT create /home/user/doc_compressed or /home/user/doc_extracted;
+    # those are to be produced later by the agent.
+
+%environment
+    chmod 755 /home/user
+
+    # Keep a sane PATH; do not override HOME so that Apptainer’s default
+    # home binding behaviour remains intact.
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author "Container setup for documentation-compression task"

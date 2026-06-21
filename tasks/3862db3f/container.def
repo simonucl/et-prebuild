@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the unprivileged user expected by the tests
+    useradd -m -u 1000 -s /bin/bash user
+
+    # Prepare the input directory and the banners.txt file
+    mkdir -p /home/user/vuln_scan/input
+
+    cat >/home/user/vuln_scan/input/banners.txt <<'EOF'
+80/tcp open  http  Apache httpd 2.2.15 (CentOS)
+22/tcp open  ssh   OpenSSH 6.0p1 Debian 4+deb7u2 (protocol 2.0)
+443/tcp open  ssl/openssl  OpenSSL 1.0.1e
+21/tcp open  ftp   vsftpd 2.3.4
+EOF
+
+    # Set permissions so the non-root user can work with the files
+    chown -R user:user /home/user
+    chmod 755  /home/user
+    chmod 755  /home/user/vuln_scan
+    chmod 755  /home/user/vuln_scan/input
+    chmod 644  /home/user/vuln_scan/input/banners.txt
+
+%environment
+    chmod 755 /home/user
+
+    # Keep environment minimal; do not override HOME as per instructions
+    export PATH=/usr/local/bin:/usr/bin:/bin

@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install required packages
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip diffutils
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial directory structure and configuration files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/pipeline_configs/old
+    mkdir -p /home/user/pipeline_configs/new
+
+    # Old pipeline configuration
+    cat > /home/user/pipeline_configs/old/config.yml <<'EOF'
+version: "1.0"
+stages:
+  - build
+  - test
+  - deploy
+EOF
+
+    # New pipeline configuration
+    cat > /home/user/pipeline_configs/new/config.yml <<'EOF'
+version: "1.1"
+stages:
+  - build
+  - test
+  - deploy
+notifications:
+  email: devops@example.com
+EOF
+
+    # ------------------------------------------------------------------
+    # Set permissions
+    # ------------------------------------------------------------------
+    # Make sure the runtime user (non-root) can create the /home/user/ci_cd_patch directory
+    chmod 777 /home/user
+
+    # The configuration files only need read access
+    chmod -R 755 /home/user/pipeline_configs
+
+%labels
+    chmod 755 /home/user
+
+    Author      "container-builder"
+    Description "Initial state for CI/CD patch generation task"
+
+%help
+    This container sets up the baseline environment for the CI/CD patch
+    generation exercise.  The necessary old and new configuration files are
+    located under /home/user/pipeline_configs.  Students must create their
+    patch and log under /home/user/ci_cd_patch.

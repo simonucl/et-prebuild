@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing Python + pip..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating a non-privileged user 'user' with home directory /home/user ..."
+    if ! getent group user >/dev/null 2>&1; then
+        groupadd -g 1000 user
+    fi
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 -g user -s /bin/bash user
+    fi
+
+    # Ensure correct permissions on the home directory
+    chown -R user:user /home/user
+    chmod 755 /home/user
+
+    echo "Container setup complete."
+
+%environment
+    # Do not override $HOME; leave it to Apptainer runtime defaults.
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author example@example.com
+    Description "Base environment for firewall-tuning script exercise with pytest installed"
+
+%help
+    This container provides a clean Ubuntu 22.04 environment with Python 3 and
+    pytest pre-installed.  It intentionally does NOT create the files or
+    directories that students will be asked to produce during the assignment.

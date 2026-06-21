@@ -1,0 +1,38 @@
+FROM ubuntu:22.04
+
+# Install Python and pytest
+RUN set -e && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip && \
+    pip3 install --no-cache-dir pytest
+
+# Prepare initial filesystem state for the credential-rotation task
+RUN mkdir -p /home/user/security
+
+# Create the rotation.log with the exact expected contents
+RUN cat > /home/user/security/rotation.log <<'EOF'
+2024-05-21T09:14:03Z INFO User john rotated credential AKIAOLD123 to AKIANEW321 from IP 10.0.0.12
+2024-05-21T10:22:17Z WARN Rotation failed for credential AKIAOLD456 from IP 10.0.0.7
+2024-05-21T11:33:01Z INFO User alice rotated credential AKIAOLD789 to AKIANEW654 from IP 10.0.0.23
+2024-05-22T12:01:55Z INFO User bob rotated credential AKIAOLD000 to AKIANEW999 from IP 10.0.0.5
+2024-05-22T13:09:42Z WARN Rotation failed for credential AKIAOLD888 from IP 10.0.0.29
+2024-05-22T14:45:17Z INFO User carol rotated credential AKIAOLD222 to AKIANEW333 from IP 10.0.0.44
+EOF
+
+# Set appropriate permissions
+RUN chmod 0644 /home/user/security/rotation.log && \
+    chmod 0755 /home/user/security && \
+    chmod 755 /home/user
+
+# Labels
+LABEL Author="SecurityTaskSetup"
+LABEL Description="Docker image for credential-rotation log parsing task."
+
+# Help information (as comments):
+# This container provides the initial filesystem and software environment
+# for the credential-rotation log parsing task.  It includes:
+#
+#   • /home/user/security/rotation.log (read-only log to be processed)
+#   • Python 3 with pytest pre-installed for automated grading

@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest for the grading tests
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tar \
+        gzip \
+        coreutils
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial workspace layout expected by the grading tests
+    # ------------------------------------------------------------------
+    #   /home/user/
+    #       workspace/
+    #           build_output/    <-- contains three files with given content
+    #           scripts/         <-- exists but is empty
+    #       releases/            <-- MUST NOT exist at this point
+    # ------------------------------------------------------------------
+
+    # Create required directories
+    mkdir -p /home/user/workspace/build_output
+    mkdir -p /home/user/workspace/scripts
+
+    # Populate the build_output directory with the three artefacts
+    printf 'HelloAppBinaryV100'              > /home/user/workspace/build_output/app_binary
+    printf 'SharedObjectV100'                > /home/user/workspace/build_output/libhelper.so
+    printf 'Build artifacts for release 1.0.0' > /home/user/workspace/build_output/README.md
+
+    # Ensure everything under /home/user is writable by the eventual
+    # unprivileged runtime user (UID is unknown at build time)
+    chmod -R a+rwX /home/user
+
+    # Do NOT create /home/user/releases – it must be absent initially
+    :
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=$PATH:/usr/local/bin
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Environment prepared for the release-engineer automation exercise."

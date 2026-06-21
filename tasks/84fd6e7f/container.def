@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pip
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the assessment suite
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected home directory for the learner
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+%environment
+    # Locale settings
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+    # Make sure standard system paths are available
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%runscript
+    # Default entrypoint: just run whatever command is passed in.
+    exec "$@"
+
+%labels
+    Author      "Your Name"
+    Description "Starter container for the data pre-processing environment. Includes Python and pytest, with a clean workspace at /home/user."
+
+%help
+    This container supplies the minimal environment needed for the learner to
+    complete the data pre-processing exercise.  
+    Python 3 and pytest are pre-installed, and /home/user is ready for use.

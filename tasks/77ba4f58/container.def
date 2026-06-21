@@ -1,0 +1,34 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        iputils-ping \
+        fping \
+        python3-pip
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # Set up the initial filesystem state for the exercise
+    mkdir -p /home/user
+    chmod 777 /home/user         # Ensure the non-root student can create /home/user/logs
+
+    cat >/home/user/services.list <<'EOF'
+127.0.0.1
+192.0.2.1
+203.0.113.1
+EOF
+    chmod 644 /home/user/services.list
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

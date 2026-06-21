@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required software
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        curl \
+        ca-certificates
+
+    # Install pytest (system-wide)
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the automated tests
+    # ------------------------------------------------------------------
+
+    # Ensure the home directory structure exists
+    mkdir -p /home/user
+
+    # Create the secure_api directory with the required permissions (755)
+    install -d -m 0755 /home/user/secure_api
+
+    # Create the token.json file with exact required content and permissions (644)
+    printf '{"new_token":"xyz789","expires_in":3600}' > /home/user/secure_api/token.json
+    chmod 0644 /home/user/secure_api/token.json
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python and pip are in the path for any user
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    # Default command when container is executed without explicit command.
+    # Provide a helpful message.
+    echo "Container ready. Use this image to work on the credential rotation task."
+
+%help
+    This Apptainer container provides the starting environment for the
+    credential-rotation task. It already contains:
+      • /home/user/secure_api/token.json  (the immutable credential source)
+      • python3, pip, and pytest
+      • curl for retrieving the JSON via file:// URI
+    The working directory /home/user is writable by the invoking user.

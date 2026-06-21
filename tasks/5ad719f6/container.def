@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install Python tooling required for the assessment environment
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create reference input data (initial state before the student works)
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data/raw
+    mkdir -p /home/user/config
+
+    # 1) Raw customer CSV -------------------------------------------------
+    cat > /home/user/data/raw/customers.csv << 'EOF'
+customer_id,full_name,email,age,country,phone
+1,John Doe,jdoe@example.com,29,USA,555-1234
+2,Jane Smith,,34,Canada,555-2345
+3,,third@example.com,27,USA,
+4,Bob Lee,blee@example.com,,USA,555-4567
+5,Alice Wong,awong@example.com,31,,555-5678
+EOF
+
+    # 2) Cleaning INI configuration --------------------------------------
+    cat > /home/user/config/cleaning.ini << 'EOF'
+[keep]
+list = customer_id,full_name,email,age,country
+
+[rename]
+customer_id = id
+full_name   = name
+email       = email_address
+
+[drop]
+policy = any
+EOF
+
+    # ------------------------------------------------------------------
+    # Ensure files are readable by the unprivileged user inside the
+    # container that will run the tests.
+    # ------------------------------------------------------------------
+    chmod 644 /home/user/data/raw/customers.csv
+    chmod 644 /home/user/config/cleaning.ini
+
+%environment
+    chmod 755 /home/user
+
+    # Preserve default HOME binding; no modifications needed.
+
+%runscript
+    echo "Apptainer container for the customer list cleaning task."
+    echo "No default action. Refer to task instructions."

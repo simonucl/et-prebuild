@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Refresh APT and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        dnsutils \
+        ca-certificates
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state needed by the exercise
+    # ------------------------------------------------------------------
+    # Create the /home/user hierarchy and the network directory
+    mkdir -p /home/user/network
+    chmod 0755 /home/user/network
+
+    # Create the access.log file with exact required contents (LF endings)
+    cat > /home/user/network/access.log <<'EOF'
+10.0.0.15 - - [12/Dec/2023:10:15:21 +0000] "GET http://localhost/index.html HTTP/1.1" 200 512
+10.0.0.15 - - [12/Dec/2023:10:15:22 +0000] "GET http://example.com/assets/logo.png HTTP/1.1" 200 1024
+10.0.0.15 - - [12/Dec/2023:10:15:25 +0000] "GET http://nonexistent.domain.tld/register HTTP/1.1" 404 123
+EOF
+    chmod 0644 /home/user/network/access.log
+
+    # Do NOT create /home/user/analysis; it must be absent initially
+
+    # Clean up APT cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python user base binaries (pip installs) are available
+    export PATH="$PATH:$HOME/.local/bin"
+
+%labels
+    Author="Automated build for security log-analysis exercise"
+
+%help
+    This container provides the initial environment for the security log-analysis
+    task.  The HTTP access log is pre-seeded in /home/user/network/access.log, and
+    pytest is available for the grading harness.

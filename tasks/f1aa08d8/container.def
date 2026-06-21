@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists
+    apt-get update
+
+    # Install Python and PyPI tooling
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Create the initial directory hierarchy and snapshot files
+    # ---------------------------------------------------------------------
+    # Ensure /home/user exists and is writable by the unprivileged runtime user
+    mkdir -p /home/user
+    chmod 777 /home/user
+
+    # Create snapshot directory structure
+    mkdir -p /home/user/backup_source/docs
+    mkdir -p /home/user/backup_source/images
+
+    # Create snapshot files with exact contents (NO trailing newline)
+    printf "hello world" > /home/user/backup_source/docs/report.txt
+    printf "abc"         > /home/user/backup_source/images/logo.txt
+
+    # Set permissions
+    chmod 755 /home/user/backup_source
+    chmod 755 /home/user/backup_source/docs
+    chmod 755 /home/user/backup_source/images
+    chmod 644 /home/user/backup_source/docs/report.txt
+    chmod 644 /home/user/backup_source/images/logo.txt
+
+    # Clean up APT caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Nothing special needed; keep default environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

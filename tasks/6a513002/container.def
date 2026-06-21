@@ -1,0 +1,29 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        curl \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the assignment
+    # ------------------------------------------------------------------
+    # Create the directory hierarchy
+    mkdir -p /home/user/mock/api
+
+    # Create the JSON file with EXACT contents and no trailing newline
+    printf '{"message":"Hello, integration test!"}' > /home/user/mock/api/greeting.json
+
+    # Ensure world-readable permissions so the unprivileged test user can access them
+    chmod 755 /home/user /home/user/mock /home/user/mock/api
+    chmod 644 /home/user/mock/api/greeting.json
+
+%environment
+    # Keep environment minimal; ensure deterministic Python I/O
+    export PYTHONUNBUFFERED=1

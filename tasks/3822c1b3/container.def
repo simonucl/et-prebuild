@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating APT and installing Python tooling..."
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating initial repository layout..."
+    # Repository directories
+    mkdir -p /home/user/repos/stable
+
+    # Placeholder Debian packages (empty files)
+    touch /home/user/repos/stable/libbar_2.5.1_amd64.deb
+    touch /home/user/repos/stable/libfoo_1.0.0_amd64.deb
+
+    # Ensure files are world-readable
+    chmod 644 /home/user/repos/stable/libbar_2.5.1_amd64.deb
+    chmod 644 /home/user/repos/stable/libfoo_1.0.0_amd64.deb
+
+    # Give every non-root user write access inside /home/user so the agent
+    # (running with an arbitrary UID) can create manifests later.
+    chmod -R a+rX /home/user
+    chmod 777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python / pip are on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    echo "Container for the artifact-manager task."
+    echo "Run your solution inside the container shell."

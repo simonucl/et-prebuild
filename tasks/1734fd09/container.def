@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    #------------------------------------------------------------
+    # Basic tooling
+    #------------------------------------------------------------
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the evaluation test-suite
+    pip3 install --no-cache-dir pytest
+
+    #------------------------------------------------------------
+    # Prepare the initial workspace and sample telemetry data
+    #------------------------------------------------------------
+    mkdir -p /home/user/capacity_planner/input
+
+    # Create the sample CSV exactly as provided in the task description
+    cat > /home/user/capacity_planner/input/usage_samples.csv <<'EOF'
+timestamp,cpu_percent,mem_used_mb,disk_used_gb,net_in_kbps,net_out_kbps
+2023-01-01 00:00,45.6,2300,120,300,250
+2023-01-01 01:00,55.2,2400,121,350,270
+2023-01-01 02:00,65.4,2500,123,400,310
+2023-01-01 03:00,35.8,2200,119,280,200
+EOF
+
+    #------------------------------------------------------------
+    # Permissions
+    #------------------------------------------------------------
+    # Exact permissions for the CSV file (read-only for group/others)
+    chmod 0644 /home/user/capacity_planner/input/usage_samples.csv
+
+    # Allow the (non-root) runtime user to create additional files/directories
+    # inside the workspace.
+    chmod 0777 /home/user
+    chmod 0777 /home/user/capacity_planner
+    chmod 0777 /home/user/capacity_planner/input
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to add; relying on container defaults
+%runscript
+    echo "Container for capacity-planner task.  Open a shell to begin."

@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Set up the initial project tree expected by the assignment
+    # ------------------------------------------------------------------
+    PROJECT_DIR="/home/user/project"
+    DATA_DIR="${PROJECT_DIR}/data"
+
+    # Create directories
+    mkdir -p "${DATA_DIR}"
+
+    # Populate data files with the exact required contents
+    printf 'abc' > "${DATA_DIR}/file1.txt"
+    printf 'The quick brown fox jumps over the lazy dog' > "${DATA_DIR}/file2.bin"
+
+    # Make sure no checksums directory exists yet
+    rm -rf "${PROJECT_DIR}/checksums"
+
+    # ------------------------------------------------------------------
+    # Permissions
+    # ------------------------------------------------------------------
+    # Grant write access on the project root so the unprivileged runtime
+    # user can create new files/directories during the exercise.
+    chmod 777 "${PROJECT_DIR}"
+
+    # Ensure data files are readable by everyone but not writable by others
+    chmod 644 "${DATA_DIR}/file1.txt" "${DATA_DIR}/file2.bin"
+    chmod 755 "${DATA_DIR}"
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special needed; use default environment
+
+%labels
+    Author      "Checksum Manifest Setup"
+    Description "Container prepared for checksum-manifest exercise (pytest inside)"

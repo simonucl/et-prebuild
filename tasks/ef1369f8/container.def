@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip
+
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Set up the initial filesystem state expected by the test harness
+    # -----------------------------------------------------------------
+    # Create /home/user and the logs directory
+    mkdir -p /home/user/logs
+
+    # Write the ssh authentication log with the exact required contents
+    cat > /home/user/logs/ssh_auth.log <<'EOF'
+Jan 12 10:23:45 server sshd[12345]: Accepted password for alice from 192.168.1.10 port 53422 ssh2
+Jan 12 10:25:12 server sshd[12346]: Failed password for invalid user dave from 192.168.1.20 port 53468 ssh2
+Jan 12 10:30:01 server sshd[12347]: Accepted password for bob from 192.168.1.11 port 53478 ssh2
+Jan 12 11:01:02 server sshd[12348]: Accepted password for carol from 192.168.1.12 port 53479 ssh2
+Jan 12 11:15:22 server sshd[12349]: Accepted password for alice from 192.168.1.10 port 53490 ssh2
+Jan 12 12:45:22 server sshd[12350]: Accepted password for bob from 192.168.1.11 port 53500 ssh2
+Jan 12 12:55:22 server sshd[12351]: Failed password for root from 192.168.1.31 port 53501 ssh2
+Jan 12 13:25:22 server sshd[12352]: Accepted password for alice from 192.168.1.10 port 53502 ssh2
+EOF
+
+    # Set sensible permissions so the non-root agent can read the file
+    chmod 644 /home/user/logs/ssh_auth.log
+    chmod 755 /home/user /home/user/logs
+
+    # Intentionally DO NOT create /home/user/compliance
+    # The agent will create it during the task.
+
+%environment
+    # Ensure Python and common utilities are on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author example@example.com
+    Description Container with initial state for SSH login audit task.
+
+%help
+    This Apptainer image provides the exact initial filesystem and package
+    state required for the automated grading of the SSH login audit task.

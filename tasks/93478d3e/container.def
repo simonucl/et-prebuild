@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python3, pip and pytest
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the grader
+    # ------------------------------------------------------------------
+
+    # Base directories
+    mkdir -p /home/user/cloud_costs/raw
+
+    # sep1.csv
+    cat > /home/user/cloud_costs/raw/sep1.csv <<'EOF'
+service,region,amount
+EC2,us-east-1,120.50
+S3,us-east-1,30.00
+Lambda,us-east-1,10.50
+EOF
+
+    # sep2.csv
+    cat > /home/user/cloud_costs/raw/sep2.csv <<'EOF'
+service,region,amount
+EC2,us-east-1,100.00
+S3,us-east-1,25.00
+RDS,us-east-1,80.00
+EOF
+
+    # sep3.csv
+    cat > /home/user/cloud_costs/raw/sep3.csv <<'EOF'
+service,region,amount
+EC2,us-west-2,90.00
+S3,us-west-2,20.00
+RDS,us-west-2,60.00
+EOF
+
+    # Give wide permissions so the non-root runtime user can manipulate files
+    chmod -R 777 /home/user/cloud_costs
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python and pytest are on PATH
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author YourName
+    Description Container providing initial state for FinOps cost-summary task.
+
+%runscript
+    echo "Container for FinOps cost-summary task."
+    echo "Run your analysis script or open a shell."

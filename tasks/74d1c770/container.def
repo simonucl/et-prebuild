@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------
+    # Install required software
+    # ------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        patch
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------
+    # Prepare initial file tree for the task
+    # ------------------------------------------------------------
+    # Ensure home directory exists
+    mkdir -p /home/user
+
+    # 1) Create prerequisite directories
+    mkdir -p /home/user/webapp
+    mkdir -p /home/user/patches
+
+    # 2) Provide the original (un-patched) configuration file
+    cat > /home/user/webapp/settings.conf <<'EOF'
+# WebApp configuration
+HOST=localhost
+PORT=8080
+DEBUG=false
+TIMEOUT=30
+EOF
+
+    # 3) Provide the patch file that the agent must apply later
+    cat > /home/user/patches/settings.patch <<'EOF'
+--- a/settings.conf
++++ b/settings.conf
+@@ -1,5 +1,6 @@
++# WebApp configuration
+ HOST=localhost
+-PORT=8080
+-DEBUG=false
++PORT=9090
++DEBUG=true
+ TIMEOUT=30
++MAX_CONNECTIONS=100
+EOF
+
+    # ------------------------------------------------------------
+    # Make everything in /home/user writable by the unprivileged
+    # user who will run inside the container.
+    # ------------------------------------------------------------
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author          sandbox
+    Description     Environment for “Apply a configuration patch and record the outcome” task
+
+%help
+    This container image provides the clean starting state for the
+    task where a QA engineer must apply a configuration patch and
+    record the outcome.

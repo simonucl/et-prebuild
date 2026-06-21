@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package index and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        coreutils
+
+    # Install pytest for the test runner
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create non-root user `user` with home directory /home/user
+    # ------------------------------------------------------------------
+    useradd -m -s /bin/bash -u 1000 user
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state required by the assignment
+    # ------------------------------------------------------------------
+    # 1. Create the builds directory
+    mkdir -p /home/user/builds
+
+    # 2. Create the artefact file containing exactly the bytes "hello"
+    printf 'hello' > /home/user/builds/webapp_2023-09-15.tar.gz
+
+    # 3. Set permissions (0644) and ownership to the non-root user
+    chmod 0644 /home/user/builds/webapp_2023-09-15.tar.gz
+    chown -R 1000:1000 /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure the user-installed Python tools are on PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%runscript
+    exec /bin/bash

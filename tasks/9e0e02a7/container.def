@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        git \
+        python3-pip \
+        ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    python3 -m pip install --no-cache-dir pytest
+
+    # -------------------------------------------------------------------------
+    # Prepare initial repository in /home/user/edge-devices
+    # -------------------------------------------------------------------------
+    mkdir -p /home/user/edge-devices
+    cd /home/user/edge-devices
+
+    # Initialise Git repository with default branch 'main'
+    git init -b main
+
+    # Configure a default identity at the system level so non-root users can commit
+    git config --system user.name  "Apptainer Builder"
+    git config --system user.email "builder@example.com"
+
+    # Create VERSION file
+    echo "0.9.4" > VERSION
+
+    # Create CHANGELOG.md with required initial content
+    cat > CHANGELOG.md <<'EOF'
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.9.4] – 2023-10-07
+- Added support for dynamic topic subscriptions.
+
+## [0.9.3] – 2023-09-12
+- Improved TLS handshake performance.
+
+EOF
+
+    # Stage and commit the initial files
+    git add VERSION CHANGELOG.md
+    git commit -m "feat: initial state 0.9.4"
+
+    # Ensure all contents are writable by any user that later runs inside the container
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # No HOME override; keep default binding behaviour
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

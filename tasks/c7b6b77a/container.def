@@ -1,0 +1,95 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python, pip and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        bash \
+        procps \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Create monitoring workspace
+    # ---------------------------------------------------------------------
+    MON_HOME="/home/user"
+    MON_DIR="${MON_HOME}/monitoring"
+    CONFIG_DIR="${MON_DIR}/config"
+    LOGS_DIR="${MON_DIR}/logs"
+
+    mkdir -p "${CONFIG_DIR}" "${LOGS_DIR}"
+
+    # 1. threshold.conf
+    echo 'THRESHOLD=75' > "${CONFIG_DIR}/threshold.conf"
+
+    # 2. check_memory.sh
+    cat <<'EOF' > "${MON_DIR}/check_memory.sh"
+#!/usr/bin/env bash
+set -e
+
+CONFIG_DIR="/home/user/monitoring/config"
+LOGS_DIR="/home/user/monitoring/logs"
+CONF_FILE="${CONFIG_DIR}/threshold.conf"
+LOG_FILE="${LOGS_DIR}/memory_alert.log"
+
+# Ensure config exists
+if [[ ! -f "${CONF_FILE}" ]]; then
+    echo "Missing configuration file: ${CONF_FILE}" >&2
+    exit 1
+fi
+
+# shellcheck disable=SC1090
+source "${CONF_FILE}"
+
+if [[ -z "${THRESHOLD}" ]]; then
+    echo "THRESHOLD not set in ${CONF_FILE}" >&2
+    exit 1
+fi
+
+if [[ "$1" == "--test" ]]; then
+    TOTAL=1000
+    USED=900
+    PERC=90
+    echo "[TEST] [ALERT] Memory usage is ${PERC}% (Used: ${USED}MB / Total: ${TOTAL}MB)" >> "${LOG_FILE}"
+    chmod 755 /home/user
+
+    exit 0
+fi
+
+TOTAL=$(free -m | awk '/Mem:/ {print $2}')
+USED=$(free -m | awk '/Mem:/ {print $3}')
+
+# Basic sanity check
+if [[ -z "${TOTAL}" || -z "${USED}" ]]; then
+    echo "Unable to parse memory statistics." >&2
+    exit 1
+fi
+
+# Integer arithmetic with simple rounding
+PERC=$(( (USED * 100 + TOTAL / 2) / TOTAL ))
+
+if (( PERC > THRESHOLD )); then
+    TS=$(date "+%F %T")
+    echo "[${TS}] ALERT: Memory usage is ${PERC}% (Used: ${USED}MB / Total: ${TOTAL}MB)" >> "${LOG_FILE}"
+fi
+EOF
+
+    chmod 755 "${MON_DIR}/check_memory.sh"
+
+    # 3. Run once in TEST mode to create the initial log entry
+    "${MON_DIR}/check_memory.sh" --test
+
+%labels
+    Author monitoring-setup
+    Description "Environment pre-configured for the memory monitoring prototype task."
+
+%environment
+    # Nothing special required; rely on default environment. 
+
+%runscript
+    echo "Container for monitoring prototype. Files are pre-populated under /home/user/monitoring."

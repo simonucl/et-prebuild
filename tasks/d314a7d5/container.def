@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # ------------------------------------------------------------------
+    # Basic tooling
+    # ------------------------------------------------------------------
+    apt-get update -y
+    apt-get install -y python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare directory structure and files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/db/queries/daily
+    mkdir -p /home/user/db/queries/archive
+    mkdir -p /home/user/db/queries/maintenance
+    mkdir -p /home/user/db/optimization
+
+    # daily/report.sql  (recent file)
+    cat <<'EOF' > /home/user/db/queries/daily/report.sql
+/* daily report */
+SELECT * FROM sales;
+LIMIT 100;
+EOF
+
+    # archive/old_report.sql  (older file)
+    cat <<'EOF' > /home/user/db/queries/archive/old_report.sql
+/* archived report */
+SELECT * FROM sales;
+EOF
+
+    # maintenance/cleanup.sql  (older file)
+    cat <<'EOF' > /home/user/db/queries/maintenance/cleanup.sql
+/* maintenance task */
+DELETE FROM logs WHERE date < NOW() - INTERVAL '30 days';
+EOF
+
+    # ------------------------------------------------------------------
+    # Set permissions so an unprivileged agent can modify the tree
+    # ------------------------------------------------------------------
+    chmod -R a+rwX /home/user/db
+
+    # ------------------------------------------------------------------
+    # Adjust timestamps:
+    #   * daily/report.sql     → within last 7 days
+    #   * others               → older than 7 days
+    # ------------------------------------------------------------------
+    touch -d "2 days ago"  /home/user/db/queries/daily/report.sql
+    touch -d "10 days ago" /home/user/db/queries/archive/old_report.sql
+    touch -d "10 days ago" /home/user/db/queries/maintenance/cleanup.sql
+
+%environment
+    chmod 755 /home/user
+
+    export PYTHONIOENCODING="utf-8"
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author="ChatGPT"
+    Description="Container for the SQL refactoring task with pytest pre-installed."

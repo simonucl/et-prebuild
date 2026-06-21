@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the assignment
+    # ------------------------------------------------------------------
+    # Create the /home/user hierarchy with permissive permissions so the
+    # unprivileged runtime user can create new directories/files under it.
+    mkdir -p /home/user/webpages
+    chmod 0777 /home/user
+
+    # Create the three required HTML pages with exact, known contents
+    # (each line ends with a single newline character).
+    cat > /home/user/webpages/page1.html <<'EOF'
+<html><head><title>Page One</title></head><body><p>Alpha</p></body></html>
+EOF
+
+    cat > /home/user/webpages/page2.html <<'EOF'
+<html><head><title>Page Two</title></head><body><p>Beta</p></body></html>
+EOF
+
+    cat > /home/user/webpages/page3.html <<'EOF'
+<html><head><title>Page Three</title></head><body><p>Gamma</p></body></html>
+EOF
+
+    # Ensure directory and file permissions are readable by everyone
+    chmod 755 /home/user/webpages
+    chmod 644 /home/user/webpages/page*.html
+
+%environment
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8

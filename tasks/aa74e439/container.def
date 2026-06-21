@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest for the test harness
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create required directory structure
+    mkdir -p /home/user/k8s-operator/logs
+
+    # Make directories writable so the non-root test runner can add new files
+    chmod 0777 /home/user
+    chmod 0777 /home/user/k8s-operator
+    chmod 0777 /home/user/k8s-operator/logs
+
+    # Populate operator.log with canonical contents
+    cat > /home/user/k8s-operator/logs/operator.log <<'EOF'
+2023-08-01T08:30:12Z level=info    msg="Starting controller"
+2023-08-01T08:30:13Z level=error   code=CM001 ns=default name=app-config   msg="Missing ConfigMap"
+2023-08-01T08:30:14Z level=warning msg="Retry reconcile"
+2023-08-01T08:30:15Z level=error   code=SV001 ns=prod    name=web-svc      msg="Service not found"
+2023-08-01T08:30:16Z level=info    msg="Reconcile complete"
+2023-08-01T08:30:17Z level=error   code=DEP404 ns=staging name=api-deployment msg="Deployment failed"
+2023-08-01T08:31:18Z level=info    msg="Starting controller"
+2023-08-01T08:31:19Z level=error   code=CM001 ns=default name=app-config   msg="Missing ConfigMap"
+2023-08-01T08:31:20Z level=warning msg="Retry reconcile"
+2023-08-01T08:31:21Z level=error   code=SV001 ns=prod    name=web-svc      msg="Service not found"
+EOF
+
+    # Set required permissions on operator.log
+    chmod 0644 /home/user/k8s-operator/logs/operator.log
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%labels
+    Author ChatGPT
+    Description "Environment for Kubernetes Operator log-filtering exercise with pytest pre-installed."

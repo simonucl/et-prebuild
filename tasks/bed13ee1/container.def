@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # ------------------------------------------------------------------
+    # Base tools
+    # ------------------------------------------------------------------
+    apt-get update -y
+    apt-get install -y python3 python3-pip sqlite3
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create dedicated, non-privileged user “user” (UID/GID 1000)
+    # ------------------------------------------------------------------
+    if ! id -u user >/dev/null 2>&1; then
+        groupadd  -g 1000 user
+        useradd   -m -u 1000 -g 1000 -s /bin/bash user
+    fi
+
+    # ------------------------------------------------------------------
+    # Directory structure with correct permissions
+    # ------------------------------------------------------------------
+    install -o user -g user -m 770 -d /home/user/pipelines
+    install -o user -g user -m 770 -d /home/user/pipelines/logs
+
+    # ------------------------------------------------------------------
+    # Initialise the SQLite database
+    # ------------------------------------------------------------------
+    cat >/tmp/init_builds.sql <<'SQL'
+CREATE TABLE builds (
+    id INTEGER PRIMARY KEY,
+    platform TEXT,
+    status TEXT,
+    timestamp TEXT
+);
+
+INSERT INTO builds VALUES
+(40, 'ios',      'success', '2024-04-29T08:11:00Z');
+INSERT INTO builds VALUES
+(41, 'android',  'failed',  '2024-04-29T09:03:00Z');
+INSERT INTO builds VALUES
+(42, 'android',  'queued',  '2024-04-29T10:27:00Z');
+INSERT INTO builds VALUES
+(43, 'ios',      'queued',  '2024-04-29T10:41:00Z');
+SQL
+
+    chown user:user /tmp/init_builds.sql
+    su - user -c "sqlite3 /home/user/pipelines/app_builds.db < /tmp/init_builds.sql"
+    rm /tmp/init_builds.sql
+
+    # Correct permissions on the database file
+    chown user:user /home/user/pipelines/app_builds.db
+    chmod 660      /home/user/pipelines/app_builds.db
+
+%environment
+    chmod 755 /home/user
+
+    # Keep the original $HOME; just ensure standard paths are present
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+
+%runscript
+    exec /bin/bash "$@"

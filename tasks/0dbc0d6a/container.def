@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package list and install Python tooling.
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading framework.
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state required by the assignment.
+    # ------------------------------------------------------------------
+    # Create the working directory structure.
+    mkdir -p /home/user/pen_test
+
+    # Populate /home/user/pen_test/targets.txt with the exact IP list.
+    cat >/home/user/pen_test/targets.txt <<'EOF'
+192.168.0.10
+192.168.0.11
+192.168.0.12
+EOF
+
+    # Ensure world-readable permissions as required by the tests.
+    chmod 755 /home/user
+    chmod 755 /home/user/pen_test
+    chmod 644 /home/user/pen_test/targets.txt
+
+%labels
+    Author penetration-test-setup
+    Description "Base image for mini vulnerability-pipeline assignment"
+
+%help
+This container provides the initial state for the penetration-testing
+automation task. It includes:
+  • pytest (for the grading harness)
+  • /home/user/pen_test/targets.txt with the required IP addresses  
+No other artefacts are pre-created.

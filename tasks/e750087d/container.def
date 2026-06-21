@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the grading tests
+    # ------------------------------------------------------------------
+
+    # 1. Create /home/user/logs/ with the correct permissions
+    mkdir -p /home/user/logs
+    chmod 0755 /home/user
+    chmod 0755 /home/user/logs
+
+    # 2. Populate /home/user/logs/webserver.log with the exact contents
+    cat >/home/user/logs/webserver.log <<'EOF'
+2024-04-12T10:14:01Z server1.example.com status=UP   response_ms=101
+2024-04-12T10:15:32Z server1.example.com status=DOWN response_ms=0
+2024-04-12T10:16:45Z server2.example.com status=UP   response_ms=95
+2024-04-12T10:17:02Z server2.example.com status=DOWN response_ms=0
+2024-04-12T10:18:01Z server1.example.com status=UP   response_ms=103
+2024-04-12T10:19:20Z server1.example.com status=DOWN response_ms=0
+2024-04-12T10:20:45Z server2.example.com status=UP   response_ms=96
+2024-04-12T10:21:11Z server3.example.com status=DOWN response_ms=0
+EOF
+    chmod 0644 /home/user/logs/webserver.log
+
+    # 3. Ensure /home/user/reports/ does NOT exist yet
+    rm -rf /home/user/reports
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default environment; no overrides needed.

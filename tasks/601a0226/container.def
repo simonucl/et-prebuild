@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install required software
+    apt-get update
+    apt-get install -y \
+        python3 \
+        python3-pip \
+        cron
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest (needed by the autograder)
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the exercise
+    # ------------------------------------------------------------------
+    # Create the build directory and required shell scripts
+    mkdir -p /home/user/build
+
+    cat >/home/user/build/build_android.sh <<'EOF'
+#!/usr/bin/env bash
+echo "Building Android..."
+EOF
+
+    cat >/home/user/build/cleanup_artifacts.sh <<'EOF'
+#!/usr/bin/env bash
+echo "Cleaning up old artefacts..."
+EOF
+
+    chmod 755 /home/user/build/build_android.sh /home/user/build/cleanup_artifacts.sh
+
+    # Give broad read/execute permissions so the (unprivileged) learner user
+    # inside the container can access them even if UID/GID differ.
+    chmod 755 /home/user
+    chmod 755 /home/user/build
+
+    # Ensure no pre-existing crontab for whichever user runs the tests
+    # (root will exist in /etc/passwd by default)
+    rm -f /var/spool/cron/crontabs/* || true
+
+%labels
+    Author education-bot
+    Description Base image for Cron scheduling exercise

@@ -1,0 +1,32 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package lists and install required packages
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        iputils-ping
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # Prepare the initial filesystem state expected by the tests
+    mkdir -p /home/user
+    # Make /home/user writable by the non-root user who will run the container
+    chmod 0777 /home/user
+
+    # Create the target IP file with exactly one line
+    printf "127.0.0.1\n" > /home/user/target_ip.txt
+    chmod 0644 /home/user/target_ip.txt
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard binary locations are in PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

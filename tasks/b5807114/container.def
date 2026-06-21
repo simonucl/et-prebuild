@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package lists and installing base tools..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        jq \
+        ca-certificates
+
+    echo "Installing Python packages..."
+    pip3 install --no-cache-dir pytest jsonschema
+
+    echo "Creating initial directory structure and fixture files..."
+    mkdir -p /home/user/qa/json_samples
+
+    # ------------------ JSON-Schema ------------------
+    cat > /home/user/qa/user_schema.json <<'EOF'
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "User",
+  "type": "object",
+  "required": ["id", "name", "email", "roles"],
+  "properties": {
+    "id":    { "type": "integer", "minimum": 1 },
+    "name":  { "type": "string",  "minLength": 1 },
+    "email": { "type": "string",  "format": "email" },
+    "roles": { "type": "array",   "items": { "type": "string" } }
+  }
+}
+EOF
+
+    # ------------------ Sample JSON files ------------------
+    cat > /home/user/qa/json_samples/user1.json <<'EOF'
+{"id":1,"name":"Alice","email":"alice@example.com","roles":["admin","qa"]}
+EOF
+
+    cat > /home/user/qa/json_samples/user2.json <<'EOF'
+{"id":0,"name":"Bob","email":"not-an-email","roles":[]}
+EOF
+
+    cat > /home/user/qa/json_samples/user3.json <<'EOF'
+{"id":2,"name":"Charlie","email":"charlie@example.com","roles":["dev"]}
+EOF
+
+    echo "Setting permissions so that the unprivileged runtime user can work..."
+    chmod -R ugo+rwX /home/user/qa
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip user-installs are found
+    export PATH="$PATH:$HOME/.local/bin"
+
+%labels
+    Author qa-bot
+    Description "Container with initial JSON fixtures and schema for QA automation assignment."

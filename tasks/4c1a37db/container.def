@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    #------------------------------------------------------------------
+    # Install required packages
+    #------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        curl \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    #------------------------------------------------------------------
+    # Create the expected directory structure and JSON source files
+    #------------------------------------------------------------------
+    mkdir -p /home/user/data
+
+    # Ensure the student (non-root inside the container) can create
+    # additional sub-directories such as /home/user/diagnostics later.
+    chmod 0777 /home/user
+
+    # Create the two mandatory JSON files
+    echo '{"status":"ok"}'    > /home/user/data/status.json
+    echo '{"version":"1.3.7"}' > /home/user/data/version.json
+    chmod 0644 /home/user/data/status.json /home/user/data/version.json
+
+    #------------------------------------------------------------------
+    # Clean up APT caches to keep the image small
+    #------------------------------------------------------------------
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author quick-api-diagnostic-container
+%help
+    Base container for the “Quick API Diagnostic” exercise.
+    Includes curl, Python 3, and pytest, plus the pre-populated JSON
+    files required by the assessment.

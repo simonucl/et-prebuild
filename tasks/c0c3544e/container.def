@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected directory tree and configuration files
+    mkdir -p /home/user/incident_configs
+
+    cat > /home/user/incident_configs/service1.ini <<'EOF'
+[network]
+port = 8080
+host = 0.0.0.0
+
+[auth]
+method = token
+
+[performance]
+debug_mode = false
+EOF
+
+    cat > /home/user/incident_configs/service2.ini <<'EOF'
+[network]
+port = 65535
+host = 192.168.1.50
+
+[auth]
+method = none
+
+[performance]
+debug_mode = true
+EOF
+
+    cat > /home/user/incident_configs/service3.ini <<'EOF'
+[network]
+port = 443
+host = 10.0.0.1
+
+[auth]
+method = oauth
+
+[performance]
+debug_mode = false
+EOF
+
+    # Ensure all files and directories are world-readable so the unprivileged
+    # runtime user can access them.
+    chmod -R a+rX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep locale deterministic for predictable sorting in tests
+    export LC_ALL=C
+    export LANG=C
+
+%labels
+    Author incident_setup_bot
+    Description "Container prepared for the incident-analysis task with initial INI configuration files and pytest installed."

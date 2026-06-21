@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install the base tools that must be present
+    # for the student’s script, plus Python/pip for pytest.
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        util-linux \
+        procps \
+        iputils-ping \
+        gawk \
+        grep \
+        coreutils
+
+    # Install pytest for the grader.
+    pip3 install --no-cache-dir pytest
+
+    # Create the working directory expected by the tests and make it writable
+    # for whichever user will run inside the container.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up apt caches to keep the image small.
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard locale and PATH (Ubuntu’s defaults are usually fine).
+    export LC_ALL=C
+    export LANG=C
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%runscript
+    # Default action: show an informative message.
+    echo "Container is ready.  Run your benchmark script as needed."
+
+%test
+    # Basic sanity check: pytest should be importable.
+    python3 - <<'PY'
+import pytest, sys, importlib.util, textwrap
+print("pytest version:", pytest.__version__)
+PY

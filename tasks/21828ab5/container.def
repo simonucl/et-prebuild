@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author security-scan-task
+    Description "Environment for filesystem security-sweep exercise"
+
+%post
+    set -e
+
+    # Install Python tooling and pytest for the grader
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip ca-certificates
+    pip install --no-cache-dir pytest
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Set up the filesystem layout expected by the tests
+    # ------------------------------------------------------------------
+    # Ensure /home/user hierarchy exists
+    mkdir -p /home/user/shared /home/user/scripts /home/user/security_scan
+
+    # Create the two world-writable regular files
+    echo "#!/bin/sh\necho 'run'" > /home/user/scripts/run.sh
+    echo "Public data" > /home/user/shared/public.txt
+
+    # Mark them world-writable (octal 666)
+    chmod 666 /home/user/scripts/run.sh /home/user/shared/public.txt
+
+    # Permissions for directories
+    chmod 755 /home /home/user
+    chmod 755 /home/user/shared /home/user/scripts
+    # The student must be able to create the report file here
+    chmod 777 /home/user/security_scan
+
+%environment
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%runscript
+    echo "Filesystem security-scan task container. Nothing to run by default."

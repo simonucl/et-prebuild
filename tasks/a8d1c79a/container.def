@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip tar ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the checker
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the automated tests
+    # ------------------------------------------------------------------
+    # Create monitoring directory and populate the two CSV files
+    mkdir -p /home/user/monitoring
+
+    cat > /home/user/monitoring/service1-uptime-2023-09.csv <<'EOF'
+date,uptime_percentage
+2023-09-01,99.98
+2023-09-02,99.99
+2023-09-03,99.97
+EOF
+
+    cat > /home/user/monitoring/service2-uptime-2023-09.csv <<'EOF'
+date,uptime_percentage
+2023-09-01,99.95
+2023-09-02,99.96
+2023-09-03,99.94
+EOF
+
+    # Permissions
+    chmod 755 /home/user
+    chmod 755 /home/user/monitoring
+    chmod 644 /home/user/monitoring/service*-uptime-2023-09.csv
+
+%environment
+    # Make sure Python is in PATH for convenience
+    export PATH="/usr/local/bin:/usr/bin:${PATH}"

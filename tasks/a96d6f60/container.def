@@ -1,0 +1,30 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Prepare initial filesystem state expected by the tests
+    # -----------------------------------------------------------------
+    mkdir -p /home/user/builds/artifacts
+
+    # Create the three JAR artifacts with the exact byte-sizes required
+    printf 'CORE_1.2.0_CONTENT\n'           > /home/user/builds/artifacts/app-core-1.2.0.jar
+    printf 'CORE_1.2.1_SNAPSHOT_CONTENT\n'  > /home/user/builds/artifacts/app-core-1.2.1-SNAPSHOT.jar
+    printf 'UI_1.2.0_CONTENT\n'             > /home/user/builds/artifacts/app-ui-1.2.0.jar
+
+    # Ensure world-readable permissions so non-root users can access them
+    chmod -R a+rX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # No special environment variables are needed; rely on defaults
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

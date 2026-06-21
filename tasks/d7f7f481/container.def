@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update and install Python & pip
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create project directory and starter files
+    mkdir -p /home/user/project
+
+    # app.yaml (starter content, no logging section yet)
+    cat << 'EOF' > /home/user/project/app.yaml
+services:
+  database:
+    host: localhost
+    port: 5432
+EOF
+
+    # pyproject.toml (starter content, version 0.1.0)
+    cat << 'EOF' > /home/user/project/pyproject.toml
+[tool.poetry]
+name = "tiny-util"
+version = "0.1.0"
+description = "Small helper scripts"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+EOF
+
+    # README.md placeholder (content is irrelevant for the task)
+    echo "placeholder – irrelevant" > /home/user/project/README.md
+
+    # Ensure non-root users can modify the files during the exercise
+    chmod -R a+rw /home/user/project
+
+%environment
+    chmod 755 /home/user
+
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author  Tiny-Util Exercise Container
+    Description  Container with initial state for YAML & TOML editing task
+
+%runscript
+    echo "Container for Tiny-Util configuration editing exercise."
+    echo "Navigate to /home/user/project to begin."

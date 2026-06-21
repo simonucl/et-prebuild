@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest pytest-order
+
+    # Create project directory and starter file
+    mkdir -p /home/user/dns_profile
+
+    cat > /home/user/dns_profile/custom_hosts <<'EOF'
+192.168.50.10 app.internal.local app
+192.168.50.11 db.internal.local db
+192.168.50.12 cache.internal.local cache
+EOF
+
+    # Correct permissions
+    chmod 0755 /home/user/dns_profile
+    chmod 0644 /home/user/dns_profile/custom_hosts
+
+    # Clean up APT cache to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is easily accessible
+    export PATH=/usr/bin:$PATH
+
+%runscript
+    exec "$@"
+
+%labels
+    Author="Auto-generated for hostname resolution task"
+    Description="Container providing starter environment and pytest for the task: Profile and document local hostname resolution."

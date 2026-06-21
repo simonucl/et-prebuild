@@ -1,0 +1,71 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python plus pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading tests
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Prepare the certificate directory structure and files expected by
+    # the autograder. DO NOT create the scan_results directory yet.
+    # -----------------------------------------------------------------
+    TARGET_DIR="/home/user/targets/certs"
+    mkdir -p "${TARGET_DIR}"
+
+    # goodcorp.pem
+    cat > "${TARGET_DIR}/goodcorp.pem" <<'EOF'
+-----BEGIN CERTIFICATE-----
+Subject: CN=good.example.com
+Signature Algorithm: sha256WithRSAEncryption
+Not After : Dec 31 23:59:59 2035 GMT
+-----END CERTIFICATE-----
+EOF
+
+    # weakcorp.pem
+    cat > "${TARGET_DIR}/weakcorp.pem" <<'EOF'
+-----BEGIN CERTIFICATE-----
+Subject: CN=weak.example.com
+Signature Algorithm: sha1WithRSAEncryption
+Not After : Dec 31 23:59:59 2035 GMT
+-----END CERTIFICATE-----
+EOF
+
+    # oldcorp.pem
+    cat > "${TARGET_DIR}/oldcorp.pem" <<'EOF'
+-----BEGIN CERTIFICATE-----
+Subject: CN=expired.example.com
+Signature Algorithm: sha256WithRSAEncryption
+Not After : Jan  1 00:00:00 2020 GMT
+-----END CERTIFICATE-----
+EOF
+
+    # Ensure the whole /home/user tree is readable and traversable
+    chmod -R 755 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure the default python command is available (if not already)
+    if ! command -v python >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
+        alias python=python3
+    fi
+
+%labels
+    Author certificate-vuln-scan setup
+
+%help
+    This container provides the initial filesystem state for the
+    certificate vulnerability sweep assignment.
+    It contains three certificate dump files in:
+      /home/user/targets/certs
+    Pytest is installed so the autograder can run its tests.

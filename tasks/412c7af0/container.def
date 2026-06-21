@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest for the grader
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data/source
+
+    cat <<'EOF' > /home/user/data/source/customers_legacy.csv
+customer_id,name,age,signup_date
+1,Alice,30,2021-01-05
+2,Bob,17,2022-07-12
+3,Charlie,25,2019-11-23
+4,David,15,2020-02-14
+5,Eva,40,2018-06-30
+6,Frank,22,2023-03-01
+EOF
+
+    # Ensure the future student can create additional files/directories
+    chmod -R a+rX /home/user
+    chmod -R a+w  /home/user /home/user/data /home/user/data/source
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%labels
+    Author      "Apptainer exercise generator"
+    Description "Base image for legacy-customer migration task (pytest pre-installed)"

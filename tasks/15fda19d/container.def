@@ -1,0 +1,70 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    #!/bin/bash
+    set -e
+
+    ###########################################################################
+    # Install runtime dependencies
+    ###########################################################################
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ###########################################################################
+    # Prepare initial task data
+    ###########################################################################
+    # Create the directory hierarchy
+    mkdir -p /home/user/profiles
+
+    # Make the directory world-writable so that the non-root user who will
+    # run inside the container can create additional files there.
+    chmod 0777 /home/user/profiles
+
+    # Populate the required call-stack dump with exactly 22 lines
+    cat > /home/user/profiles/callstack.log << 'EOF'
+malloc
+free
+malloc
+memcpy
+malloc
+memcpy
+free
+read
+write
+read
+malloc
+free
+memcpy
+write
+write
+malloc
+free
+read
+memset
+memset
+malloc
+write
+EOF
+
+    # Make the input file read-only (not strictly required, but signals that it
+    # must not be modified by the student).
+    chmod 0444 /home/user/profiles/callstack.log
+
+%labels
+    chmod 755 /home/user
+
+    Author example@example.com
+    Description "Container for profiling frequency task – provides initial data and pytest."
+
+%help
+    This Apptainer image contains the initial immutable state for the
+    "function frequency" profiling task.  It provides:
+      • /home/user/profiles/callstack.log  (22 lines of sample data)
+      • pytest (pre-installed)
+
+    Students are expected to create /home/user/profiles/function_frequency.log
+    during their solve phase.

@@ -1,0 +1,87 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # -------------------------------------------------
+    # Basic tooling
+    # -------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # -------------------------------------------------
+    # Initial directory tree under /home/user
+    # -------------------------------------------------
+    mkdir -p /home/user/iot_configs
+    for num in 01 02 03 04 05; do
+        dev="device_${num}"
+        devdir="/home/user/iot_configs/${dev}"
+        mkdir -p "${devdir}"
+
+        cat > "${devdir}/settings.conf" <<EOF
+# IoT Edge Device Config
+DEVICE_ID=${dev}
+DEPLOY=NO
+EOF
+        # Make both directory and file writable by the runtime user
+        chmod 777 "${devdir}"
+        chmod 666 "${devdir}/settings.conf"
+    done
+
+    # -------------------------------------------------
+    # Firmware directory
+    # -------------------------------------------------
+    mkdir -p /home/user/new_firmware
+    touch /home/user/new_firmware/device_01.bin
+    touch /home/user/new_firmware/device_02.bin
+    touch /home/user/new_firmware/device_04.bin
+    touch /home/user/new_firmware/device_05.bin
+
+    cat > /home/user/new_firmware/device_01.md5 <<EOF
+3e25960a79dbc69b674cd4ec67a72c62  device_01.bin
+EOF
+    cat > /home/user/new_firmware/device_02.md5 <<EOF
+8f14e45fceea167a5a36dedd4bea2543  device_02.bin
+EOF
+    cat > /home/user/new_firmware/device_04.md5 <<EOF
+1679091c5a880faf6fb5e6087eb1b2dc  device_04.bin
+EOF
+    cat > /home/user/new_firmware/device_05.md5 <<EOF
+d3d9446802a44259755d38e6d163e820  device_05.bin
+EOF
+
+    chmod 777 /home/user/new_firmware
+    chmod 666 /home/user/new_firmware/*.bin
+    chmod 666 /home/user/new_firmware/*.md5
+
+    # -------------------------------------------------
+    # Old backups directory
+    # -------------------------------------------------
+    mkdir -p /home/user/old_backups
+    echo "legacy backup 1" > /home/user/old_backups/stale1.bak
+    echo "legacy backup 2" > /home/user/old_backups/stale2.bak
+    echo "Some human-readable notes." > /home/user/old_backups/notes.txt
+
+    chmod 777 /home/user/old_backups
+    chmod 666 /home/user/old_backups/stale1.bak
+    chmod 666 /home/user/old_backups/stale2.bak
+    chmod 666 /home/user/old_backups/notes.txt
+
+    # -------------------------------------------------
+    # Ensure deployment report does not yet exist
+    # -------------------------------------------------
+    rm -f /home/user/deployment_report.log
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author "ChatGPT"
+    Description "Apptainer container for IoT staged deployment task with pytest pre-installed."

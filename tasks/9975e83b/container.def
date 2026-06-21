@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest for the assessment framework
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    pip3 install --no-cache-dir pytest
+
+    # Create an unprivileged user `user` with UID 1000 and home directory /home/user
+    useradd -m -u 1000 user
+
+    # Provide a starter ~/.bashrc that is **not yet** compliant
+    cat > /home/user/.bashrc <<'EOF'
+# ~/.bashrc - initial content for compliance exercise
+echo "Interactive Bash shell initialized."
+EOF
+    # Ensure the file ends with a newline and correct ownership
+    echo >> /home/user/.bashrc
+    chown user:user /home/user/.bashrc
+
+%environment
+    chmod 755 /home/user
+
+    # No environment overrides required; keep defaults.
+
+%files
+
+%runscript
+    echo "Container for HISTTIMEFORMAT compliance task ready."

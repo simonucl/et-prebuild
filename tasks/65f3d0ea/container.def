@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install dependencies
+    # ------------------------------------------------------------------
+    apt-get update && \
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            python3-pip jq ca-certificates && \
+        apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest jsonschema
+
+    # ------------------------------------------------------------------
+    # Create directory structure and seed initial files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/app/metrics/raw
+
+    # schema.json
+    cat > /home/user/app/metrics/schema.json <<'JSON'
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Performance Metrics",
+  "type": "object",
+  "required": ["timestamp", "cpu", "mem", "req_per_sec"],
+  "properties": {
+    "timestamp": { "type": "integer" },
+    "cpu": { "type": "number", "minimum": 0, "maximum": 100 },
+    "mem": { "type": "number", "minimum": 0, "maximum": 100 },
+    "req_per_sec": { "type": "integer", "minimum": 0 }
+  },
+  "additionalProperties": false
+}
+JSON
+
+    # metric1.json
+    cat > /home/user/app/metrics/raw/metric1.json <<'JSON'
+{ "timestamp": 1680000000, "cpu": 45.5, "mem": 62.3, "req_per_sec": 850 }
+JSON
+
+    # metric2.json
+    cat > /home/user/app/metrics/raw/metric2.json <<'JSON'
+{ "timestamp": 1680000600, "cpu": 52.0, "mem": 70.1, "req_per_sec": 920 }
+JSON
+
+    # metric3_bad.json
+    cat > /home/user/app/metrics/raw/metric3_bad.json <<'JSON'
+{ "timestamp": "1680001200", "cpu": 47.2, "mem": 65.0 }
+JSON
+
+    # ------------------------------------------------------------------
+    # Permissions: owner-writeable (0644) so no root privileges needed
+    # ------------------------------------------------------------------
+    chmod 644 /home/user/app/metrics/schema.json /home/user/app/metrics/raw/*.json
+
+%labels
+    chmod 755 /home/user
+
+Author="Performance-metric initial state creator"

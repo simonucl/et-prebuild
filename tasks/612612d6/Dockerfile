@@ -1,0 +1,77 @@
+# syntax=docker/dockerfile:1
+FROM ubuntu:22.04
+
+# This container provides the initial filesystem and tools (jq, python3, pytest)
+# required for the performance-engineer assignment. Two seed JSON files are placed
+# in /home/user/perfdata, and an empty /home/user/reports directory is ready for use.
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked --mount=type=cache,target=/var/lib/apt,sharing=locked set -e && \
+    echo "Updating package index and installing required packages..." && \
+    apt-get update -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        jq \
+        python3-jsonschema \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN --mount=type=cache,target=/root/.cache/pip echo "Installing pytest via pip..." && \
+    pip3 install --no-cache-dir pytest
+
+RUN echo "Creating directory structure under /home/user ..." && \
+    mkdir -p /home/user/perfdata && \
+    mkdir -p /home/user/reports && \
+    chmod -R 755 /home/user
+
+RUN echo "Populating seed JSON files..." && \
+    cat >/home/user/perfdata/performance.json <<'EOF'
+{
+  "timestamp": "2023-11-05T14:25:30Z",
+  "environment": "staging",
+  "runs": [
+    { "service": "auth",      "response_time_ms": 120 },
+    { "service": "payment",   "response_time_ms": 860 },
+    { "service": "search",    "response_time_ms": 450 },
+    { "service": "inventory", "response_time_ms": 1020 },
+    { "service": "auth",      "response_time_ms": 200 },
+    { "service": "payment",   "response_time_ms": 780 },
+    { "service": "search",    "response_time_ms": 300 }
+  ]
+}
+EOF
+
+RUN cat >/home/user/perfdata/schema.json <<'EOF'
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["timestamp", "environment", "runs"],
+  "properties": {
+    "timestamp": { "type": "string", "format": "date-time" },
+    "environment": { "type": "string", "enum": ["dev", "staging", "prod"] },
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["service", "response_time_ms"],
+        "properties": {
+          "service": { "type": "string" },
+          "response_time_ms": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
+EOF
+
+RUN chmod 644 /home/user/perfdata/performance.json && \
+    chmod 644 /home/user/perfdata/schema.json
+
+RUN echo "Ensuring /home/user/reports is empty..." && \
+    rm -f /home/user/reports/*
+
+# Environment setup (no variables to override; keep default environment)
+RUN chmod 755 /home/user

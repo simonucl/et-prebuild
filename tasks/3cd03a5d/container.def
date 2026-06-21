@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # --- Install required packages -------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        coreutils
+
+    # --- Install pytest ------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # --- Create non-root user ------------------------------------------------------
+    useradd -m -u 1000 user
+
+    # --- Prepare directory & file structure ---------------------------------------
+    mkdir -p /home/user/data
+    mkdir -p /home/user/reports
+
+    # Create the backup file containing exactly the ASCII text "hello"
+    # (five bytes, no trailing newline).
+    printf 'hello' > /home/user/data/backup.tar.gz
+
+    # Set appropriate ownership and permissions
+    chown -R user:user /home/user
+    chmod 755 /home/user
+    chmod 755 /home/user/data /home/user/reports
+    chmod 644 /home/user/data/backup.tar.gz
+
+%labels
+    Author "backup-integrity task setup"
+
+%environment
+    # No changes to $HOME; leave environment untouched.

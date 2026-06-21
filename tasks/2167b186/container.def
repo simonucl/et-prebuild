@@ -1,0 +1,90 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install required software: Python, pip, pytest, jq
+    # ------------------------------------------------------------------
+    apt-get update && \
+        apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            jq && \
+        rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create project directory structure
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/project-localization/locales
+    mkdir -p /home/user/project-localization/scripts
+    mkdir -p /home/user/project-localization/dist
+
+    # ------------------------------------------------------------------
+    # .env.example (must end with a trailing newline)
+    # ------------------------------------------------------------------
+    cat > /home/user/project-localization/.env.example <<'EOF'
+API_KEY=CHANGE_ME
+DEFAULT_LOCALE=en_US
+EOF
+
+    # ------------------------------------------------------------------
+    # locales/en_US.json (must end with a trailing newline)
+    # ------------------------------------------------------------------
+    cat > /home/user/project-localization/locales/en_US.json <<'EOF'
+{
+  "greeting": "Hello",
+  "farewell": "Goodbye",
+  "inquiry": "How are you?"
+}
+EOF
+
+    # ------------------------------------------------------------------
+    # locales/es_ES.json (must end with a trailing newline, UTF-8 encoding)
+    # ------------------------------------------------------------------
+    cat > /home/user/project-localization/locales/es_ES.json <<'EOF'
+{
+  "greeting": "Hola",
+  "farewell": "Adiós",
+  "inquiry": "¿Cómo estás?"
+}
+EOF
+
+    # ------------------------------------------------------------------
+    # scripts/build_translations.sh (exact content, executable)
+    # ------------------------------------------------------------------
+    cat > /home/user/project-localization/scripts/build_translations.sh <<'EOF'
+#!/usr/bin/env bash
+set -e
+if [ -z "$LOCALE" ]; then
+  echo "LOCALE env variable not set" >&2
+  exit 1
+fi
+mkdir -p dist
+jq -r 'to_entries[] | "\(.key)=\(.value)"' "locales/${LOCALE}.json" > "dist/${LOCALE}.po"
+echo "Built dist/${LOCALE}.po with $(wc -l < "dist/${LOCALE}.po") entries"
+EOF
+    chmod +x /home/user/project-localization/scripts/build_translations.sh
+
+    # ------------------------------------------------------------------
+    # Ensure non-root users can write inside the project directory
+    # ------------------------------------------------------------------
+    chmod -R 0777 /home/user/project-localization
+
+%environment
+    chmod 755 /home/user
+
+    # No special environment variables required at build time.
+    # Runtime users will set/modify variables as needed.
+
+%labels
+    Author localization_task_setup
+    Description "Container initial state for French localisation exercise"
+
+%runscript
+    echo "This container sets up the initial state for the localisation task."
+    echo "Invoke your preferred shell to start working."
+    exec /bin/bash

@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author Automation-Workflow Specialist
+    Description "Base image for dotenv + Bash workflow exercise. Provides writable /home/user, Bash, and pytest."
+
+%post
+    set -e
+
+    # Update package lists and install required system packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        bash \
+        python3-pip
+
+    # Install pytest for the checking framework
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the expected home directory exists and is writable by any user
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Guarantee that Python user-installed binaries (e.g. pytest) are on PATH
+    export PATH=$PATH:/home/user/.local/bin
+
+%runscript
+    exec bash

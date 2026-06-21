@@ -1,0 +1,36 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and supporting tools
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-venv
+
+    # Upgrade pip to a recent version
+    pip3 install --no-cache-dir --upgrade pip
+
+    # Install pytest (required for the assessment framework inside the container)
+    pip3 install --no-cache-dir pytest==7.4.0
+
+    # Prepare a writable home directory for the learner’s work
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up APT cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure user-installed scripts are found before system binaries
+    export PATH="/usr/local/bin:${PATH}"
+
+%runscript
+    # Default action: run whatever the user specifies
+    exec "$@"

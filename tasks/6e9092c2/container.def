@@ -1,0 +1,63 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install Python tooling and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Create initial filesystem layout for the exercise
+    # ------------------------------------------------------------------
+    # Ensure /home/user exists
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Parent projects directory
+    mkdir -p /home/user/projects
+    chmod 755 /home/user/projects
+
+    # ----- app_alpha ---------------------------------------------------
+    mkdir -p /home/user/projects/app_alpha/bin
+    mkdir -p /home/user/projects/app_alpha/log
+
+    # 1 MiB dummy binary
+    dd if=/dev/zero of=/home/user/projects/app_alpha/bin/dummy.bin bs=1M count=1 status=none
+    # 3 MiB log file
+    dd if=/dev/zero of=/home/user/projects/app_alpha/log/logfile.log bs=1M count=3 status=none
+    # 4 KiB README
+    dd if=/dev/zero of=/home/user/projects/app_alpha/README.md bs=4K count=1 status=none
+
+    # ----- app_beta ----------------------------------------------------
+    mkdir -p /home/user/projects/app_beta/data
+    mkdir -p /home/user/projects/app_beta/docs
+
+    dd if=/dev/zero of=/home/user/projects/app_beta/data/data.bin bs=1M count=1 status=none
+    dd if=/dev/zero of=/home/user/projects/app_beta/docs/doc.bin  bs=1M count=1 status=none
+
+    # ----- app_gamma ---------------------------------------------------
+    mkdir -p /home/user/projects/app_gamma/src
+    mkdir -p /home/user/projects/app_gamma/tests
+
+    dd if=/dev/zero of=/home/user/projects/app_gamma/src/src.bin   bs=1M count=4 status=none
+    dd if=/dev/zero of=/home/user/projects/app_gamma/tests/test.bin bs=1M count=1 status=none
+    dd if=/dev/zero of=/home/user/projects/app_gamma/report.pdf    bs=1M count=1 status=none
+
+    # ------------------------------------------------------------------
+    # Permissions: readable by all users (directories 755, files 644)
+    # ------------------------------------------------------------------
+    find /home/user -type d -exec chmod 755 {} +
+    find /home/user -type f -exec chmod 644 {} +
+
+%environment
+    # No special environment variables needed for this task.
+    export LC_ALL=C

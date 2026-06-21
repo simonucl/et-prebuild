@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    # Install pytest for the checker suite
+    pip3 install --no-cache-dir --upgrade pytest
+
+    # Create the required directory structure and CSV file
+    mkdir -p /home/user/releases
+
+    cat >/home/user/releases/release_log.csv <<'EOF'
+ID,Version,Commit,Date,Environment
+1,2.3.0,5ad88f9,2023-04-17,staging
+2,2.3.0,5ad88f9,2023-04-18,production
+3,2.3.1,a71e3dd,2023-05-01,staging
+4,2.3.1,a71e3dd,2023-05-02,production
+5,2.2.5,cd891ee,2023-03-10,production
+6,2.4.0,ab123df,2023-06-11,staging
+7,2.4.0,ab123df,2023-06-12,production
+8,2.5.0-beta,bad1337,2023-07-01,staging
+EOF
+
+    # Set the correct permissions
+    chmod 755 /home/user/releases
+    chmod 644 /home/user/releases/release_log.csv
+
+    # Clean up apt caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for Release Engineering task. Use it with an interactive shell or run commands directly."

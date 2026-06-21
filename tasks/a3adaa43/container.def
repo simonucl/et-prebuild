@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package index and install Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state required by the exercise
+    # ------------------------------------------------------------------
+    # Create the directory tree /home/user/data
+    mkdir -p /home/user/data
+
+    # Populate the access-log.html file with the specified contents
+    cat <<'HTML_EOF' >/home/user/data/access-log.html
+<!DOCTYPE html>
+<html>
+<head><title>login log</title></head>
+<body>
+<pre id="log">
+2024-05-05 10:01:22 - LOGIN - user:alice  - status:SUCCESS
+2024-05-05 10:02:47 - LOGIN - user:bob    - status:FAIL
+2024-05-05 10:03:19 - LOGIN - user:dave   - status:SUCCESS
+2024-05-05 10:05:12 - LOGIN - user:carol  - status:FAIL
+2024-05-05 10:06:54 - LOGIN - user:erin   - status:SUCCESS
+</pre>
+</body>
+</html>
+HTML_EOF
+
+    # Set appropriate permissions (readable by any unprivileged user)
+    chmod 755 /home/user
+    chmod 755 /home/user/data
+    chmod 644 /home/user/data/access-log.html
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    Author="Container Build Automation"
+    Description="Environment for log-analysis CLI exercise with pytest pre-installed"

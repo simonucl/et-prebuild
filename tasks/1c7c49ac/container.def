@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author      ChatGPT
+    Description Initial environment for the “db-query-opt” release-management task.
+
+%post
+    set -e
+
+    # Install Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial project state expected by the grader
+    # ------------------------------------------------------------------
+    PROJECT_DIR="/home/user/db-query-opt"
+    mkdir -p "${PROJECT_DIR}"
+
+    # version.txt
+    printf "2.4.0\n" > "${PROJECT_DIR}/version.txt"
+
+    # CHANGELOG.md
+    cat > "${PROJECT_DIR}/CHANGELOG.md" <<'EOF'
+# Changelog
+
+## [2.4.0] - 2023-04-10
+### Added
+- Support for composite indexes in query planner
+
+EOF
+
+    # Ensure the student (non-root) user can modify everything
+    chmod -R 777 "${PROJECT_DIR}"
+
+%environment
+    chmod 755 /home/user
+
+    # Add pip’s default bin location to PATH for good measure
+    export PATH="$PATH:/usr/local/bin"

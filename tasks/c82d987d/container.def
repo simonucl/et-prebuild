@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required software
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        iproute2 \
+        procps \
+        coreutils \
+        util-linux
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Create the baseline filesystem items expected by the automated tests
+    # ---------------------------------------------------------------------
+
+    # Create application log directory with correct permissions (755)
+    install -d -m 0755 /home/user/app/logs
+
+    # Create the seed log file with required contents and permissions (644)
+    cat > /home/user/app/logs/app.log <<'EOF'
+2023-01-01 00:00:00 INFO Application started
+2023-01-01 00:05:00 WARN No config file, using defaults
+2023-01-01 00:10:00 INFO Service listening on port 8080
+EOF
+    chmod 0644 /home/user/app/logs/app.log
+
+    # Ensure /home/user is writable by whatever unprivileged UID runs later
+    chmod 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep Python on PATH and ensure UTF-8 locale for consistent behaviour
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author "Container build for diagnostic-bundle task"
+
+%help
+    This Apptainer image provides the initial state required for the
+    “standard short-form diagnostic bundle” task. Pytest is pre-installed
+    and the seed log file is located at /home/user/app/logs/app.log.

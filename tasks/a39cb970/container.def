@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        tar \
+        gzip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial project structure expected by the tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/project/src
+
+    # main.py
+    cat > /home/user/project/src/main.py <<'EOF'
+# main module
+def hello():
+    print("Hello from main")
+EOF
+
+    # utils.py
+    cat > /home/user/project/src/utils.py <<'EOF'
+# utility module
+def add(a, b):
+    return a + b
+EOF
+
+    # README.md
+    cat > /home/user/project/README.md <<'EOF'
+Sample project directory. Do not archive me!
+EOF
+
+    # Ensure the future runtime user can write inside /home/user
+    chmod -R 0777 /home/user
+
+    # Clean up APT cache to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin
+    export PYTHONIOENCODING=utf-8
+
+%runscript
+    exec "$@"

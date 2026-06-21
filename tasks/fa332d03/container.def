@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update apt metadata and install Python tooling
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-venv \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state required by the exercise
+    # ------------------------------------------------------------------
+
+    # Create the user’s home hierarchy (world-writable so the unprivileged
+    # runtime user can create files and directories as needed).
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Directory containing the PostgreSQL dump files
+    mkdir -p /home/user/db_backups
+    chmod 0755 /home/user/db_backups
+
+    # Populate the dump files that the tests expect to find
+    cat >/home/user/db_backups/backup_20220115.sql <<'EOF'
+-- dummy SQL dump for 15 Jan 2022
+EOF
+
+    cat >/home/user/db_backups/backup_20220120.sql <<'EOF'
+-- dummy SQL dump for 20 Jan 2022
+EOF
+
+    cat >/home/user/db_backups/backup_20220201.sql <<'EOF'
+-- dummy SQL dump for 01 Feb 2022
+EOF
+
+    cat >/home/user/db_backups/backup_20220210.sql <<'EOF'
+-- dummy SQL dump for 10 Feb 2022
+EOF
+
+    # Ensure all dump files are readable
+    chmod 0644 /home/user/db_backups/backup_*.sql
+
+    # Do NOT create /home/user/backup_archives or any archive/log files.
+    # These are to be produced by the learner during the exercise.
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python uses UTF-8 by default
+    export PYTHONIOENCODING=UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for PostgreSQL backup-archiving exercise."
+    echo "Run your commands inside an interactive shell:"
+    echo "    apptainer exec <container.sif> /bin/bash"

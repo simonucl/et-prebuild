@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Create the initial backup data required by the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/backups
+
+    # Two zero-byte backup archives
+    touch /home/user/backups/db_customers_full_20230710.sql.gz
+    touch /home/user/backups/db_orders_full_20230710.sql.gz
+
+    # Inventory backup archive with the prescribed content
+    cat > /home/user/backups/db_inventory_full_20230710.sql.gz <<'EOF'
+INVENTORY BACKUP
+item_id,item_name,stock
+1001,Widget,150
+1002,Gadget,200
+EOF
+
+    # Expected checksum listing (sha256sum –b format, 2 spaces between hash & filename)
+    cat > /home/user/backups/expected_checksums.sha256 <<'EOF'
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  db_customers_full_20230710.sql.gz
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  db_orders_full_20230710.sql.gz
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  db_inventory_full_20230710.sql.gz
+EOF
+
+    # Ensure reasonable permissions
+    chmod 755 /home/user
+    chmod 700 /home/user/backups
+    chmod 644 /home/user/backups/*
+
+    # The verification directory intentionally NOT created; the learner must create it.
+
+%labels
+    Author checksum-task-preparer
+
+%help
+    Container for the “checksum-verification report” exercise.
+    It ships with the initial backup archives and checksum listing under
+      /home/user/backups/
+    Pytest is pre-installed so the evaluation harness can run its tests.

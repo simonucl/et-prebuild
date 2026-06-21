@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author etl_task_preparer
+    Description "Environment for ETL configuration task with pytest pre-installed."
+
+%post
+    set -e
+
+    # Update apt cache and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the autograder
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the workspace expected by the exercise
+    # ------------------------------------------------------------------
+    WORKSPACE=/home/user/etl_pipeline
+    mkdir -p "${WORKSPACE}/config"
+    mkdir -p "${WORKSPACE}/logs"
+
+    # ------------------------------------------------------------------
+    # Draft YAML with placeholders – MUST match test expectations exactly
+    # ------------------------------------------------------------------
+    cat > "${WORKSPACE}/config/config.yaml" <<'YAML'
+source:
+  type: #TODO
+  host: #TODO
+  port: #TODO
+  database: #TODO
+  user: #TODO
+  password: #TODO
+
+transformations: []
+
+destination:
+  type: #TODO
+  path: #TODO
+YAML
+
+    # ------------------------------------------------------------------
+    # Draft TOML with only the default table
+    # ------------------------------------------------------------------
+    cat > "${WORKSPACE}/config/pipeline.toml" <<'TOML'
+[default]
+timezone = "UTC"
+retry = 3
+TOML
+
+    # Ensure the non-root runtime user can modify everything later
+    chmod -R a+rw "${WORKSPACE}"
+
+%environment
+    chmod 755 /home/user
+
+    # Expose PYTHONPATH if needed; otherwise rely on defaults
+    export PYTHONUNBUFFERED=1
+
+%runscript
+    echo "Container built for ETL config task."
+    echo "Use this container to complete the exercise."

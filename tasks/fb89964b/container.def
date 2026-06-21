@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest for the grading framework
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem expected by the exercise
+    # ------------------------------------------------------------------
+    # Create the support directory structure
+    mkdir -p /home/user/support
+    # Allow the unprivileged runtime user to write the required output files
+    chmod 0777 /home/user/support
+
+    # Create an empty firmware image
+    touch /home/user/support/firmware_v2.1.0.bin
+    chmod 0644 /home/user/support/firmware_v2.1.0.bin
+
+    # Reference SHA-256 file with the known digest for an empty file
+    cat <<'EOF' > /home/user/support/reference.sha256
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  firmware_v2.1.0.bin
+EOF
+    chmod 0644 /home/user/support/reference.sha256
+
+%runscript
+    chmod 755 /home/user
+
+    # Default runscript: simply execute any provided command
+    exec "$@"

@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install system dependencies and Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial directory structure expected by the task
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data
+
+    # Create the raw CSV with exact required content and LF line endings
+    cat > /home/user/data/raw_customer_churn.csv << 'EOF'
+customer_id,name,age,churn,signup_date
+1,Alice,30,0,2020-01-01
+2,Bob,45,1,2019-11-21
+3,Charlie,25,0,2021-06-12
+4,Denise,33,1,2020-07-30
+5,Evan,28,0,2022-02-14
+EOF
+
+    # Ensure writable permissions for the non-root user who will run the task
+    chmod -R 777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to override; keep default $HOME binding behaviour
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for the CSV cleaning task. Drop into a shell with:"
+    echo "  apptainer exec <image> bash"
+
+%labels
+    Author TaskSetup
+    Description "Initial state container for CSV cleaning AWK/Sed exercise"

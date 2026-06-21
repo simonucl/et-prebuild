@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # --------------------------------------------------
+    # 1) Install Python and pytest
+    # --------------------------------------------------
+    apt-get update && \
+        apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip && \
+        pip3 install --no-cache-dir pytest && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # --------------------------------------------------
+    # 2) Prepare required directory structure and files
+    # --------------------------------------------------
+    # Create the source directories
+    mkdir -p /home/user/dev/bin
+    mkdir -p /home/user/bin
+
+    # Create dummy executable scripts in /home/user/dev/bin
+    cat <<'EOF' > /home/user/dev/bin/run_backup.sh
+#!/usr/bin/env bash
+echo "Running backup..."
+EOF
+
+    cat <<'EOF' > /home/user/dev/bin/check_status.sh
+#!/usr/bin/env bash
+echo "Checking status..."
+EOF
+
+    chmod +x /home/user/dev/bin/run_backup.sh /home/user/dev/bin/check_status.sh
+
+    # Create the out-of-date (incorrect) symlink that the agent must replace
+    ln -sfn /usr/local/bin/run_backup_old /home/user/bin/run_backup
+
+    # --------------------------------------------------
+    # 3) Ensure write permissions for the non-root agent
+    # --------------------------------------------------
+    chmod -R 777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing needed here; keep default environment.
+
+%labels
+    Author  "Automation"
+    Description "Container for symlink exercise with initial state prepared and pytest installed."
+
+%help
+    This Apptainer image sets up the initial filesystem state for the
+    symlink-management task and includes pytest for automated evaluation.

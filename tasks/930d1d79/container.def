@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest for the checker
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel --no-install-recommends
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    # Create /home/user with world-writable permissions so the
+    # non-privileged runtime user can add the required artefacts later.
+    mkdir -p /home/user
+    chmod 777 /home/user
+
+    # Create the api_samples directory with the three JSON stubs
+    mkdir -p /home/user/api_samples
+
+    cat >/home/user/api_samples/sample1.json <<'EOF'
+{
+  "id": 1,
+  "status": "ok",
+  "data": "alpha"
+}
+EOF
+
+    cat >/home/user/api_samples/sample2.json <<'EOF'
+{
+  "id": 2,
+  "status": "ok",
+  "data": "beta"
+}
+EOF
+
+    cat >/home/user/api_samples/sample3.json <<'EOF'
+{
+  "id": 3,
+  "status": "ok",
+  "data": "gamma"
+}
+EOF
+
+    # Read-only access is sufficient for the sample files themselves
+    chmod 755 /home/user/api_samples
+    chmod 644 /home/user/api_samples/sample*.json
+
+%labels
+    Author  API-backup exercise container
+
+%help
+    This Apptainer container provides the initial environment for the
+    “API backup” exercise.  It contains:
+      • /home/user/api_samples/ with three predefined JSON files
+      • pytest installed for automated checking
+    Students will create additional artefacts (tar archive, restore
+    directory, log file) during the exercise runtime.

@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Set up the FinOps exercise workspace with the required initial files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/finops
+
+    # cost-alerts.yaml (pristine version)
+    cat > /home/user/finops/cost-alerts.yaml <<'EOF'
+alerts:
+  - name: daily-spend
+    threshold: 500
+    channels:
+      - slack
+      - email
+  - name: monthly-spend
+    threshold: 15000
+    channels:
+      - slack
+EOF
+
+    # budget.toml (pristine version)
+    cat > /home/user/finops/budget.toml <<'EOF'
+[budget]
+monthly_limit = 20000
+daily_limit  = 700
+
+[metadata]
+owner        = "finops-team"
+last_updated = "2023-01-15"
+EOF
+
+    # Permissions: directory writable, files readable/writable by non-root users
+    chmod 777 /home/user/finops
+    chmod 666 /home/user/finops/cost-alerts.yaml /home/user/finops/budget.toml
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and common paths are visible
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author="ChatGPT (FinOps setup)"
+    Description="Base container for FinOps cost-control configuration editing exercise"

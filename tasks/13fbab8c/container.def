@@ -1,0 +1,72 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Maintainer microservice-container-prep
+    Description Base developer container for microservice SSH-key exercise
+
+%post
+    set -e
+
+    echo "Updating package index and installing dependencies..."
+    apt-get update
+    # Core tools: openssh-client (for ssh-keygen), python3/pip and other utilities
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        openssh-client \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tzdata \
+        locales \
+        git
+
+    # Reduce image size a bit
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Python tooling
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create dedicated non-privileged user “user” with home /home/user.
+    # UID/GID 1000 is the most common default; if already taken, ignore.
+    # ------------------------------------------------------------------
+    if ! getent group 1000 >/dev/null 2>&1; then
+        groupadd -g 1000 user || true
+    fi
+
+    if ! id -u 1000 >/dev/null 2>&1; then
+        useradd -u 1000 -g 1000 -m -d /home/user -s /bin/bash user || true
+    fi
+
+    # Make sure the home directory exists and has correct permissions
+    mkdir -p /home/user
+    chown -R 1000:1000 /home/user
+    chmod 755 /home/user
+
+    # Ensure locale is usable
+    sed -i 's/^# *\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen
+    locale-gen
+    update-locale LANG=en_US.UTF-8
+
+%environment
+    # Minimal environment; do NOT override $HOME
+    export LC_ALL=en_US.UTF-8
+    export LANG=en_US.UTF-8
+    export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+
+%runscript
+    # Default action: launch an interactive shell as the non-privileged user
+    exec sudo -u user --preserve-env=LC_ALL,LANG,PATH bash -l "$@"
+
+%help
+    This container provides the base environment for the “microservice
+    administration SSH-key” exercise.  It contains:
+      • OpenSSH client utilities (ssh-keygen)  
+      • Python 3 with pytest pre-installed  
+      • A non-privileged user account “user” with home directory /home/user  
+
+    The filesystem is intentionally left **clean**: no .ssh or log files
+    related to the exercise are present.  Students are expected to carry out
+    the provisioning steps after launching the container.

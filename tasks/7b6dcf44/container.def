@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #---------------------------------------------------------------------#
+    # Install required system packages
+    #---------------------------------------------------------------------#
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3 \
+        ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    #---------------------------------------------------------------------#
+    # Install Python testing framework
+    #---------------------------------------------------------------------#
+    pip3 install --no-cache-dir pytest
+
+    #---------------------------------------------------------------------#
+    # Create filesystem layout expected by the tests
+    #---------------------------------------------------------------------#
+    # /home/user and sub-directory /home/user/data
+    mkdir -p /home/user/data
+    chmod 0755 /home/user          # no specific requirement, but sensible defaults
+    chmod 0700 /home/user/data     # as required by the tests
+
+    #---------------------------------------------------------------------#
+    # Create and populate the SQLite database
+    #---------------------------------------------------------------------#
+    sqlite3 /home/user/data/infra.db <<'SQL'
+    CREATE TABLE alerts(
+        id       INTEGER PRIMARY KEY,
+        severity TEXT NOT NULL,
+        status   TEXT NOT NULL
+    );
+
+    INSERT INTO alerts (id, severity, status) VALUES
+        (1, 'Sev1', 'Open'),
+        (2, 'Sev1', 'Acknowledged'),
+        (3, 'Sev1', 'Resolved'),
+        (4, 'Sev2', 'Open'),
+        (5, 'Sev1', 'Open'),
+        (6, 'Sev3', 'Closed');
+SQL
+
+    # Correct permissions for the DB file
+    chmod 0644 /home/user/data/infra.db
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C
+    export LANG=C
+
+%runscript
+    exec /bin/bash "$@"

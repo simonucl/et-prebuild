@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Ensure regular, non-root user exists (ignore if it already does)
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -d /home/user -s /bin/bash user
+    fi
+
+    # Permissions for /home and /home/user
+    chmod 755 /home
+    chmod 755 /home/user
+
+    # Create dataset directory and CSV file with exact content
+    mkdir -p /home/user/data
+    chmod 755 /home/user/data
+
+    cat >/home/user/data/sales.csv <<'EOF'
+Date,Region,Product,Quantity,Price,Revenue
+2023-01-01,North,Widget,10,2.50,25.00
+2023-01-02,South,Gadget,5,5.00,25.00
+2023-01-03,East,Widget,7,2.50,17.50
+2023-01-04,West,Doohickey,2,12.00,24.00
+2023-01-05,North,Gadget,1,5.00,5.00
+EOF
+
+    chmod 644 /home/user/data/sales.csv
+
+%environment
+    export LC_ALL=C.UTF-8
+    export PYTHONDONTWRITEBYTECODE=1

@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author Storage-Cleanup-Setup
+    Description "Initial filesystem state and tooling for disk_cleanup task"
+
+%post
+    set -e
+
+    #--------------------------------------------------
+    # 1. Basic tooling: Python and pytest
+    #--------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #--------------------------------------------------
+    # 2. Create the required directory hierarchy
+    #--------------------------------------------------
+    mkdir -p /home/user/data/incoming
+    mkdir -p /home/user/archive
+    mkdir -p /home/user/logs
+    mkdir -p /home/user/bin
+
+    # Ensure permissions are exactly 755
+    chmod 755 /home/user
+    chmod 755 /home/user/data
+    chmod 755 /home/user/data/incoming
+    chmod 755 /home/user/archive
+    chmod 755 /home/user/logs
+    chmod 755 /home/user/bin
+
+    #--------------------------------------------------
+    # 3. Seed incoming directory with files of exact size
+    #--------------------------------------------------
+    # log1.txt               – 2 048 bytes
+    truncate -s 2048 /home/user/data/incoming/log1.txt
+
+    # old_report.tar         – 5 242 880 bytes (5 MiB)
+    truncate -s 5242880 /home/user/data/incoming/old_report.tar
+
+    # video.mp4              – 15 728 640 bytes (15 MiB)
+    truncate -s 15728640 /home/user/data/incoming/video.mp4
+
+    # Set reasonable permissions on the seed files
+    chmod 644 /home/user/data/incoming/log1.txt
+    chmod 644 /home/user/data/incoming/old_report.tar
+    chmod 644 /home/user/data/incoming/video.mp4
+
+    #--------------------------------------------------
+    # 4. Make sure no cleanup script exists yet
+    #--------------------------------------------------
+    rm -f /home/user/bin/disk_cleanup.sh || true
+
+%environment
+    # Add /home/user/bin to PATH so that the agent's script
+    # will be discoverable without specifying the full path.
+    export PATH="/home/user/bin:$PATH"
+
+%runscript
+    echo "Container for disk_cleanup exercise. Nothing to run by default."

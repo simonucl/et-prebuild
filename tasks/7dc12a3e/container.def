@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Make sure basic tools and pytest are available
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir -U pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the baseline filesystem state expected by the tests
+    # ------------------------------------------------------------------
+    # 1. Create /home/user and the pt_reports directory hierarchy
+    mkdir -p /home/user/pt_reports
+
+    # 2. Populate the scan_results_critical.txt file with exact contents
+    cat > /home/user/pt_reports/scan_results_critical.txt <<'EOF'
+CVE-2023-1234: OpenSSH user enumeration vulnerability
+CVE-2022-3456: Apache Struts remote code execution
+CVE-2021-0001: Sample vulnerability
+EOF
+
+    # 3. Ensure correct permissions (read-only file, normal dir access)
+    chmod 644 /home/user/pt_reports/scan_results_critical.txt
+    chmod 755 /home/user/pt_reports
+    chmod 755 /home/user
+
+    # 4. Guarantee that /home/user/archives does NOT exist at build time
+    if [ -d /home/user/archives ]; then
+        rm -rf /home/user/archives
+    fi
+
+    # Clean up apt caches to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Minimal locale settings for Python / pytest
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%runscript
+    # Default entry: drop into a shell unless something else is supplied
+    exec /bin/bash "$@"

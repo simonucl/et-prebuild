@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Ensure a basic Python environment and GNU time are present
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        time
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare directory structure and reference implementation sources
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/app/v1
+    mkdir -p /home/user/app/v2
+
+    # v1 script --------------------------------------------------------
+    cat >/home/user/app/v1/process_data.sh <<'EOF'
+#!/usr/bin/env bash
+echo "Processing data – v1"
+sleep 1
+EOF
+    chmod 755 /home/user/app/v1/process_data.sh
+
+    # v2 script --------------------------------------------------------
+    cat >/home/user/app/v2/process_data.sh <<'EOF'
+#!/usr/bin/env bash
+echo "Processing data – v2"
+sleep 0.25
+EOF
+    chmod 755 /home/user/app/v2/process_data.sh
+
+    # Ensure /home/user has safe default permissions
+    chmod 755 /home/user
+
+%labels
+    Author          "benchmark-task-setup"
+    Description     "Container image that prepares the initial state for the CLI micro-benchmark task (v1 vs v2)."
+
+%environment
+    # Rely on Apptainer's default HOME binding; no modifications required.
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

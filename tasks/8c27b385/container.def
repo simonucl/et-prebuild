@@ -1,0 +1,71 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update apt and install Python plus pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory tree and files expected by the grader
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data/backups
+
+    # 1. CSV file (must end with a newline)
+    cat > /home/user/data/backups/archive_2023-09-30.csv <<'CSV_EOF'
+id,name,value
+1,alpha,100
+2,beta,200
+3,gamma,300
+CSV_EOF
+
+    # 2. Companion metadata JSON
+    cat > /home/user/data/backups/archive_2023-09-30.json <<'JSON_EOF'
+{
+  "header": ["id","name","value"],
+  "rows": 3
+}
+JSON_EOF
+
+    # 3. Notes file
+    echo "Backup created on 2023-09-30 at 03:00 UTC." > /home/user/data/backups/notes.txt
+
+    # ------------------------------------------------------------------
+    # Create manifest.json with CORRECT sha256 values calculated at build time
+    # ------------------------------------------------------------------
+    CSV_HASH=$(sha256sum /home/user/data/backups/archive_2023-09-30.csv | cut -d' ' -f1)
+    NOTES_HASH=$(sha256sum /home/user/data/backups/notes.txt               | cut -d' ' -f1)
+
+    cat > /home/user/data/backups/manifest.json <<EOF
+[
+  {
+    "file": "archive_2023-09-30.csv",
+    "sha256": "${CSV_HASH}"
+  },
+  {
+    "file": "notes.txt",
+    "sha256": "${NOTES_HASH}"
+  }
+]
+EOF
+
+    # ------------------------------------------------------------------
+    # Ensure non-root container users can modify everything under /home/user
+    # ------------------------------------------------------------------
+    chmod -R 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing needs to be set explicitly; keep default HOME handling.
+
+%runscript
+    echo "Container for backup-verification task. Use 'apptainer exec' to run commands."
+
+%labels
+    Author backup-verification-container
+    Description "Environment prepared for the backup integrity validation task"

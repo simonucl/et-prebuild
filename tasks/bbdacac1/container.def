@@ -1,0 +1,68 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # 1. Basic tooling and Python test framework
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        jq \
+        ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # 2. Prepare working directory and seed data
+    mkdir -p /home/user/audit
+
+    # Make the directory writable for any unprivileged user running inside
+    chmod 777 /home/user /home/user/audit || true
+
+    # permissions.json – exact content including trailing newline
+    cat > /home/user/audit/permissions.json <<'EOF'
+{
+  "users": [
+    { "username": "alice", "uid": 1001, "permissions": ["read", "write"] },
+    { "username": "bob", "uid": 1002, "permissions": ["read"] },
+    { "username": "carol", "uid": 0, "permissions": ["read", "write", "execute", "admin"] },
+    { "username": "dave", "uid": 1003, "permissions": ["read", "write", "execute"] }
+  ]
+}
+EOF
+
+    # permissions.schema.json – exact content including trailing newline
+    cat > /home/user/audit/permissions.schema.json <<'EOF'
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["users"],
+  "properties": {
+    "users": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["username", "uid", "permissions"],
+        "properties": {
+          "username": { "type": "string" },
+          "uid": { "type": "integer" },
+          "permissions": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}
+EOF
+
+    # Set read-only permissions for the seed files
+    chmod 644 /home/user/audit/permissions.json /home/user/audit/permissions.schema.json
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special needed; default environment is fine.
+    export LC_ALL=C.UTF-8

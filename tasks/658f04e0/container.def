@@ -1,0 +1,70 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ## ------------------------------------------------------------
+    ## Base system packages
+    ## ------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ## ------------------------------------------------------------
+    ## Python tooling – pytest for the grader
+    ## ------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    ## ------------------------------------------------------------
+    ## Prepare initial filesystem state for the exercise
+    ## ------------------------------------------------------------
+    # Create the required raw-data hierarchy
+    mkdir -p /home/user/data/raw/dataset_A
+    mkdir -p /home/user/data/raw/dataset_B
+
+    # Populate dataset_A CSVs
+    cat >/home/user/data/raw/dataset_A/sample1.csv <<'EOF'
+gene_id,value
+A1,5
+A2,7
+EOF
+
+    cat >/home/user/data/raw/dataset_A/sample2.csv <<'EOF'
+gene_id,value
+A3,2
+A4,9
+EOF
+
+    # Populate dataset_B CSVs
+    cat >/home/user/data/raw/dataset_B/sample1.csv <<'EOF'
+gene_id,value
+B1,4
+B2,1
+EOF
+
+    cat >/home/user/data/raw/dataset_B/sample2.csv <<'EOF'
+gene_id,value
+B3,6
+B4,3
+EOF
+
+    ## ------------------------------------------------------------
+    ## Permissions
+    ## ------------------------------------------------------------
+    # Allow the (non-root) student user to create new directories/files
+    chmod 777 /home/user
+    chmod 777 /home/user/data
+
+    # CSV files need only read access
+    chmod 644 /home/user/data/raw/dataset_*/sample*.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Keep environment minimal; rely on Apptainer’s default HOME binding
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

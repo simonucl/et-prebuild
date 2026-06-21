@@ -1,0 +1,26 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required packages and Python tooling
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        dnsutils && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # Prepare baseline directory expected by the exercise
+    mkdir -p /home/user
+    chmod 0777 /home/user   # allow the non-root runtime user to create files here
+
+%runscript
+    chmod 755 /home/user
+
+    exec "$@"

@@ -1,0 +1,38 @@
+FROM ubuntu:22.04
+
+# HELP:
+# This container image provides the exact starting conditions for the
+# automation task that asks the learner to create
+#   /home/user/output/error_count.log
+# based on the contents of /home/user/logs/sys_events.log. Pytest is
+# installed so the supplied test suite can validate both the initial
+# state and the learner's solution.
+
+LABEL Author="AutomationTaskSetup"
+LABEL Description="Container prepared for the single-command log analysis task. Pytest installed and prerequisite log file seeded."
+
+RUN set -e && \
+    apt-get update -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates && \
+    pip3 install --no-cache-dir pytest && \
+    mkdir -p /home/user/logs
+
+RUN cat >/home/user/logs/sys_events.log <<'EOF'
+2023-06-01 10:15:23 [INFO] Application started
+2023-06-01 10:15:24 [ERROR] Failed to open config file
+2023-06-01 10:15:25 [WARNING] Low memory
+2023-06-01 10:15:26 [ERROR] Failed to connect to database
+2023-06-01 10:15:27 [INFO] Retrying connection
+2023-06-01 10:15:28 [CRITICAL] System crash
+2023-06-01 10:15:29 [ERROR] Data corruption detected
+2023-06-01 10:15:30 [INFO] Shutdown sequence initiated
+EOF
+
+RUN chmod 0755 /home/user && \
+    chmod 0755 /home/user/logs && \
+    chmod 0644 /home/user/logs/sys_events.log
+
+ENV PATH="/usr/local/bin:/usr/bin:/bin:$PATH"

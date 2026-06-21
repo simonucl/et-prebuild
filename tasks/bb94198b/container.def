@@ -1,0 +1,29 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package lists and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        make
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the expected home directory exists and is writable
+    mkdir -p /home/user
+    # Make it writable for whatever unprivileged UID runs inside the container
+    chmod 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Preserve default HOME; no override necessary
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

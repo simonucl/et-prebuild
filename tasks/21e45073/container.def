@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ---------------------------------------------------------------------
+    # Install Python and pytest
+    # ---------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Prepare directory structure and seed data
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/logs
+
+    # Create the egress_traffic.csv file with exact required content (LF endings)
+    cat << 'EOF' > /home/user/logs/egress_traffic.csv
+timestamp,src_ip,dst_ip,bytes_out
+2024-05-01T10:00:00Z,10.0.0.5,34.102.120.1,2048
+2024-05-01T10:01:00Z,10.0.0.5,44.12.31.5,10240
+2024-05-01T10:02:00Z,10.0.0.20,34.102.120.1,4096
+2024-05-01T10:03:00Z,10.0.0.20,172.217.3.110,5120
+2024-05-01T10:04:00Z,10.0.0.7,44.12.31.5,8192
+2024-05-01T10:05:00Z,10.0.0.7,34.102.120.1,1024
+2024-05-01T10:06:00Z,10.0.0.7,172.217.3.110,10000
+2024-05-01T10:07:00Z,10.0.0.5,34.102.120.1,3072
+2024-05-01T10:08:00Z,10.0.0.20,44.12.31.5,2048
+2024-05-01T10:09:00Z,10.0.0.5,34.102.120.1,5120
+EOF
+
+    # Permissions: CSV world-readable; parent dirs searchable
+    chmod 644 /home/user/logs/egress_traffic.csv
+    chmod 755 /home/user
+    chmod 755 /home/user/logs
+
+    # Ensure the finops output directory is NOT present at build time
+    if [ -d /home/user/finops_firewall ]; then
+        rm -rf /home/user/finops_firewall
+    fi
+
+%environment
+    # No special environment variables needed; keep defaults
+
+%labels
+    Author          "OpenAI ChatGPT"
+    Description     "Ubuntu 22.04 container for FinOps egress analysis task with pytest pre-installed."

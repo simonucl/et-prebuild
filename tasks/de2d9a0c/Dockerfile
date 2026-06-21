@@ -1,0 +1,50 @@
+FROM ubuntu:22.04
+
+# Environment variables
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+
+# Update package index and install Python tooling
+RUN set -e && \
+    echo "Updating package index and installing Python tooling..." && \
+    apt-get update -qq && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        ca-certificates && \
+    echo "Installing pytest for the verification suite..." && \
+    pip3 install --no-cache-dir pytest && \
+    echo "Creating initial file system state for the incident-responder task..." && \
+    mkdir -p /home/user/cluster_logs && \
+    chmod 755 /home/user && \
+    chmod 755 /home/user/cluster_logs
+
+# Create node1.log
+RUN cat >/home/user/cluster_logs/node1.log <<'EOF'
+INFO service started
+ERROR failed to connect db
+WARN retrying
+ERROR timeout
+EOF
+
+# Create node2.log
+RUN cat >/home/user/cluster_logs/node2.log <<'EOF'
+INFO service started
+INFO healthcheck pass
+INFO user login
+ERROR disk full
+ERROR disk full
+ERROR disk full
+EOF
+
+# Create node3.log
+RUN cat >/home/user/cluster_logs/node3.log <<'EOF'
+INFO service started
+WARN memory usage high
+INFO request processed
+EOF
+
+# Ensure the log files are readable by non-root users
+RUN chmod 644 /home/user/cluster_logs/node*.log && \
+    echo "Initial state prepared."
+
+CMD ["sh", "-c", "echo 'Container for the incident-responder task.' && echo 'Invoke your commands with docker exec as needed.'"]

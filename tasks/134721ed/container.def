@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the curated Java repository that the exercise relies on.
+    # ------------------------------------------------------------------
+    # Ensure the user home hierarchy exists
+    mkdir -p /home/user/artifacts/java/plugins
+
+    # Create the required JAR files with the exact byte contents
+    printf 'Sample binary A\n' > /home/user/artifacts/java/libraryA-1.0.jar
+    printf 'Sample binary B\n' > /home/user/artifacts/java/plugins/pluginB-2.1.jar
+
+    # Set sensible permissions (readable by any unprivileged user)
+    chmod -R a+rX /home/user/artifacts
+
+%labels
+    chmod 755 /home/user
+
+    Author task-setup
+    Description "Environment for the checksum-manifest Apptainer exercise"
+
+%help
+    This container provides the initial state and dependencies (pytest) for
+    the “Create a checksum manifest for curated Java binaries” programming task.

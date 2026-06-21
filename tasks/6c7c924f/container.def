@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Install Python and pytest for the grader
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    pip3 install --no-cache-dir pytest tomli && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Set up the initial working directory and seed files for the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/deploy
+
+    # config.yaml (version 1.2.3, no release_date yet)
+    cat > /home/user/deploy/config.yaml <<'EOF'
+app_name: "WeatherApp"
+version: "1.2.3"
+environment: "staging"
+maintainers:
+  - "alice"
+  - "bob"
+EOF
+
+    # metadata.toml (version 1.2.3, no release_date yet)
+    cat > /home/user/deploy/metadata.toml <<'EOF'
+[package]
+name = "weather_app"
+version = "1.2.3"
+
+[build]
+target = "x86_64"
+EOF
+
+    # Make sure the runtime (non-root) user can modify everything
+    chmod -R 777 /home/user/deploy
+
+%environment
+    chmod 755 /home/user
+
+    # Include the default user-local bin directory for any pip installs
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%labels
+    Author="Exercise Preparation Bot"
+    Description="Container image for release-manager version bump exercise (pytest included)."

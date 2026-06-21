@@ -1,0 +1,79 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required system packages
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        sqlite3 \
+        ca-certificates \
+        build-essential
+
+    # Install pytest for the validation test-suite
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the autograder
+    # ------------------------------------------------------------------
+    # Create /home/user and ensure it is writable by *any* user that the
+    # container might be executed under.
+    mkdir -p /home/user
+    chmod 777 /home/user
+
+    # Create the migration directory structure (only the root dir; backup
+    # sub-dir must NOT exist yet).
+    mkdir -p /home/user/migration
+    chmod 777 /home/user/migration
+
+    # ------------------------------------------------------------------
+    # Seed the on-prem “source” database.
+    # ------------------------------------------------------------------
+    SQLITE_DB="/home/user/migration/source_app.db"
+
+    # Build the SQLite database with the required schema and data
+    sqlite3 "$SQLITE_DB" <<'EOF'
+BEGIN;
+CREATE TABLE customers (
+    id   INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE
+);
+INSERT INTO customers (id, name, email) VALUES
+    (1, 'Alice Chen',  'alice.chen@example.com'),
+    (2, 'Bob Gupta',   'bob.gupta@example.com'),
+    (3, 'Carla Diaz',  'carla.diaz@example.com');
+COMMIT;
+EOF
+
+    # Make sure every user can read the DB and write into the directory
+    chmod 666 "$SQLITE_DB"
+
+    # Final permission sweep so that any non-root UID running the tests
+    # can create new files/directories alongside our preparatory ones.
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and shell utilities are available first in PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    # Default runscript does nothing; the evaluation harness will exec
+    # its own commands inside the container.
+    exec /bin/bash "$@"
+
+%help
+    This container provides the initial state for a cloud-migration
+    exercise.  It includes:
+      • Ubuntu 22.04 base OS
+      • sqlite3 CLI
+      • pytest (for the autograder)
+      • Pre-populated /home/user/migration/source_app.db containing
+        a 3-row 'customers' table.
+    All filesystem permissions are relaxed so that the non-privileged
+    evaluation user can create, modify, and inspect files as required.

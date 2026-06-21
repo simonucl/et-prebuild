@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ---------------------------------------------------------------------
+    # Prepare initial filesystem required for the exercise
+    # ---------------------------------------------------------------------
+    # Create experiment directories and files
+    mkdir -p /home/user/experiments/run_001
+    mkdir -p /home/user/experiments/run_002
+
+    printf "run_001 model checkpoint\n" > /home/user/experiments/run_001/model.pkl
+    printf '{"accuracy": 0.91, "loss": 0.23}\n' > /home/user/experiments/run_001/metrics.json
+
+    printf "run_002 model checkpoint\n" > /home/user/experiments/run_002/model.pkl
+    printf '{"accuracy": 0.93, "loss": 0.19}\n' > /home/user/experiments/run_002/metrics.json
+
+    # Create empty writable destination directories
+    mkdir -p /home/user/backups
+    mkdir -p /home/user/backup_logs
+
+    # Make everything under /home/user writable by any unprivileged user
+    chmod -R a+rwx /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C
+    export LANG=C
+    export PYTHONUNBUFFERED=1

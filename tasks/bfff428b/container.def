@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------ #
+    # Create the pre-supplied Nmap XML scan (world-readable, 0644)
+    # ------------------------------------------------------------------ #
+    mkdir -p /home/user/raw_scans
+
+    cat >/home/user/raw_scans/nmap_scan1.xml <<'EOF'
+<?xml version="1.0"?>
+<!DOCTYPE nmaprun>
+<nmaprun scanner="nmap" args="nmap -oX -" start="1234567890">
+<host>
+  <status state="up" reason="syn-ack"/>
+  <address addr="192.168.1.10" addrtype="ipv4"/>
+  <ports>
+    <port protocol="tcp" portid="22">
+      <state state="open" reason="syn-ack" />
+      <service name="ssh" />
+    </port>
+    <port protocol="tcp" portid="80">
+      <state state="open" reason="syn-ack" />
+      <service name="http" />
+    </port>
+    <port protocol="tcp" portid="3306">
+      <state state="closed" />
+      <service name="mysql" />
+    </port>
+  </ports>
+</host>
+<host>
+  <status state="up" reason="syn-ack"/>
+  <address addr="192.168.1.11" addrtype="ipv4"/>
+  <ports>
+    <port protocol="tcp" portid="21">
+      <state state="open" reason="syn-ack" />
+      <service name="ftp" />
+    </port>
+    <port protocol="tcp" portid="139">
+      <state state="open" reason="syn-ack" />
+      <service name="netbios-ssn" />
+    </port>
+    <port protocol="tcp" portid="445">
+      <state state="open" reason="syn-ack" />
+      <service name="microsoft-ds" />
+    </port>
+  </ports>
+</host>
+</nmaprun>
+EOF
+
+    chmod 0644 /home/user/raw_scans/nmap_scan1.xml
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure pip-installed executables are reachable
+    export PATH="/usr/local/bin:${PATH}"

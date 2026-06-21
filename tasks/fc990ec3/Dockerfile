@@ -1,0 +1,69 @@
+FROM ubuntu:22.04
+
+# Help:
+# This container supplies the starting environment for the shell task where
+# the student must analyse a web-server access log. It contains:
+#   - /home/user/app/logs/access.log (populated with sample data)
+#   - pytest pre-installed for grading purposes.
+# The reports directory intentionally does NOT exist yet; students will create it during their solution.
+
+RUN set -e && \
+    export DEBIAN_FRONTEND=noninteractive && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3-pip python3-setuptools && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /home/user/app/logs && \
+    chmod 755 /home && \
+    chmod 755 /home/user && \
+    chmod -R 755 /home/user/app
+
+RUN cat > /home/user/app/logs/access.log <<'EOF'
+192.168.1.10 - - [01/Jun/2023:09:00:01 +0000] "GET /api/users HTTP/1.1" 500 0 "-" "curl/7.64.1"
+192.168.1.10 - - [01/Jun/2023:09:00:02 +0000] "GET /api/orders HTTP/1.1" 500 0 "-" "curl/7.64.1"
+192.168.1.10 - - [01/Jun/2023:09:00:03 +0000] "GET /api/products HTTP/1.1" 500 0 "-" "curl/7.64.1"
+10.0.0.5 - - [01/Jun/2023:09:01:01 +0000] "POST /login HTTP/1.1" 500 0 "-" "python-requests/2.25.1"
+10.0.0.5 - - [01/Jun/2023:09:01:02 +0000] "POST /checkout HTTP/1.1" 500 0 "-" "python-requests/2.25.1"
+10.0.0.5 - - [01/Jun/2023:09:01:03 +0000] "POST /logout HTTP/1.1" 500 0 "-" "python-requests/2.25.1"
+172.16.0.2 - - [01/Jun/2023:09:02:01 +0000] "GET /api/payments HTTP/1.1" 500 0 "-" "Go-http-client/1.1"
+172.16.0.2 - - [01/Jun/2023:09:02:02 +0000] "GET /api/shipments HTTP/1.1" 500 0 "-" "Go-http-client/1.1"
+203.0.113.5 - - [01/Jun/2023:09:03:00 +0000] "GET /admin HTTP/1.1" 403 512 "-" "Mozilla/5.0"
+203.0.113.5 - - [01/Jun/2023:09:03:01 +0000] "GET /admin/settings HTTP/1.1" 403 512 "-" "Mozilla/5.0"
+198.51.100.8 - - [01/Jun/2023:09:03:02 +0000] "GET /secret HTTP/1.1" 403 256 "-" "Mozilla/5.0"
+198.51.100.8 - - [01/Jun/2023:09:03:03 +0000] "GET /hidden HTTP/1.1" 403 256 "-" "Mozilla/5.0"
+198.51.100.8 - - [01/Jun/2023:09:03:04 +0000] "GET /forbidden HTTP/1.1" 403 256 "-" "Mozilla/5.0"
+203.0.113.10 - - [01/Jun/2023:09:04:00 +0000] "GET /does-not-exist HTTP/1.1" 404 128 "-" "Mozilla/5.0"
+203.0.113.11 - - [01/Jun/2023:09:04:01 +0000] "GET /missing HTTP/1.1" 404 128 "-" "Mozilla/5.0"
+203.0.113.11 - - [01/Jun/2023:09:04:02 +0000] "GET /null HTTP/1.1" 404 128 "-" "Mozilla/5.0"
+203.0.113.12 - - [01/Jun/2023:09:04:03 +0000] "GET /zero HTTP/1.1" 404 128 "-" "Mozilla/5.0"
+203.0.113.12 - - [01/Jun/2023:09:04:04 +0000] "GET /nothing HTTP/1.1" 404 128 "-" "Mozilla/5.0"
+192.0.2.1 - - [01/Jun/2023:09:05:00 +0000] "GET /old-page HTTP/1.1" 301 0 "-" "Mozilla/5.0"
+192.0.2.1 - - [01/Jun/2023:09:05:01 +0000] "GET /older-page HTTP/1.1" 301 0 "-" "Mozilla/5.0"
+192.0.2.2 - - [01/Jun/2023:09:05:02 +0000] "GET /archive HTTP/1.1" 301 0 "-" "Mozilla/5.0"
+192.0.2.3 - - [01/Jun/2023:09:05:03 +0000] "GET /legacy HTTP/1.1" 301 0 "-" "Mozilla/5.0"
+192.0.2.4 - - [01/Jun/2023:09:06:00 +0000] "GET /temporary HTTP/1.1" 302 0 "-" "Mozilla/5.0"
+192.0.2.4 - - [01/Jun/2023:09:06:01 +0000] "GET /tmp HTTP/1.1" 302 0 "-" "Mozilla/5.0"
+192.0.2.5 - - [01/Jun/2023:09:06:02 +0000] "GET /temp HTTP/1.1" 302 0 "-" "Mozilla/5.0"
+198.51.100.1 - - [01/Jun/2023:09:07:00 +0000] "GET / HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+198.51.100.1 - - [01/Jun/2023:09:07:01 +0000] "GET /about HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+198.51.100.1 - - [01/Jun/2023:09:07:02 +0000] "GET /contact HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+198.51.100.2 - - [01/Jun/2023:09:07:03 +0000] "GET /pricing HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+198.51.100.2 - - [01/Jun/2023:09:07:04 +0000] "GET /blog HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+198.51.100.3 - - [01/Jun/2023:09:07:05 +0000] "GET /docs HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+198.51.100.3 - - [01/Jun/2023:09:07:06 +0000] "GET /docs/setup HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+198.51.100.4 - - [01/Jun/2023:09:07:07 +0000] "GET /docs/install HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+198.51.100.5 - - [01/Jun/2023:09:07:08 +0000] "GET /docs/usage HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+198.51.100.6 - - [01/Jun/2023:09:07:09 +0000] "GET /search?q=test HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+198.51.100.7 - - [01/Jun/2023:09:07:10 +0000] "GET /sitemap.xml HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+198.51.100.8 - - [01/Jun/2023:09:07:11 +0000] "GET /rss HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+198.51.100.9 - - [01/Jun/2023:09:07:12 +0000] "GET /robots.txt HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+198.51.100.10 - - [01/Jun/2023:09:07:13 +0000] "GET /humans.txt HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+198.51.100.11 - - [01/Jun/2023:09:07:14 +0000] "GET /changelog HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+EOF
+
+RUN chmod 644 /home/user/app/logs/access.log
+
+LABEL Author="DevOps-Apptainer-Setup"
+LABEL Description="Initial state for log-analysis shell task with pytest installed."

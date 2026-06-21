@@ -1,0 +1,28 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Upgrade pip and install pytest
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected base home directory for the exercise
+    mkdir -p /home/user
+    chmod 755 /home/user
+    chown 0:0 /home/user
+
+    # Clean up apt caches to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Minimal, don’t override $HOME (Apptainer will bind the host $HOME if set).
+    export PATH=/usr/local/bin:/usr/bin:/bin:${PATH}

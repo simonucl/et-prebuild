@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    #!/bin/bash -e
+
+    ## Install Python and pytest
+    apt-get update
+    apt-get install -y python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    ## --------------------------------------------------------------------- ##
+    ## Prepare initial directory structure and log files for the exercise
+    ## --------------------------------------------------------------------- ##
+    mkdir -p /home/user/incident_logs
+
+    # ---------- app1.log ----------
+    cat > /home/user/incident_logs/app1.log <<'APP1'
+2024-06-12 08:55:23,123 - INFO - Service started
+2024-06-12 09:01:02,456 - ERROR - Failed to connect to database
+2024-06-12 09:05:10,890 - WARN - Retrying connection
+2024-06-12 13:15:45,321 - CRITICAL - Out of memory
+2024-06-13 10:01:57,777 - ERROR - Timeout while processing request
+APP1
+
+    # ---------- app2.log ----------
+    cat > /home/user/incident_logs/app2.log <<'APP2'
+[2024-06-11 23:59:59] DEBUG Initializing
+[2024-06-12 00:00:01] ERROR Disk full
+[2024-06-12 08:00:00] INFO Job started
+[2024-06-12 12:30:00] CRITICAL Kernel panic
+[2024-06-12 17:45:10] INFO Job finished
+[2024-06-13 00:01:01] ERROR Disk almost full
+APP2
+
+    # ---------- system.log ----------
+    cat > /home/user/incident_logs/system.log <<'SYS'
+Jun 12 00:05:01 localhost CRON[1234]: (root) CMD (backup.sh)
+Jun 12 01:10:45 localhost kernel: [123456.789] ERROR CPU overheating
+Jun 12 02:22:11 localhost kernel: [123557.890] INFO CPU temperature normalized
+Jun 13 04:01:33 localhost kernel: [123999.123] CRITICAL Kernel crash
+SYS
+
+    ## Make sure the files and directories are readable by non-root users
+    chmod 755 /home/user
+    chmod -R 755 /home/user/incident_logs
+
+%environment
+    # Ensure the local pip installation directory remains on PATH
+    export PATH="/usr/local/bin:${PATH}"
+
+%labels
+    Author example
+    Description "Initial state for log-processing incident exercise"

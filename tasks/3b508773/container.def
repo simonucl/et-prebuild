@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author rotation-task-setup
+    Description "Environment for credential-rotation one-liner exercise"
+
+%post
+    set -e
+
+    # Basic utilities and Python toolchain
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        curl
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ----------------------------------------------------------------------------
+    # Prepare initial task state
+    # ----------------------------------------------------------------------------
+    # Create the expected home directory and make it writable by any UID that
+    # will execute inside the container (the runner will be a non-root user).
+    mkdir -p /home/user
+    chmod 777 /home/user
+
+    # Seed /home/user/container_secrets.env with the two legacy lines
+    printf 'DB_USER=legacy\nDB_PASS=OldP@ssword123\n' > /home/user/container_secrets.env
+
+    # The file must be modifiable by the unprivileged agent
+    chmod 666 /home/user/container_secrets.env
+
+    # Ensure the rotation log does NOT yet exist
+    rm -f /home/user/rotation.log
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python executables are on PATH
+    export PATH=/usr/local/bin:$PATH
+
+%runscript
+    echo "This container is prepared for the credential-rotation task."
+    echo "Run your one-liner in an interactive shell or via 'apptainer exec'."
+
+%help
+    This image provides the initial conditions for the credential-rotation
+    exercise.  The legacy credentials file is present at
+    /home/user/container_secrets.env, and pytest is available for test
+    execution.

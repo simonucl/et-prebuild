@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Ensure non-interactive apt operations
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tzdata
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Create initial filesystem state expected by the exercise
+    # ---------------------------------------------------------------------
+
+    # Create the user home directory structure
+    mkdir -p /home/user/data
+
+    # Populate the CSV inventory file with the exact required contents
+cat > /home/user/data/iot_device_inventory.csv <<'CSVEND'
+raspberry_pi,edge_node_01
+raspberry_pi,edge_node_02
+jetson_nano,edge_node_03
+esp32,edge_node_04
+raspberry_pi,edge_node_05
+jetson_nano,edge_node_06
+jetson_nano,edge_node_07
+beaglebone_black,edge_node_08
+esp32,edge_node_09
+odroid_c2,edge_node_10
+esp32,edge_node_11
+beaglebone_black,edge_node_12
+odroid_c2,edge_node_13
+raspberry_pi,edge_node_14
+esp32,edge_node_15
+raspberry_pi,edge_node_16
+CSVEND
+
+    # Ensure correct permissions (readable by any non-root user)
+    chmod 644 /home/user/data/iot_device_inventory.csv
+
+%labels
+    chmod 755 /home/user
+
+    Author Edge-Computing Exercise Generator
+    Description Container image pre-provisioned with inventory data and pytest for automated grading.
+
+%help
+    This Apptainer image contains:
+      • /home/user/data/iot_device_inventory.csv  – preloaded inventory file
+      • pytest                                    – installed via pip
+    It is intended for use in edge-computing automation exercises.

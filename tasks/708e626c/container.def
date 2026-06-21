@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the grading tests
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the required initial directory structure and seed data file
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/environments
+
+    # Create the source TSV file with the exact required contents
+    cat > /home/user/environments/test_servers.tsv <<'EOF'
+web-01	10.10.1.11	8080	Alice
+api-01	10.10.1.21	9000	Bob
+db-01	10.10.1.31	5432	Charlie
+cache-01	10.10.1.41	6379	David
+mq-01	10.10.1.51	5672	Eve
+EOF
+
+    # Ensure the student (non-root) user can write inside the environment directory
+    chmod -R 777 /home/user/environments
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special needed; rely on container defaults
+    export PYTHONUNBUFFERED=1
+
+%runscript
+    echo "Container for TSV column-extraction task."
+    echo "Run your shell commands inside /home/user/environments to complete the exercise."

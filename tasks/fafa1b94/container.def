@@ -1,0 +1,67 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install Python tooling
+    apt-get update
+    apt-get install -y python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the required directory tree and populate the CSV files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data/csvs/archive
+
+    # /home/user/data/csvs/sales_central.csv
+    cat >/home/user/data/csvs/sales_central.csv <<'EOF'
+OrderID,Product,Quantity
+1001,Widget,4
+1002,Gadget,2
+1003,Doodad,1
+EOF
+
+    # /home/user/data/csvs/sales_east.csv
+    cat >/home/user/data/csvs/sales_east.csv <<'EOF'
+OrderID,Product,Quantity
+2001,Thingamabob,5
+2002,Widget,3
+2003,Gadget,2
+2004,Thingy,1
+EOF
+
+    # /home/user/data/csvs/sales_west.csv
+    cat >/home/user/data/csvs/sales_west.csv <<'EOF'
+OrderID,Product,Quantity
+3001,Gadget,2
+3002,Widget,1
+EOF
+
+    # /home/user/data/csvs/archive/sales_north.csv
+    cat >/home/user/data/csvs/archive/sales_north.csv <<'EOF'
+OrderID,Product,Quantity
+4001,Doodad,3
+4002,Thingamajig,4
+4003,Gizmo,1
+4004,Widget,2
+4005,Gadget,3
+EOF
+
+    # ------------------------------------------------------------------
+    # Prepare analysis directory (log file itself must NOT exist yet)
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/analysis
+
+    # ------------------------------------------------------------------
+    # Set permissive permissions so the non-root runtime user can work
+    # ------------------------------------------------------------------
+    chmod -R a+rX /home
+    chmod -R a+rwX /home/user/analysis
+
+%labels
+    chmod 755 /home/user
+
+    Author "OpenAI ChatGPT"
+    Description "Environment for the quarterly sales CSV analysis task with pytest pre-installed."

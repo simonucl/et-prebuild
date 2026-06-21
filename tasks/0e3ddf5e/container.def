@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package list and install required system packages
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel \
+        patch \
+        diffutils \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial workspace expected by the assignment
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/docs
+
+    # Create the initial, unpatched user_guide.md file (7 lines, LF endings)
+    cat <<'EOF' >/home/user/docs/user_guide.md
+# MyApp User Guide v1.0
+
+Welcome! In this document you will learn how to instal and configure MyApp.
+
+To recieve updates, subscribe to our newsletter.
+
+Happy hacking!
+EOF
+
+    # Ensure the agent has write permissions to create patches and logs
+    chmod 777 /home/user/docs
+    chmod 666 /home/user/docs/user_guide.md
+
+%environment
+    chmod 755 /home/user
+
+    # Keep locale predictable
+    export LC_ALL=C
+
+%labels
+    Author student-setup
+    Description Container for “release-notes tidy-up” exercise
+
+%help
+    This Apptainer image provides the initial filesystem state required for
+    the release-notes tidy-up task.

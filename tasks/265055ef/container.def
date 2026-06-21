@@ -1,0 +1,89 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ---------------------------------------------------------------------
+    # Base packages and Python tooling
+    # ---------------------------------------------------------------------
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Create initial ETL pipeline directory structure and contents
+    # ---------------------------------------------------------------------
+    # Directories
+    mkdir -p /home/user/etl_pipeline/data/raw
+    mkdir -p /home/user/etl_pipeline/scripts
+    mkdir -p /home/user/etl_pipeline/config
+
+    # Ensure correct permissions: not writable by group/other
+    chmod 0755 /home/user
+    find /home/user/etl_pipeline -type d -exec chmod 0755 {} \;
+
+    # ------------------------------------------------------------------
+    # Populate files with exact contents (trailing newline included)
+    # ------------------------------------------------------------------
+    # 1. customers.csv
+    cat > /home/user/etl_pipeline/data/raw/customers.csv <<'EOF'
+id,name,signup_date
+1,Alice,2020-01-05
+2,Bob,2021-03-12
+EOF
+
+    # 2. transactions.csv
+    cat > /home/user/etl_pipeline/data/raw/transactions.csv <<'EOF'
+id,customer_id,amount,transaction_date
+1001,1,250.75,2022-11-10
+1002,2,99.99,2022-11-11
+EOF
+
+    # 3. extract.sh
+    cat > /home/user/etl_pipeline/scripts/extract.sh <<'EOF'
+#!/usr/bin/env bash
+echo "Extract step placeholder"
+EOF
+    chmod 0755 /home/user/etl_pipeline/scripts/extract.sh   # executable, still not group/other writable
+
+    # 4. transform.py
+    cat > /home/user/etl_pipeline/scripts/transform.py <<'EOF'
+# Minimal transform script
+print("Transform step placeholder")
+EOF
+
+    # 5. pipeline.yaml
+    cat > /home/user/etl_pipeline/config/pipeline.yaml <<'EOF'
+pipeline:
+  name: poc_etl
+  schedule: "@daily"
+EOF
+
+    # Set permissions for data/config files
+    find /home/user/etl_pipeline -type f ! -name 'extract.sh' -exec chmod 0644 {} \;
+
+    # ------------------------------------------------------------------
+    # Clean up environment
+    # ------------------------------------------------------------------
+    apt-get clean
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default HOME binding behaviour; nothing to override.
+
+%runscript
+    echo "Container for ETL backup assignment. Execute your backup commands after shelling into the container."
+
+%labels
+    Author="Apptainer Task Auto-Generator"
+    Description="Environment with pre-populated ETL pipeline and pytest installed for automated grading."
+
+%help
+    This container provides the initial state required for the ETL backup assignment.
+    It contains the /home/user/etl_pipeline directory tree with sample data and
+    has pytest installed so the grading system can validate your work.

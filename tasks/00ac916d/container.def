@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing required packages..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        coreutils
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating non-root user 'user' (uid 1000) for the exercise..."
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g user user
+
+    echo "Setting up directory structure /home/user/app/logs..."
+    mkdir -p /home/user/app/logs
+    chown -R user:user /home/user
+
+    echo "Creating log files with exact byte sizes..."
+    truncate -s 2048 /home/user/app/logs/error.log
+    truncate -s 3072 /home/user/app/logs/access.log
+
+    echo "Applying permissions..."
+    chmod 0755 /home/user
+    chmod 0755 /home/user/app
+    chmod 0755 /home/user/app/logs
+    chmod 0644 /home/user/app/logs/error.log
+    chmod 0644 /home/user/app/logs/access.log
+
+    echo "Environment setup complete."
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are in PATH for all users.
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for the 'log-directory size' exercise."
+    echo "Switch to the 'user' account with:   su - user"
+    echo "Then follow the task instructions."

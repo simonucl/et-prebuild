@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Minimal non-interactive APT setup
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        procps \
+        bash \
+        ca-certificates
+
+    # Install pytest for the forthcoming test-harness
+    pip3 install --no-cache-dir pytest
+
+    # Provide a convenient `python` alias for python3
+    ln -sf /usr/bin/python3 /usr/local/bin/python
+
+    # Ensure the expected home directory exists and is usable
+    mkdir -p /home/user
+    chmod 0755 /home/user
+
+    # Guarantee a clean slate for the forthcoming exercise
+    rm -rf /home/user/dns_test || true
+
+    # Clean up APT cache to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Preserve UTF-8 locale behaviour and python alias at runtime
+    export PYTHONIOENCODING=UTF-8
+
+%labels
+    Author "Container Builder"
+    Description "Base image for self-contained name-resolution workspace exercise, with pytest installed."
+
+%runscript
+    # Default entrypoint: open an interactive shell
+    exec /bin/bash "$@"

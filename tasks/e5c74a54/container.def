@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # ------------------------------------------------------------------
+    # Install the Python tooling required by the test-harness
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial on-disk layout for the assignment
+    # ------------------------------------------------------------------
+    # 1. Base directory for the user
+    mkdir -p /home/user
+    # Give every (non-root) runtime user permission to create /home/user/audit later
+    chmod 1777 /home/user          # drwxrwxrwt
+
+    # 2. Project tree
+    mkdir -p /home/user/project/logs
+    mkdir -p /home/user/project/scripts
+    mkdir -p /home/user/project/tmp
+
+    # Directory permissions
+    chmod 0755 /home/user/project              # drwxr-xr-x
+    chmod 0777 /home/user/project/logs         # drwxrwxrwx
+    chmod 0755 /home/user/project/scripts      # drwxr-xr-x
+    chmod 1777 /home/user/project/tmp          # drwxrwxrwt
+
+    # 3. Regular files with exact permission bits
+    echo 'dummy db'                > /home/user/project/data.db
+    echo '#!/bin/bash'             > /home/user/project/file1.sh
+    echo 'placeholder'             > /home/user/project/file2.txt
+    echo 'log entry'               > /home/user/project/logs/app.log
+    printf '#!/bin/bash\necho Installing\n' > /home/user/project/scripts/install.sh
+    echo 'cache'                   > /home/user/project/tmp/cache.tmp
+
+    chmod 0666 /home/user/project/data.db         # -rw-rw-rw-
+    chmod 0644 /home/user/project/file1.sh        # -rw-r--r--
+    chmod 0664 /home/user/project/file2.txt       # -rw-rw-r--
+    chmod 0644 /home/user/project/logs/app.log    # -rw-r--r--
+    chmod 0755 /home/user/project/scripts/install.sh  # -rwxr-xr-x
+    chmod 0666 /home/user/project/tmp/cache.tmp   # -rw-rw-rw-
+
+%runscript
+    chmod 755 /home/user
+
+    exec "$@"

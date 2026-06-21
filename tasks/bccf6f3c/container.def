@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    #---------------------------------------------------------------------
+    # 1) Install Python, pip, and pytest (required by the test harness)
+    #---------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip ca-certificates
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #---------------------------------------------------------------------
+    # 2) Create non-root user `user` (UID picked automatically if free)
+    #---------------------------------------------------------------------
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -s /bin/bash user
+    fi
+
+    #---------------------------------------------------------------------
+    # 3) Prepare the FinOps input directory and the canonical log file
+    #---------------------------------------------------------------------
+    mkdir -p /home/user/finops/logs
+
+    cat > /home/user/finops/logs/cluster_usage.tsv <<'EOF'
+2023-08-01T12:00:00Z	cluster-a	payment	app-payment-api	ComputeHours	50	12.50
+2023-08-01T12:05:00Z	cluster-b	payment	app-payment-api	NetworkEgressGB	30	45.00
+2023-08-01T12:10:00Z	cluster-a	search	app-search-api	ComputeHours	70	20.00
+2023-08-01T12:15:00Z	cluster-b	search	app-search-api	NetworkEgressGB	10	15.00
+2023-08-01T12:20:00Z	cluster-c	auth	app-auth-api	ComputeHours	40	8.00
+2023-08-01T12:25:00Z	cluster-c	auth	app-auth-api	NetworkEgressGB	5	7.50
+2023-08-01T12:30:00Z	cluster-a	reporting	app-report-api	ComputeHours	100	25.00
+2023-08-01T12:35:00Z	cluster-b	reporting	app-report-api	NetworkEgressGB	120	180.00
+2023-08-01T12:40:00Z	cluster-a	analytics	app-analytics	ComputeHours	80	30.00
+2023-08-01T12:45:00Z	cluster-b	analytics	app-analytics	NetworkEgressGB	60	90.00
+EOF
+
+    # Ownership & permissions so an unprivileged runtime user can access them
+    chown -R user:user /home/user/finops
+    chmod -R a+rX /home/user/finops
+
+%environment
+    chmod 755 /home/user
+
+    # Do not overwrite $HOME; keep default binding behaviour.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    exec "$@"

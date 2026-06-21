@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required system packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        gettext \
+        procps \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading suite
+    pip3 install --no-cache-dir pytest
+
+    # ----------------------------------------------------------------------------
+    # Create the initial filesystem layout and seed files expected by the tests
+    # ----------------------------------------------------------------------------
+    mkdir -p /home/user/project_i18n
+
+    # messages.pot (template)
+    cat > /home/user/project_i18n/messages.pot <<'POT'
+msgid ""
+msgstr ""
+"Project-Id-Version: example 1.0\n"
+"Language: en\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: src/main.c:10
+msgid "Hello, world!"
+msgstr ""
+
+#: src/main.c:20
+msgid "Goodbye."
+msgstr ""
+POT
+
+    # fr.po (existing French translation — no "Goodbye." entry yet)
+    cat > /home/user/project_i18n/fr.po <<'PO'
+msgid ""
+msgstr ""
+"Project-Id-Version: example 1.0\n"
+"Language: fr\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: src/main.c:10
+msgid "Hello, world!"
+msgstr "Bonjour le monde!"
+PO
+
+    # Set sensible permissions
+    chmod 644 /home/user/project_i18n/messages.pot
+    chmod 644 /home/user/project_i18n/fr.po
+    chmod 755 /home/user
+    chmod 755 /home/user/project_i18n
+
+%environment
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author localization_setup
+    Description "Environment for localization engineer task with pytest pre-installed."

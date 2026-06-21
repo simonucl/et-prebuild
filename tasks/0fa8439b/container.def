@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial directory structure and seed files for the task
+    # ------------------------------------------------------------------
+    IOT_DIR="/home/user/iot"
+    DEPLOY_DIR="${IOT_DIR}/deploy"
+
+    mkdir -p "${DEPLOY_DIR}"
+
+    # inventory.csv (with required trailing newline)
+    cat > "${IOT_DIR}/inventory.csv" <<'EOF'
+device01,edge-lab,68,45,ok
+device02,edge-lab,77,50,ok
+device03,edge-lab,72,85,ok
+device04,field,80,90,error
+device05,field,60,40,ok
+EOF
+
+    # config.ini (with required trailing newline)
+    cat > "${DEPLOY_DIR}/config.ini" <<'EOF'
+[deployment]
+device_group=edge
+version=1.4.2
+EOF
+
+    # Make sure everything under /home/user is writable by the runtime user
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author  edge-task-prep
+
+%help
+    This container provides the starting environment for the IoT edge-computing
+    task.  The initial resources are placed under /home/user/iot/ as specified,
+    and pytest is installed so the automatic test-suite can run.

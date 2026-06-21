@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    #!/bin/bash
+    set -e
+
+    # Install Python and pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest (required by the grading framework)
+    pip3 install --no-cache-dir pytest
+
+    # Prepare a writable directory the student will use later
+    mkdir -p /home/user
+    chmod 777 /home/user   # allow any unprivileged user to write here
+
+    # Clean up to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is available in PATH (usually already true, but explicit is better)
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for root-UID sanity-check exercise.  Invoke your commands inside an interactive shell:"
+    exec /bin/bash

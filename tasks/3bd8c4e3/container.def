@@ -1,0 +1,87 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # -------------------------------------------------------------------------
+    # 1. Base OS packages and Python tooling
+    # -------------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive \
+        apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            sqlite3 \
+            tar \
+            gzip
+    pip3 install --no-cache-dir pytest
+
+    # -------------------------------------------------------------------------
+    # 2. Create non-privileged “user” account (UID 1000) and its home
+    # -------------------------------------------------------------------------
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 user
+    fi
+
+    # Make sure the home directory tree exists and is writable
+    install -d -m 0777 /home/user
+
+    # -------------------------------------------------------------------------
+    # 3. Pre-existing application state
+    # -------------------------------------------------------------------------
+
+    # Directory structure
+    install -d -m 0777 /home/user/app/data
+    install -d -m 0777 /home/user/app/logs
+    install -d -m 0777 /home/user/update_scripts
+    install -d -m 0777 /home/user/backups
+    install -d -m 0777 /home/user/deployment
+    install -d -m 0777 /home/user/tmp
+
+    # -----------------------------------------------------------------
+    # 3a. SQLite database with only the `users` table
+    # -----------------------------------------------------------------
+    DB_PATH=/home/user/app/data/app.db
+    sqlite3 "${DB_PATH}" <<'SQL_EOF'
+CREATE TABLE users(
+    id INTEGER PRIMARY KEY,
+    name TEXT
+);
+INSERT INTO users(id, name) VALUES (1, 'Alice');
+SQL_EOF
+    chmod 0666 "${DB_PATH}"
+
+    # -----------------------------------------------------------------
+    # 3b. Migration SQL script with exact 5-line content + trailing \n
+    # -----------------------------------------------------------------
+    cat > /home/user/update_scripts/02_create_release_info.sql <<'SQL_SCRIPT'
+CREATE TABLE release_info(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    version TEXT NOT NULL,
+    deployed_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+SQL_SCRIPT
+    chmod 0666 /home/user/update_scripts/02_create_release_info.sql
+
+    # -----------------------------------------------------------------
+    # 3c. Log files inside /home/user/app/logs
+    # -----------------------------------------------------------------
+    touch /home/user/app/logs/access.log
+    touch /home/user/app/logs/error.log
+    chmod 0666 /home/user/app/logs/access.log /home/user/app/logs/error.log
+
+    # -------------------------------------------------------------------------
+    # 4. Relax permissions so the non-privileged runtime user can modify content
+    # -------------------------------------------------------------------------
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard paths are available
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author="Automated build for deployment-engineering exercise"
+    Version="v1.4.0 initial state"

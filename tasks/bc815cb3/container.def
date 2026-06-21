@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create a writable home directory for the upcoming user work
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up APT cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    chmod 755 /home/user
+
+    exec /bin/bash "$@"
+
+%labels
+    Author="Apptainer build for server_configs task"
+    Description="Clean environment with pytest installed and no pre-created deliverables."
+
+%help
+    This container provides the base environment for the “server_configs” task.
+    All required assignment files are intentionally **absent** so that students
+    can create them during the exercise. Pytest is installed for automated
+    grading.

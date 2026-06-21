@@ -1,0 +1,29 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial sandbox for the “backup-and-restore” exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/backup_demo/original
+
+    # Create the sample file with exactly 5 bytes: h e l l o
+    printf 'hello' > /home/user/backup_demo/original/sample.txt
+
+    # Make everything under /home/user writable by the runtime (non-root) user
+    chmod -R 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard paths are available
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

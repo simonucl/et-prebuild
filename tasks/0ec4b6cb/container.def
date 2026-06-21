@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        curl \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the grader
+    # ---------------------------------------------------------------------
+    # Create the /home/user hierarchy with permissive permissions so the
+    # non-root agent can write inside it later.
+    mkdir -p /home/user/mock_api
+    chmod 0777 /home/user            # allow write access for the agent
+    chmod 0755 /home/user/mock_api
+
+    # Create the mock API JSON file (exactly 57 bytes, no trailing newline)
+    printf '{"users":[{"id":1,"name":"Alice"},{"id":2,"name":"Bob"}]}' \
+        > /home/user/mock_api/users.json
+    chmod 0644 /home/user/mock_api/users.json
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author AI Assistant
+    Description "Environment for mock-API smoke-test task"
+
+%help
+This container provides the initial state for the mock-API smoke-test
+programming exercise.

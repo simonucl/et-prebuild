@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update apt index and install Python and pip
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install required Python packages for the tests
+    pip install --no-cache-dir pytest pyyaml tomli
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the artifact-manager exercise
+    # ------------------------------------------------------------------
+    # Create configuration directory with correct permissions
+    mkdir -p /home/user/repositories/config
+    chmod 755 /home/user/repositories/config
+
+    # Create the initial repo-settings.yaml containing only the two
+    # original repository blocks (core-libs and plugins)
+    cat > /home/user/repositories/config/repo-settings.yaml <<'YAML_EOF'
+repositories:
+  - name: "core-libs"
+    type: "maven"
+    url: "https://artifacts.example.com/libs-release-local"
+  - name: "plugins"
+    type: "npm"
+    url: "https://artifacts.example.com/npm"
+YAML_EOF
+    chmod 644 /home/user/repositories/config/repo-settings.yaml
+
+    # Create the initial cleanup-policy.toml with maxDays = 60
+    cat > /home/user/repositories/config/cleanup-policy.toml <<'TOML_EOF'
+[policy]
+active = true
+maxDays = 60
+TOML_EOF
+    chmod 644 /home/user/repositories/config/cleanup-policy.toml
+
+    # Ensure the edit log does NOT exist yet
+    rm -f /home/user/repositories/config/config-edit.log
+
+%environment
+    # Ensure Python is on PATH for non-privileged users
+    export PYTHONUSERBASE=/home/user/.local
+    export PATH=/home/user/.local/bin:$PATH
+
+%runscript
+    echo "Container for the artifact-manager exercise."
+    echo "Run your commands inside an interactive shell:"
+    echo "    apptainer exec <container>.sif /bin/bash"

@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install required system packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        bc \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------- #
+    # Prepare initial filesystem state expected by the automated tests
+    # --------------------------------------------------------------------- #
+    # Create logs directory and populate the log file
+    mkdir -p /home/user/logs
+
+    cat <<'EOF' > /home/user/logs/container_stats_2023-09-15.log
+container_id,name,cpu_percent,mem_usage_mb
+1db3aa112,web_frontend,35.5,512
+2ab4cc223,database,82.7,1500
+3cd5dd334,cache,18.2,256
+4de6ee445,worker,77.9,1100
+5ef7ff556,nginx_proxy,23.0,450
+6fa8gg667,analytics,69.4,2048
+EOF
+
+    # Ensure appropriate permissions so the non-root runtime user can read
+    chmod 644 /home/user/logs/container_stats_2023-09-15.log
+    chmod 755 /home/user /home/user/logs
+
+    # Do NOT create /home/user/reports; that is part of the student task.
+
+%labels
+    Author   Capacity-Planning Task Builder
+    Description   Base image for capacity-planning exercise with initial log data and pytest installed.
+
+%environment
+    # Nothing special to add; Python is already in PATH
+    :

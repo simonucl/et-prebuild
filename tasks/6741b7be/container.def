@@ -1,0 +1,115 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    #------------------------------------------------------------------
+    # Base tooling
+    #------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        patch \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #------------------------------------------------------------------
+    # Initial exercise state under /home/user
+    #------------------------------------------------------------------
+    mkdir -p /home/user/project/translations
+    mkdir -p /home/user/patches
+
+    # --------------------- translations/en.po ------------------------
+    cat > /home/user/project/translations/en.po <<'EOF'
+# SOME DESCRIPTIVE TITLE
+# Copyright (C)
+# This file is distributed under the same license as the project package.
+# FIRST AUTHOR <email>, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ExampleProject 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-10-01 10:00+0000\n"
+"PO-Revision-Date: 2023-10-01 10:00+0000\n"
+"Language: en\n"
+"Language-Team: English\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/ui.c:10
+msgid "Hello"
+msgstr "Hello"
+EOF
+
+    # --------------------- translations/es.po ------------------------
+    cat > /home/user/project/translations/es.po <<'EOF'
+# SOME DESCRIPTIVE TITLE
+# Copyright (C)
+# This file is distributed under the same license as the project package.
+# FIRST AUTHOR <email>, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ExampleProject 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-10-01 10:00+0000\n"
+"PO-Revision-Date: 2023-10-01 10:00+0000\n"
+"Language: es\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/ui.c:10
+msgid "Hello"
+msgstr "Hola"
+EOF
+
+    # --------------------- patches/new_strings.patch -----------------
+    cat > /home/user/patches/new_strings.patch <<'EOF'
+diff --git a/translations/en.po b/translations/en.po
+index e69de29..4b825dc 100644
+--- a/translations/en.po
++++ b/translations/en.po
+@@
++#: src/ui.c:20
++msgid "Goodbye"
++msgstr "Goodbye"
+diff --git a/translations/es.po b/translations/es.po
+index e69de29..4b825dc 100644
+--- a/translations/es.po
++++ b/translations/es.po
+@@
+-#: src/ui.c:10
+-msgid "Hello"
+-msgstr "Hola"
++#: src/ui.c:10
++msgid "Hello"
++msgstr "¡Hola!"
++
++#: src/ui.c:20
++msgid "Goodbye"
++msgstr ""
+EOF
+
+    #------------------------------------------------------------------
+    # Permissions – make sure the non-root user can modify everything
+    #------------------------------------------------------------------
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author          localization-task-setup
+    Description     "Environment for ExampleProject 1.0 localization exercise"
+
+%help
+    This Apptainer container provides the starting workspace for the
+    ExampleProject 1.0 localization task described in the assignment.
+    The initial tree lives under /home/user/.  Pytest is pre-installed
+    so that the validation suite can be run immediately.

@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Base utilities
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Python testing framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the TLS-credential rotation task
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/.secrets
+
+    # Previous key
+    printf 'OLD_KEY_PLACEHOLDER\n' > /home/user/.secrets/old_key.pem
+
+    # Freshly generated key
+    printf 'NEW_KEY_PLACEHOLDER\n' > /home/user/.secrets/new_key.pem
+
+    # Symbolic link that currently points to the old key
+    ln -sf /home/user/.secrets/old_key.pem /home/user/.secrets/active_key.pem
+
+    # ------------------------------------------------------------------
+    # Permissions
+    # Make sure the non-root runtime user can modify the contents under
+    # /home/user (create rotation.log, retarget the symlink, etc.).
+    # ------------------------------------------------------------------
+    chmod 0777 /home/user
+    chmod 0777 /home/user/.secrets
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=utf-8

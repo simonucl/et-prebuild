@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ---------------------------------------------------------------------
+    # Core utilities + Python tooling for the test harness
+    # ---------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Seed the initial release assets expected by the grading tests
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/deploy/releases/v2.3.1
+    mkdir -p /home/user/deploy/releases/v2.4.0
+    mkdir -p /home/user/deploy/releases/v2.4.1
+
+    # v2.3.1
+    cat > /home/user/deploy/releases/v2.3.1/release_notes.md <<'EOF'
+# Release v2.3.1
+Date: 2023-04-17
+- Fixed issue with authentication timeout
+- Improved logging around API errors
+EOF
+
+    # v2.4.0
+    cat > /home/user/deploy/releases/v2.4.0/release_notes.md <<'EOF'
+# Release v2.4.0
+Date: 2023-05-29
+- Added support for PostgreSQL 14
+- Deprecated legacy report generator
+EOF
+
+    # v2.4.1
+    cat > /home/user/deploy/releases/v2.4.1/release_notes.md <<'EOF'
+# Release v2.4.1
+Date: 2023-06-12
+- Hotfix: Corrected SQL migration script for user_profiles table
+EOF
+
+    # ---------------------------------------------------------------------
+    # Permission tweaks:
+    #   • allow the (non-root) runtime user to write inside /home/user/deploy
+    #   • keep release artefacts read-only to avoid accidental edits
+    # ---------------------------------------------------------------------
+    chmod 0777 /home/user/deploy
+    chmod -R a+rX /home/user/deploy/releases
+
+%runscript
+    chmod 755 /home/user
+
+    echo "Container ready. Launch a shell to perform the deployment-log task."
+    exec "$@"

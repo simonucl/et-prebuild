@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt repositories and installing prerequisites..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    echo "Installing pytest for the test harness..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating initial directory structure and raw profile file..."
+    # Ensure /home/user exists and is writable by any unprivileged user that
+    # will run inside the container.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Create the raw_profiles directory
+    mkdir -p /home/user/raw_profiles
+    chmod 0755 /home/user/raw_profiles
+
+    # Populate the raw trace file with the exact expected content
+    cat > /home/user/raw_profiles/app_service.profile << 'EOF'
+# Profile data for app_service
+# timestamp cpu_percent mem_mb
+2024-06-20T12:00:00Z 35.5 1530
+2024-06-20T12:00:05Z 42.0 1548
+2024-06-20T12:00:10Z 27.3 1522
+2024-06-20T12:00:15Z 55.1 1555
+2024-06-20T12:00:20Z 48.6 1540
+2024-06-20T12:00:25Z 31.2 1528
+EOF
+    chmod 0644 /home/user/raw_profiles/app_service.profile
+
+    echo "Container setup complete."
+
+%labels
+    chmod 755 /home/user
+
+    Author="Apptainer Task Setup"
+    Description="Environment prepared for the performance-engineer trace transformation task."
+
+%environment
+    # Ensure Python and pip are on PATH
+    export PATH="/usr/bin:/usr/local/bin:$PATH"
+
+%runscript
+    # Default command when container is run without arguments
+    exec /bin/bash "$@"

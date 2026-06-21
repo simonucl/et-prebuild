@@ -1,0 +1,31 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install Python tooling
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the tests.
+    # Only the /home/user/qa_env/bin directory must exist.
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/qa_env/bin
+    # Give broad read/execute permissions; ownership root:root is fine.
+    chmod 755 /home/user /home/user/qa_env /home/user/qa_env/bin
+
+%runscript
+    # Default runscript does nothing special.
+    exec "$@"
+
+%environment
+    # Do not modify HOME; allow Apptainer’s default behaviour.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

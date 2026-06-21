@@ -1,0 +1,52 @@
+FROM ubuntu:22.04
+
+# Install Python and pytest
+RUN set -e && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates && \
+    pip3 install --no-cache-dir pytest
+
+# Create the initial directory tree and raw log files
+RUN mkdir -p /home/user/research/logs/raw
+
+# run1.log
+RUN cat > /home/user/research/logs/raw/run1.log << 'EOF'
+2023-05-01 09:00:00.123 [data_collector] INFO: Starting data collection
+2023-05-01 09:00:01.456 [data_collector] DEBUG: Reading sensor 1
+2023-05-01 09:00:02.789 [data_collector] WARNING: Sensor 1 value out of range
+2023-05-01 09:00:03.012 [data_collector] INFO: Sensor 1 value normalized
+2023-05-01 09:00:04.345 [data_collector] ERROR: Failed to write to database
+EOF
+
+# run2.log
+RUN cat > /home/user/research/logs/raw/run2.log << 'EOF'
+2023-05-01 10:10:00.111 [data_processor] INFO: Starting batch job
+2023-05-01 10:10:02.222 [data_processor] WARNING: Missing metadata for file X
+2023-05-01 10:10:05.555 [data_processor] INFO: Completed batch job
+2023-05-01 10:10:06.666 [data_processor] DEBUG: Post-processing
+2023-05-01 10:10:07.777 [data_processor] FATAL: Unrecoverable error, shutting down
+EOF
+
+# run3.log
+RUN cat > /home/user/research/logs/raw/run3.log << 'EOF'
+2023-05-01 11:20:00.000 [report_generator] DEBUG: loading templates
+2023-05-01 11:20:01.000 [report_generator] INFO: generating report
+2023-05-01 11:20:02.000 [report_generator] WARNING: deprecated API
+2023-05-01 11:20:03.000 [report_generator] INFO: report generated
+2023-05-01 11:20:04.000 [report_generator] ERROR: failed to upload report
+EOF
+
+# Make sure the student (non-root runtime user) can write new files
+RUN chmod -R a+rwX /home/user/research
+
+# Environment variables
+ENV LC_ALL=C.UTF-8
+ENV PYTHONIOENCODING=UTF-8
+
+# Set permissions on home directory at runtime
+RUN chmod 755 /home/user
+
+WORKDIR /home/user

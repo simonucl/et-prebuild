@@ -1,0 +1,38 @@
+FROM ubuntu:22.04
+
+# help section and runscript messages
+# Container for backup-integrity verification task. No default runscript defined.
+
+RUN set -e && \
+    echo "Updating apt repositories..." && \
+    apt-get update -y && \
+    echo "Installing Python 3, pip and other utilities..." && \
+    apt-get install -y --no-install-recommends python3 python3-pip ca-certificates && \
+    echo "Installing pytest via pip..." && \
+    pip3 install --no-cache-dir pytest && \
+    echo "Creating required directory structure..." && \
+    mkdir -p /home/user/backups/daily && \
+    mkdir -p /home/user/logs && \
+    echo "Setting permissions so non-root users can write the logs directory..." && \
+    chmod 777 /home/user/logs && \
+    echo "Creating empty data files..." && \
+    : > /home/user/backups/daily/data1.txt && \
+    : > /home/user/backups/daily/data2.txt && \
+    : > /home/user/backups/daily/data3.txt
+
+RUN cat << 'EOF' > /home/user/backups/daily/expected_sha256.txt
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  data1.txt
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  data2.txt
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  data3.txt
+EOF
+
+RUN echo "Setting permissions on the backups directory (read-only for users)..." && \
+    chmod -R 755 /home/user/backups && \
+    chmod 755 /home/user
+
+ENV PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+LABEL Author="GPT-4 Container Setup"
+LABEL Description="Environment for backup-integrity verification task with pytest pre-installed."
+
+CMD echo "Container for backup-integrity verification task. No default runscript defined."

@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #------------------------------------------------------------
+    # Install required system packages
+    #------------------------------------------------------------
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        time \
+        parallel
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #------------------------------------------------------------
+    # Install pytest (via pip to ensure latest version)
+    #------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    #------------------------------------------------------------
+    # Prepare directory structure and benchmark target script
+    #------------------------------------------------------------
+    mkdir -p /home/user/scripts
+    chmod 0777 /home/user          # allow non-root users to create files/dirs
+    chmod 0755 /home/user/scripts
+
+    cat > /home/user/scripts/sleep_for.py << 'PYEOF'
+#!/usr/bin/env python3
+import sys, time
+if __name__ == "__main__":
+    secs = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+    time.sleep(secs)
+PYEOF
+
+    chmod 0755 /home/user/scripts/sleep_for.py
+
+%labels
+    chmod 755 /home/user
+
+    Author benchmark-setup
+    Description Container prepared for benchmarking task with GNU time, GNU parallel, pytest, and target script.
+
+%help
+This Apptainer image contains everything needed for the benchmark exercise:
+  • Python 3 and pytest
+  • GNU time (/usr/bin/time) with “-f” support
+  • GNU parallel
+  • The target script at /home/user/scripts/sleep_for.py

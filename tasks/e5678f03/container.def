@@ -1,0 +1,36 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install required packages
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip curl
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # Create directory structure for the exercise
+    mkdir -p /home/user/simple_api
+    chmod 0755 /home/user /home/user/simple_api
+
+    # ------------------------------------------------------------------
+    # Create the two JSON files with the exact contents + trailing newline
+    # ------------------------------------------------------------------
+    cat <<'EOF' >/home/user/simple_api/users.json
+{"users":[{"id":1,"name":"Alice"},{"id":2,"name":"Bob"},{"id":3,"name":"Charlie"}]}
+EOF
+
+    cat <<'EOF' >/home/user/simple_api/status.json
+{"status":"ok","uptime_seconds":1234}
+EOF
+
+    # Ensure world-readable permissions
+    chmod 0644 /home/user/simple_api/*.json
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special needed; rely on standard environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

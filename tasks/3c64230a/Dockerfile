@@ -1,0 +1,33 @@
+FROM ubuntu:22.04
+
+# Install system packages
+RUN set -e && \
+    apt-get update -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        sqlite3 \
+        python3 \
+        python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Python tooling needed for the assessment framework
+RUN pip3 install --no-cache-dir pytest
+
+# Create the initial filesystem layout and seed data
+RUN mkdir -p /home/user/data
+
+RUN cat > /home/user/data/raw_reviews.csv << 'EOF'
+review_id,product_id,sentiment,review_text
+1,P001,positive,"Great product, works flawlessly."
+2,P002,negative,"Stopped working after a week."
+3,P001,positive,"Absolutely love it!"
+4,P003,neutral,"It is okay, does the job."
+5,P002,negative,"Poor build quality."
+6,P004,positive,"Exceeded my expectations!"
+EOF
+
+# Ensure the non-root runtime user can write under /home/user
+RUN chmod -R 777 /home/user
+
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8

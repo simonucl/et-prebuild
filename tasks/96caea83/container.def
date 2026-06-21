@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the student
+    # ------------------------------------------------------------------
+    # 1. Ensure /home/user and credential directory exist with correct perms
+    mkdir -p /home/user/credential_store
+    chmod 755 /home/user
+    chmod 755 /home/user/credential_store
+
+    # 2. Create the CSV file with EXACT required contents
+    cat > /home/user/credential_store/old_credentials.csv <<'EOF'
+service,username,old_api_key,new_api_key
+auth-service,svc-auth,x8fe21ef,NEW-API-KEY-001
+payment-gateway,svc-pay,98ab442b,NEW-API-KEY-002
+analytics-engine,svc-ana,44cc9911,NEW-API-KEY-003
+EOF
+    chmod 644 /home/user/credential_store/old_credentials.csv
+
+%labels
+    Author YourName
+    Description "Initial state for API key rotation task – Ubuntu 22.04 with pytest"
+
+%help
+This container sets up the initial environment for the API key rotation task.
+It provides:
+  • /home/user/credential_store/old_credentials.csv with the exact required data
+  • pytest installed for the automated checker

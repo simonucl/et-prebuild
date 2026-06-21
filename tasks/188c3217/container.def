@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # --------------------------------------------------------------------- #
+    # Basic tooling
+    # --------------------------------------------------------------------- #
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------- #
+    # Pre-populate backup data                                                   #
+    # --------------------------------------------------------------------- #
+    BACKUP_ROOT="/home/user/backups/2023-10-03"
+    mkdir -p "${BACKUP_ROOT}"
+
+    printf 'SAMPLE DATABASE BACKUP 2023-10-03\n' > "${BACKUP_ROOT}/db_dump.sql.gz"
+    printf 'PHOTOS ARCHIVE PLACEHOLDER\n'          > "${BACKUP_ROOT}/photos.tar"
+    printf 'CONFIG ZIP PLACEHOLDER\n'              > "${BACKUP_ROOT}/config.zip"
+
+    # The backup directory should be readable by anyone but not writable
+    chmod -R a+rX "${BACKUP_ROOT}"
+    chmod -R a-w  "${BACKUP_ROOT}"
+
+    # --------------------------------------------------------------------- #
+    # Directory for future reports                                           #
+    # --------------------------------------------------------------------- #
+    REPORT_DIR="/home/user/backup_reports"
+    mkdir -p "${REPORT_DIR}"
+    chmod 0777 "${REPORT_DIR}"   # writable for the unprivileged runtime user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special required; keep default HOME handling
+
+%labels
+    Author="Container preparation for backup inventory task"
+    Description="Provides initial state (backup files) and pytest for automated grading."

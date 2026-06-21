@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the grader
+    # ------------------------------------------------------------------
+
+    # Create user home hierarchy
+    mkdir -p /home/user/data
+    mkdir -p /home/user/reports
+
+    # Permissions:
+    #   - data directory readable for everyone
+    #   - reports directory writable so the unprivileged user can add the log
+    chmod 755 /home/user/data
+    chmod 777 /home/user/reports
+
+    # Create the empty backup file with correct permissions
+    touch /home/user/data/backup.tar.gz
+    chmod 644 /home/user/data/backup.tar.gz
+
+%labels
+    Maintainer "AI-generated definition file for backup integrity task"

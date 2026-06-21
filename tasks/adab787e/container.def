@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create a non-root user and its home directory
+    useradd -m -s /bin/bash user || true
+
+    # Prepare the raw_data directory and CSV files
+    mkdir -p /home/user/raw_data
+
+    cat > /home/user/raw_data/customers.csv <<'EOF'
+customer_id,customer_name
+1,John Doe
+2,Jane Doe
+EOF
+
+    cat > /home/user/raw_data/orders.csv <<'EOF'
+order_id,customer_id,amount
+1001,1,250.50
+1002,2,450.00
+1003,1,125.75
+EOF
+
+    cat > /home/user/raw_data/products.csv <<'EOF'
+product_id,product_name
+2001,Widget
+2002,Gadget
+EOF
+
+    # Ensure the regular user owns its home directory tree
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default HOME set by Apptainer; just ensure UTF-8 locale
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author example@example.com
+    Description Minimal environment for ETL archiving task with pytest installed.

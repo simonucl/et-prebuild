@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt indexes and installing required packages ..."
+    apt-get update && \
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            curl \
+            procps \
+            ca-certificates \
+            && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest via pip ..."
+    pip3 install --no-cache-dir --upgrade pip setuptools
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating a writable skeleton home directory for the exercise ..."
+    mkdir -p /home/user
+    chmod 0777 /home/user   # world-writable so whichever UID runs can write here
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python and pip are on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author mock_api_task_maintainer
+    Description "Environment for the mock-API curl exercise, with pytest installed."
+
+%help
+    This container supplies the minimal runtime environment (Python, curl, pytest)
+    required for learners to complete the “mock-API” exercise.  No task artefacts
+    are pre-created so that the workspace starts in a clean state.

@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the FinOps firewall task
+    # ------------------------------------------------------------------
+    # Create /home/user hierarchy
+    mkdir -p /home/user/config
+    mkdir -p /home/user/logs
+
+    # Set directory permissions (agent will not have root privileges)
+    chmod 755 /home/user
+    chmod 755 /home/user/config
+    chmod 755 /home/user/logs
+
+    # Create the baseline firewall.rules file with EXACT content + trailing newline
+    cat > /home/user/config/firewall.rules <<'EOF'
+-A INPUT -p tcp --dport 22 -j ACCEPT
+-A INPUT -j DROP
+EOF
+    chmod 644 /home/user/config/firewall.rules
+
+    # Intentionally DO NOT create /home/user/logs/firewall_actions.log
+    # so that initial-state tests confirm its absence.
+
+%environment
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    exec "$@"
+
+%labels
+    Author      FinOpsTaskBuilder
+    Description Container seeded for Prometheus firewall configuration task.

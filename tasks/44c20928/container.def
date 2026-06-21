@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Base OS packages and Python tooling
+    # ------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tzdata
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Create the reference directory tree for the exercise
+    # ------------------------------------------------------------------
+    BASE=/home/user/storage
+    mkdir -p ${BASE}/archive
+    mkdir -p ${BASE}/incoming/project1
+    mkdir -p ${BASE}/incoming/project2
+    mkdir -p ${BASE}/incoming/emptydir
+
+    # ------------------------------------------------------------------
+    # 3. Populate files with the required sizes
+    # ------------------------------------------------------------------
+    truncate -s 56        ${BASE}/incoming/project1/keep.txt
+    truncate -s 1572864   ${BASE}/incoming/project1/large.bak   # 1.5 MiB
+    truncate -s 42        ${BASE}/incoming/project1/old.txt
+
+    truncate -s 73        ${BASE}/incoming/project2/archive.txt
+    truncate -s 1310720   ${BASE}/incoming/project2/temp2.bak   # 1.28 MiB
+
+    # ------------------------------------------------------------------
+    # 4. Adjust modification times to match the specification
+    # ------------------------------------------------------------------
+    touch -d "3 days ago"  ${BASE}/incoming/project1/keep.txt
+    touch -d "2 days ago"  ${BASE}/incoming/project1/large.bak
+    touch -d "15 days ago" ${BASE}/incoming/project1/old.txt
+    touch -d "12 days ago" ${BASE}/incoming/project2/archive.txt
+    touch -d "1 day ago"   ${BASE}/incoming/project2/temp2.bak
+
+    # ------------------------------------------------------------------
+    # 5. Permissions: make everything writable by the unprivileged user
+    # ------------------------------------------------------------------
+    chmod -R 777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to override; keep default environment.
+    export LC_ALL=C
+    export LANG=C.UTF-8
+
+%labels
+    Author="Container build for spring-cleaning task"
+    Description="Provides initial filesystem state and pytest for validation."
+
+%help
+    This Apptainer image installs pytest and prepares the exact directory
+    structure required for the “spring-cleaning” exercise under
+    /home/user/storage/.

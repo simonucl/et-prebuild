@@ -1,0 +1,82 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ########## 1. Install runtime requirements ##########
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ########## 2. Prepare directory structure ##########
+    mkdir -p /home/user/config_backups/old
+    mkdir -p /home/user/audit
+    chmod 0777 /home/user/audit   # must be writable by the runtime user
+
+    ########## 3. Populate configuration backup files ##########
+    # /home/user/config_backups/sshd.conf  (5 lines)
+    cat > /home/user/config_backups/sshd.conf <<'EOF'
+# sshd configuration
+Port 22
+PermitRootLogin no
+PasswordAuthentication yes
+ChallengeResponseAuthentication no
+EOF
+
+    # /home/user/config_backups/nginx.conf  (9 lines)
+    cat > /home/user/config_backups/nginx.conf <<'EOF'
+# nginx configuration
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+events { worker_connections 768; }
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+EOF
+
+    # /home/user/config_backups/app.conf  (4 lines)
+    cat > /home/user/config_backups/app.conf <<'EOF'
+# application configuration
+debug=false
+port=8080
+log_level=info
+EOF
+
+    # /home/user/config_backups/old/legacy.conf  (3 lines)
+    cat > /home/user/config_backups/old/legacy.conf <<'EOF'
+# legacy configuration
+feature_x=disabled
+safe_mode=true
+EOF
+
+    ########## 4. Miscellaneous non-.conf file ##########
+    # /home/user/config_backups/readme.txt  (2 lines)
+    cat > /home/user/config_backups/readme.txt <<'EOF'
+This directory stores configuration backups.
+Non-.conf files should be ignored by the audit script.
+EOF
+
+    ########## 5. Set permissions ##########
+    # Ensure all files are readable by everyone
+    chmod -R a+r /home/user/config_backups
+
+%environment
+    chmod 755 /home/user
+
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author configuration-audit-setup
+    Description "Container prepared for the configuration-file audit assignment"
+
+%help
+    This Apptainer image contains the pre-populated directory tree and files
+    required for the “configuration-file audit” task, along with Python and
+    pytest for automated grading.

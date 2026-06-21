@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and PyPI tooling
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory structure and pre-existing log content
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/app/logs
+
+    # Create the sample log file with the exact expected two lines
+    cat > /home/user/app/logs/app.log <<'EOF'
+2024-01-05 12:00:00 Application started
+2024-01-05 12:05:00 Application running
+EOF
+
+    # Ensure the agent (non-root at runtime) can write inside /home/user
+    chmod 1777 /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Maintainer AI_Apptainer_Setup
+    Description "Environment for backup dry-run task – contains initial log directory only."
+
+%help
+    This Apptainer image provides the initial state for the “log-directory backup
+    dry-run” task.  Only /home/user/app/logs/app.log is pre-populated; no backup
+    or monitoring artefacts are present.  Pytest is installed for automated
+    evaluation.

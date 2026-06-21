@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package list and install required software
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        procps \
+        --no-install-recommends
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the assessment framework
+    pip install --no-cache-dir pytest
+
+    # Ensure the default working directory for the student exists and is writable
+    mkdir -p /home/user
+    chmod 0777 /home/user     # Allow any non-root user to create artifacts here
+
+%environment
+    chmod 755 /home/user
+
+    # Standard PATH setup; do NOT override $HOME
+    export PATH=/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
+
+%labels
+    Author="Incident Response Exercise Image"
+    Description="Base image for CPU snapshot task. Contains Python, pytest, and a writable /home/user."
+
+%help
+This container provides the runtime environment for the “CPU-intensive process
+snapshot” incident-response exercise.
+
+Key points:
+• Python 3 and pytest are installed for automated grading.
+• /home/user exists and is world-writable so the learner can create required
+  artifacts.
+• The ir_logs directory and top_cpu.log file are intentionally **absent**; the
+  student must create them per the task instructions.

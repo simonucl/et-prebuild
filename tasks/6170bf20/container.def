@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author On-Call Security Engineer Prep
+    Description Base image prepared for “credential rotation & dependency refresh” task
+    Maintainer AI Assistant
+
+%post
+    set -eux
+
+    # Update package index and install Python with pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip
+
+    # Ensure `pip` command is available (some tooling expects plain `pip`)
+    ln -sf /usr/bin/pip3 /usr/local/bin/pip
+
+    # Install pytest (required by the grading harness)
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Establish the REQUIRED initial filesystem state for the exercises
+    # ------------------------------------------------------------------
+    # 1. Create /home/user/microservice with legacy credentials
+    mkdir -p /home/user/microservice
+    printf 'API_KEY=oldkey123\nAPI_SECRET=oldsecret456\n' > /home/user/microservice/.env
+
+    # 2. Ensure directories and files are writable by the non-root runtime user
+    chmod -R a+rwx /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default HOME; just make sure customary paths are present
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    # Default runscript – simply execute whatever command is passed in
+    exec "$@"

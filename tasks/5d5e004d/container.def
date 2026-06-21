@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # -----------------------------------------------------------------
+    # 1. Install Python tooling required for the test-suite (pytest)
+    # -----------------------------------------------------------------
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3-pip python3-setuptools
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # -----------------------------------------------------------------
+    # 2. Create the required directory tree and placeholder files
+    #    with the exact byte-sizes described in the assignment.
+    # -----------------------------------------------------------------
+    mkdir -p /home/user/datasets/expA \
+             /home/user/datasets/expB \
+             /home/user/datasets/expC
+
+    # expA
+    truncate -s 1024 /home/user/datasets/expA/data1.txt
+    truncate -s  512 /home/user/datasets/expA/data2.txt
+    truncate -s 1536 /home/user/datasets/expA/notes.log
+
+    # expB
+    truncate -s 2048 /home/user/datasets/expB/image1.jpg
+    truncate -s 4096 /home/user/datasets/expB/image2.jpg
+    truncate -s  512 /home/user/datasets/expB/readme.md
+
+    # expC
+    truncate -s 1234 /home/user/datasets/expC/sample.dat
+    truncate -s  321 /home/user/datasets/expC/more.dat
+
+    # -----------------------------------------------------------------
+    # 3. Permissions
+    #    • /home/user                : 0777 (writable for the runtime user)
+    #    • All dataset directories   : 0755
+    #    • All files inside datasets : 0644
+    # -----------------------------------------------------------------
+    chmod 0777 /home/user              # make sure the non-root runtime user can write here
+    chmod 0755 /home/user/datasets \
+               /home/user/datasets/expA \
+               /home/user/datasets/expB \
+               /home/user/datasets/expC
+    chmod 0644 /home/user/datasets/expA/* \
+               /home/user/datasets/expB/* \
+               /home/user/datasets/expC/*
+
+%labels
+    chmod 755 /home/user
+
+    Author "Automated build for dataset summary task"
+
+%help
+    Container for the “dataset summary” exercise.
+    Provides the exact initial file-system state and has pytest installed.

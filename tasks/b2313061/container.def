@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    #!/bin/bash
+    set -e
+
+    # Update package lists and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        cron \
+        python3-pip
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare directory structure and dummy cleanup script for learners
+    # ------------------------------------------------------------------
+    # Ensure /home/user and the backup sub-directory exist
+    mkdir -p /home/user/backup
+
+    # Create a placeholder cleanup.sh script
+    cat <<'EOF' >/home/user/backup/cleanup.sh
+#!/bin/bash
+# Dummy maintenance script – learners will reference this in their cron job.
+echo "Running cleanup tasks..."
+EOF
+
+    # Make the script executable
+    chmod +x /home/user/backup/cleanup.sh
+
+    # Set sensible permissions on the directories
+    chmod 755 /home/user
+    chmod 755 /home/user/backup
+
+    # ------------------------------------------------------------------
+    # House-keeping: reduce image size
+    # ------------------------------------------------------------------
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Nothing needed here; rely on Apptainer's default HOME binding
+%runscript
+    # Default runscript does nothing; image is meant for interactive use
+    exec /bin/bash "$@"

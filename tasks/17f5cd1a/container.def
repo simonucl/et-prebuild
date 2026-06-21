@@ -1,0 +1,68 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package lists and installing Python tooling..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating workspace directory structure and sample log files..."
+    # Base workspace
+    mkdir -p /home/user
+    chmod 0755 /home/user
+
+    WORKSPACE=/home/user/api_tests
+    mkdir -p "${WORKSPACE}"
+    # Make the workspace writable so an unprivileged runtime user can create
+    # the reports/ directory and resulting file.
+    chmod 0777 "${WORKSPACE}"
+
+    # Logs directory tree
+    mkdir -p "${WORKSPACE}/logs/serviceA"
+    mkdir -p "${WORKSPACE}/logs/serviceB"
+    mkdir -p "${WORKSPACE}/logs/serviceC/archive"
+
+    # --------------------------------------------------------------------- #
+    # Populate log files with exact, deterministic content
+    # --------------------------------------------------------------------- #
+
+    cat > "${WORKSPACE}/logs/serviceA/2024-06-08.log" <<'EOF'
+OK: ping 200
+FAIL: /users endpoint returned 500
+OK: /orders endpoint returned 201
+EOF
+
+    cat > "${WORKSPACE}/logs/serviceB/2024-06-08.log" <<'EOF'
+FAIL: token refresh failed
+FAIL: login API timeout
+OK: healthcheck 200
+EOF
+
+    cat > "${WORKSPACE}/logs/serviceC/2024-06-07.log" <<'EOF'
+OK: initial handshake 200
+FAIL: search API 502
+OK: teardown 200
+EOF
+
+    cat > "${WORKSPACE}/logs/serviceC/archive/2024-05-30.log" <<'EOF'
+FAIL: should not be included because old
+OK: cleanup complete
+EOF
+
+    # Ensure all log files are world-readable and immutable in content
+    find "${WORKSPACE}/logs" -type f -exec chmod 0644 {} +
+
+    echo "Container setup for API log-processing task completed."
+
+%runscript
+    chmod 755 /home/user
+
+    echo "This container is ready for the API-tests workspace task."
+    echo "Your working directory is /home/user/api_tests"
+    exec "${@}"

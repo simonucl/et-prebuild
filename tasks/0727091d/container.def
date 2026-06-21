@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install required utilities
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        gzip \
+        passwd  # provides useradd
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the test harness
+    # ------------------------------------------------------------------
+    # 1. Create the target user directory layout
+    mkdir -p /home/user/raw_data
+
+    # 2. Populate raw CSV files with the exact content & byte size (24 B)
+    cat > /home/user/raw_data/records_A.csv <<'EOF'
+id,value
+1,10
+2,20
+3,30
+EOF
+
+    cat > /home/user/raw_data/records_B.csv <<'EOF'
+id,value
+4,40
+5,50
+6,60
+EOF
+
+    # 3. Ensure world-readable permissions
+    chmod -R a+rX /home/user
+
+    # 4. (Optional) add a non-privileged user entry for completeness
+    #    The UID/GID may not match the runtime user, but the account
+    #    itself is convenient for interactive work.
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -d /home/user -s /bin/bash user
+    fi
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal PATH so python/pytest & common utilities are found
+    PATH=/usr/local/bin:/usr/bin:/bin
+    export PATH
+
+%labels
+    Author      ChatGPT
+    Description "Container image for the tabular-data optimization task (raw CSVs staged, pytest installed)"

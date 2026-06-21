@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        sqlite3 \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the FinOps task
+    # ------------------------------------------------------------------
+    # 1. Create the directory with the required permissions
+    mkdir -p /home/user/finops
+    chmod 0755 /home/user/finops
+
+    # 2. Create and populate the SQLite database
+    sqlite3 /home/user/finops/cloud_spend.db <<'EOF'
+CREATE TABLE usage(
+    id      INTEGER PRIMARY KEY,
+    service TEXT,
+    month   TEXT,
+    cost    REAL
+);
+INSERT INTO usage (id, service, month, cost) VALUES
+    (1, 'Compute Engine', '2023-07', 523.23),
+    (2, 'Cloud Storage',  '2023-07', 123.45),
+    (3, 'BigQuery',       '2023-07', 300.00),
+    (4, 'Compute Engine', '2023-06', 200.00),
+    (5, 'BigQuery',       '2023-07',  77.89);
+EOF
+
+    # 3. Set the required permissions on the database file
+    chmod 0644 /home/user/finops/cloud_spend.db
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and SQLite are on the PATH
+    export PATH="/usr/bin:$PATH"
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author      FinOps-Exercise
+    Description "Container for FinOps analyst SQLite summation exercise"

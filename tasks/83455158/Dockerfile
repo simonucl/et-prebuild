@@ -1,0 +1,27 @@
+FROM ubuntu:22.04
+
+RUN apt-get update -y && \
+    apt-get install -y python3 python3-pip && \
+    pip3 install --no-cache-dir pytest
+
+# Create project directory structure
+RUN mkdir -p /home/user/ds_cleaning
+
+# Create VERSION file with initial version
+RUN printf '1.0.0\n' > /home/user/ds_cleaning/VERSION
+
+# Create initial CHANGELOG.md with required contents
+RUN cat > /home/user/ds_cleaning/CHANGELOG.md <<'EOF'
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [1.0.0] - 2022-12-01
+### Added
+- Initial release
+EOF
+
+# Ensure non-root users can read/write the project directory
+RUN chmod -R a+rwX /home/user
+
+ENV PATH=/usr/local/bin:/usr/bin:/bin:$PATH

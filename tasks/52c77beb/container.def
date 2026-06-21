@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest for the grading suite
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the observability-dashboard
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/observability-dashboard
+
+    # Ensure the directory is writable by the (non-root) runtime user
+    chmod 777 /home/user
+    chmod 777 /home/user/observability-dashboard
+
+    # VERSION file with the current version
+    cat > /home/user/observability-dashboard/VERSION <<'EOF'
+1.4.2
+EOF
+    chmod 666 /home/user/observability-dashboard/VERSION
+
+    # Initial CHANGELOG.md content
+    cat > /home/user/observability-dashboard/CHANGELOG.md <<'EOF'
+## [1.4.2] - 2023-09-20
+### Added
+- Initial CPU saturation panel.
+
+EOF
+    chmod 666 /home/user/observability-dashboard/CHANGELOG.md
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python user base binaries (pip installs) are in PATH
+    export PATH="$PATH:$HOME/.local/bin"
+
+%labels
+    Author observability-dashboard-setup
+    Description Initial state for the version-bump exercise. Pytest pre-installed.
+
+%help
+    This container provides the starting filesystem state required for the
+    “observability-dashboard” version-bump task along with pytest for the
+    automated grading suite.

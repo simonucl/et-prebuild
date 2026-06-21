@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # --- Base packages -------------------------------------------------------
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        locales
+
+    # --- Python tooling ------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # --- Exercise dataset ----------------------------------------------------
+    mkdir -p /home/user/data
+
+    cat > /home/user/data/logs.csv <<'EOF'
+timestamp,node_id,level,message
+2023-01-01T00:00:00Z,node-1,INFO,Service started
+2023-01-01T00:01:00Z,node-2,ERROR,Unable to reach DB
+2023-01-01T00:02:00Z,node-1,ERROR,Timeout
+2023-01-01T00:03:00Z,node-2,WARN,High memory
+2023-01-01T00:04:00Z,node-3,ERROR,Disk full
+2023-01-01T00:05:00Z,node-1,INFO,Service heartbeat
+2023-01-01T00:06:00Z,node-2,ERROR,Connection reset
+2023-01-01T00:07:00Z,node-3,INFO,Service started
+2023-01-01T00:08:00Z,node-1,ERROR,Out of memory
+2023-01-01T00:09:00Z,node-1,ERROR,Service crashed
+EOF
+
+    # --- Output directory placeholder ---------------------------------------
+    mkdir -p /home/user/output
+
+    # --- Permissions ---------------------------------------------------------
+    chmod -R 0755 /home/user
+
+    # Clean up APT caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%runscript
+    exec /bin/bash "$@"
+
+%labels
+    Author="Container Generator"
+    Description="Environment for distributed-systems incident review exercise with pre-loaded dataset and pytest installed."

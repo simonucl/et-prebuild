@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic tooling
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare filesystem layout required by the assignment
+    # ------------------------------------------------------------------
+    # Create writable home for the student
+    mkdir -p /home/user
+    chmod 0777 /home/user    # ensure any unprivileged UID can create files here
+
+    # Create scans directory and populate the fixture log file
+    mkdir -p /home/user/scans
+    chmod 0755 /home/user/scans
+
+    cat > /home/user/scans/nmap_scan.log <<'EOF'
+192.168.1.10:22/tcp open ssh (protocol 2.0) | vuln: openssh-cve-2018-15473
+192.168.1.12:80/tcp open http apache 2.4.29 | vuln: cve-2021-41773
+192.168.1.15:443/tcp open https nginx 1.14.0
+192.168.1.20:23/tcp closed telnet
+192.168.1.30:3306/tcp open mysql 5.7.31 | vuln: cve-2019-5480
+192.168.1.35:25/tcp open smtp postfix
+192.168.1.40:8080/tcp open http-proxy squid 3.5 | vuln: cve-2019-12529
+10.0.0.5:53/udp open domain bind 9.10.3-P4
+10.0.0.8:110/tcp open pop3 dovecot 2.3.13 | vuln: cve-2020-10967
+10.0.0.9:995/tcp open pop3s dovecot 2.3.13
+10.0.0.10:143/tcp open imap dovecot 2.3.13 | vuln: cve-2020-25275
+10.0.0.20:21/tcp open ftp vsftpd 3.0.3 | vuln: cve-2011-2523
+EOF
+
+    chmod 0644 /home/user/scans/nmap_scan.log
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/home/user:$PATH
+
+%labels
+    Author="ChatGPT"
+    Description="Environment for the critical-vulnerability extraction task"

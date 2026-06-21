@@ -1,0 +1,77 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install required tools
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        rsync \
+        iputils-ping \
+        ca-certificates
+
+    # Install pytest for the validation harness
+    pip3 install --no-cache-dir pytest
+
+    #################################################################
+    # Prepare initial filesystem state expected by the test suites
+    #################################################################
+
+    # Create base directories
+    mkdir -p /home/user/source_configs
+    mkdir -p /home/user/remote_share/site_backup
+    mkdir -p /home/user/logs
+
+    #################################################################
+    # Populate /home/user/source_configs/ with the three reference
+    # router configuration files.
+    #################################################################
+    cat > /home/user/source_configs/router1.conf <<'EOF'
+hostname Router1
+interface Gig0/0/0
+ ip address 10.0.1.1 255.255.255.0
+!
+EOF
+
+    cat > /home/user/source_configs/router2.conf <<'EOF'
+hostname Router2
+interface Gig0/0/0
+ ip address 10.0.2.1 255.255.255.0
+!
+EOF
+
+    cat > /home/user/source_configs/router3.conf <<'EOF'
+hostname Router3
+interface Gig0/0/0
+ ip address 10.0.3.1 255.255.255.0
+!
+EOF
+
+    #################################################################
+    # Ensure permissions allow the non-root runtime user to read/write
+    # the working directories and create new files.
+    #################################################################
+    chmod -R 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing required here; runtime user’s own environment remains.
+    :
+
+%runscript
+    echo "Container ready.  Launch a shell to begin the exercise:"
+    exec /bin/bash
+
+%help
+    This container provides the initial environment for the networking
+    rsync exercise.  It contains:
+      • /home/user/source_configs/  (three *.conf files)
+      • /home/user/remote_share/site_backup/  (empty)
+      • /home/user/logs/  (empty)
+    Required utilities (rsync, ping) and pytest are pre-installed.

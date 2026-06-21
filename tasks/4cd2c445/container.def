@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python plus pip
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the directory structure and provide the snapshot file
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data
+
+    # Create the fixed process listing (exactly 12 lines incl. header)
+    cat > /home/user/data/process_snapshot.txt << 'EOF'
+PID USER     COMMAND
+  1 root     systemd
+  2 root     kthreadd
+100 daemon   some_daemon
+101 daemon   another_daemon
+200 user     bash
+201 user     vim
+202 user     python
+300 user     java
+400 root     sshd
+401 root     sshd
+402 root     cron
+EOF
+
+    # Ensure the file is world-readable (no execution bits)
+    chmod 644 /home/user/data/process_snapshot.txt
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python user-installed scripts are found first if needed
+    export PATH="/usr/local/bin:${PATH}"
+
+%labels
+    Author    Example Author
+    Purpose   Static process snapshot analysis exercise

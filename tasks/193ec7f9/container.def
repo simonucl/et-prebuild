@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python + pip
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Create initial directory scaffold for the ETL project
+    # -----------------------------------------------------------------
+    mkdir -p /home/user/etl/config
+    mkdir -p /home/user/etl/logs
+
+    # Populate the initial pipeline.yml with the **old** configuration
+    cat > /home/user/etl/config/pipeline.yml <<'EOF'
+version: 1
+steps:
+  extract:
+    source: "s3://raw-data"
+  transform:
+    script: "transform.py"
+  load:
+    destination: "warehouse"
+EOF
+
+    # Ensure non-root users inside the container can modify the ETL tree
+    chmod -R 0775 /home/user/etl
+
+%environment
+    chmod 755 /home/user
+
+    # Keep a sensible default PATH
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author pipeline-patch-exercise
+    Description "Base image for Git-Ops ETL patch exercise – provides initial state and pytest."

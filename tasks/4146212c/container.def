@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package index and install Python 3, pip, and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Seed data for the API-key-rotation task
+    # ------------------------------------------------------------------
+    # Create the required directory structure with appropriate permissions
+    mkdir -p /home/user/credentials
+    chmod 0777 /home/user/credentials   # must be writable by the unprivileged user
+
+    # Populate users.csv with the exact contents specified in the task
+    cat > /home/user/credentials/users.csv <<'EOF'
+user_id,username,old_key
+1,alice,akjdh231
+2,bob,98dfjKsl
+3,charlie,QWERTY999
+EOF
+    chmod 0644 /home/user/credentials/users.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure pip-installed executables are in PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author="AI Assistant"
+    Description="Container image with initial state for API-key rotation task (users.csv present, pytest installed)"

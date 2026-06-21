@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic tools and Python packages needed for grading (pytest, etc.)
+    # ------------------------------------------------------------------
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial filesystem state for the “legacy utility” exercise
+    # ------------------------------------------------------------------
+    # 1. Ensure the base home directory exists and is writable for any user
+    mkdir -p /home/user
+    chmod 1777 /home/user      # let the learner create /home/user/logs later
+
+    # 2. Place the legacy script (non-executable, mode 0644)
+    mkdir -p /home/user/legacy_utils
+    cat << 'EOF' > /home/user/legacy_utils/greet.sh
+#!/bin/bash
+echo "greet.sh version 1.0"
+echo "Hello, $1!"
+EOF
+    chmod 0644 /home/user/legacy_utils/greet.sh
+
+    # 3. Do NOT create /home/user/logs; the learner must create it.
+    :
+
+%labels
+    chmod 755 /home/user
+
+    Author Legacy-Utility Setup
+
+%help
+This container image provides the initial environment for the
+“legacy utility” task. Pytest is installed, and the directory
+/home/user/legacy_utils contains the non-executable script greet.sh
+that the learner must run and log according to the assignment.

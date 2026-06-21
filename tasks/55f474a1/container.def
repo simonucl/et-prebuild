@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python 3 pip
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3-pip
+
+    # Install pytest for the automated checker
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial filesystem state expected by the tests
+    # ------------------------------------------------------------------
+    # Non-root agents will work in /home/user, so make sure it exists
+    mkdir -p /home/user
+
+    # Create the provision directory and make it writable by any user
+    mkdir -p /home/user/provision
+    chmod 0777 /home/user/provision
+
+    # Create servers.dat with the exact required content (LF endings)
+    cat >/home/user/provision/servers.dat <<'EOF'
+hostname,role,dc
+web01,app,dc1
+db01,db,dc1
+cache01,cache,dc2
+EOF
+
+    # Create ips.dat with the exact required content (LF endings)
+    cat >/home/user/provision/ips.dat <<'EOF'
+ip,netmask
+10.0.0.11,255.255.255.0
+10.0.0.21,255.255.255.0
+10.0.0.31,255.255.255.0
+EOF
+
+    # Ensure readable files
+    chmod 0644 /home/user/provision/servers.dat /home/user/provision/ips.dat
+
+    # Do NOT create inventory.txt; the agent must generate it
+    :
+
+%environment
+    chmod 755 /home/user
+
+    # Standard locale and PATH adjustments (leave $HOME untouched)
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
+
+%runscript
+    # Default runscript does nothing—container is for the exercise environment
+    exec "$@"

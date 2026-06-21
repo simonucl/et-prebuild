@@ -1,0 +1,78 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # --------------------------------------------------------------------- #
+    # 1. Create a non-root ‘user’ account with UID/GID 1000 (if not present)
+    #    This matches the typical UID Apptainer will run under so that
+    #    the on-call engineer (student) actually owns the artefacts and can
+    #    modify them without root privileges.
+    # --------------------------------------------------------------------- #
+    if ! getent group 1000 >/dev/null 2>&1; then
+        groupadd -g 1000 user
+    fi
+    if ! getent passwd 1000 >/dev/null 2>&1; then
+        useradd  -m -u 1000 -g 1000 -s /bin/bash user
+    fi
+
+    # --------------------------------------------------------------------- #
+    # 2. Install Python tooling required for the automated test-harness
+    # --------------------------------------------------------------------- #
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------- #
+    # 3. Prepare initial filesystem state expected by the tests
+    # --------------------------------------------------------------------- #
+    USER_HOME=/home/user
+    INCIDENT_DIR="$USER_HOME/incident"
+
+    # Ensure base directory
+    mkdir -p "${INCIDENT_DIR}"
+    chmod 755 "${INCIDENT_DIR}"
+
+    # backup.sh — intentionally world-writable
+    cat > "${INCIDENT_DIR}/backup.sh" <<'EOF'
+#!/bin/bash
+# Dummy backup script – initial insecure state (world-writable)
+echo "Performing backup…"
+EOF
+    chmod 777 "${INCIDENT_DIR}/backup.sh"
+
+    # .env with the insecure default secret and DB password
+    cat > "${INCIDENT_DIR}/.env" <<'EOF'
+SECRET_KEY=INSECURE_DEFAULT
+DB_PASSWORD=supersecret
+EOF
+    chmod 644 "${INCIDENT_DIR}/.env"
+
+    # access.log with at least one probe from 203.0.113.50
+    cat > "${INCIDENT_DIR}/access.log" <<'EOF'
+203.0.113.50 - - [17/Aug/2023:14:03:55 +0000] "GET /admin HTTP/1.1" 404 0
+192.0.2.10   - - [17/Aug/2023:14:04:00 +0000] "GET /robots.txt HTTP/1.1" 404 0
+203.0.113.50 - - [17/Aug/2023:14:04:05 +0000] "GET /wp-login.php HTTP/1.1" 404 0
+198.51.100.7 - - [17/Aug/2023:14:04:10 +0000] "GET /login HTTP/1.1" 404 0
+203.0.113.50 - - [17/Aug/2023:14:04:15 +0000] "GET /config.php HTTP/1.1" 404 0
+EOF
+    chmod 644 "${INCIDENT_DIR}/access.log"
+
+    # Do NOT create .env.secure, firewall directory or incident_logs directory;
+    # those are for the student to create.
+
+    # --------------------------------------------------------------------- #
+    # 4. Give ownership of everything under /home/user to UID/GID 1000
+    #    so the non-root student can work with the files.
+    # --------------------------------------------------------------------- #
+    chown -R 1000:1000 "${USER_HOME}"
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure standard locale & PATH are set
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

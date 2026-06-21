@@ -1,0 +1,22 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python, venv module and pip
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip python3-venv && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install the exact pytest version required by the exercise
+    pip3 install --no-cache-dir pytest==7.2.0
+
+    # Ensure the expected home directory exists (owned by runtime user)
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+%environment
+    # Keep default HOME provided by Apptainer; just ensure Python is visible
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

@@ -1,0 +1,67 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #-------------------------------------------------------------------
+    # 1. Base packages + pytest
+    #-------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    #-------------------------------------------------------------------
+    # 2. Create initial directory tree and configuration files
+    #-------------------------------------------------------------------
+    mkdir -p /home/user/netconfigs/old
+    mkdir -p /home/user/netconfigs/new
+    mkdir -p /home/user/etc
+
+    cat > /home/user/netconfigs/old/router.conf <<'EOF'
+hostname router-old
+ip route 0.0.0.0/0 via 192.168.0.1
+EOF
+
+    cat > /home/user/netconfigs/new/router.conf <<'EOF'
+hostname router-new
+ip route 0.0.0.0/0 via 10.0.0.1
+EOF
+
+    cat > /home/user/netconfigs/old/switch.conf <<'EOF'
+hostname switch-old
+vlan 10
+EOF
+
+    cat > /home/user/netconfigs/new/switch.conf <<'EOF'
+hostname switch-new
+vlan 20
+EOF
+
+    #-------------------------------------------------------------------
+    # 3. Set up the (intentionally incorrect) “active” symlinks
+    #-------------------------------------------------------------------
+    ln -sf /home/user/netconfigs/old/router.conf  /home/user/etc/router.conf
+    ln -sf /home/user/netconfigs/old/switch.conf  /home/user/etc/switch.conf
+
+    #-------------------------------------------------------------------
+    # 4. Permissions — make everything user-writable (non-root runtime)
+    #-------------------------------------------------------------------
+    chmod -R a+rwX /home/user
+    find /home/user -type d -exec chmod 0777 {} \;
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing overridden—Apptainer will set HOME as usual
+
+%labels
+    Author Network-Lab-Setup
+    Description Initial state for symlink-update exercise
+
+%help
+    Container providing the starting environment for the symlink-update task.
+    Directories and files under /home/user are created with write permissions
+    so that an unprivileged agent can perform the required operations.

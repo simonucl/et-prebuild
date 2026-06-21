@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #-----------------------------------------------------------------------
+    # 1. Install required packages
+    #-----------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        jq \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #-----------------------------------------------------------------------
+    # 2. Create non-root user `user`
+    #-----------------------------------------------------------------------
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g 1000 -s /bin/bash user
+
+    #-----------------------------------------------------------------------
+    # 3. Prepare initial filesystem expected by the assignment
+    #-----------------------------------------------------------------------
+    mkdir -p /home/user/mlops/experiments/run_001
+    mkdir -p /home/user/mlops/experiments/run_002
+
+    # -- run_001 files (exact one-line JSON, no trailing newline)
+    printf '{"lr":0.001,"batch_size":32,"optimizer":"adam"}'  > /home/user/mlops/experiments/run_001/config.json
+    printf '{"accuracy":0.92,"loss":0.35}'                    > /home/user/mlops/experiments/run_001/metrics.json
+
+    # -- run_002 files
+    printf '{"lr":0.0005,"batch_size":16,"optimizer":"sgd"}'  > /home/user/mlops/experiments/run_002/config.json
+    printf '{"accuracy":0.88,"loss":0.42}'                    > /home/user/mlops/experiments/run_002/metrics.json
+
+    # Permissions: make sure every test user can read the files
+    chown -R 1000:1000 /home/user
+    chmod -R 755 /home/user/mlops
+
+    #-----------------------------------------------------------------------
+    # 4. Python tooling for the grader
+    #-----------------------------------------------------------------------
+    python3 -m pip install --no-cache-dir pytest
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+
+%runscript
+    echo "MLOps tracking task container. Start a shell with: apptainer exec -it \$0 /bin/bash"
+
+%labels
+    Author      someone
+    Description "Base image for MLOps tracking task with initial experiment data and pytest installed."
+
+%help
+    This Apptainer image provides the initial environment for the “track_experiments”
+    assignment.  Two sample experiment runs are placed under
+      /home/user/mlops/experiments/
+    ready for the student-written script to process.  The container also includes
+    Python, pip, pytest, and jq.

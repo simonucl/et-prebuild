@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python and pip
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip locales
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the evidence directory and Latin-1 sample file
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/forensics
+    chmod 0777 /home/user/forensics
+
+    # Write the canonical text in UTF-8 to a temporary file
+    cat > /tmp/incident_note_utf8.txt <<'EOF'
+Incident Note - 2023-05-15
+Affected user: José Álvarez
+Issue: Crème brûlée recipe overwritten with mojibake
+Details: ½ cup sugar became ÃÂ½ cup sugar
+Resolution: Convert file encoding from ISO-8859-1 to UTF-8.
+EOF
+
+    # Convert the UTF-8 file to ISO-8859-1 (Latin-1)
+    iconv -f UTF-8 -t ISO-8859-1 /tmp/incident_note_utf8.txt \
+        > /home/user/forensics/incident_note_latin1.txt
+
+    # Make sure the evidence file is readable and the directory is writable
+    chmod 0666 /home/user/forensics/incident_note_latin1.txt
+    rm -f /tmp/incident_note_utf8.txt
+
+%labels
+    chmod 755 /home/user
+
+    Author incident-response-prep
+
+%help
+    This container sets up an evidence directory at /home/user/forensics
+    containing a Latin-1 encoded text file.  Students must convert the
+    file to UTF-8 and generate the required status log, as described in
+    the assignment.

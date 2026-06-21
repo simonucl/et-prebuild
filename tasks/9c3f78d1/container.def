@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # --------------------------------------------------------------------
+    # Prepare the initial filesystem state for the student.
+    # --------------------------------------------------------------------
+    # 1. Create the staging directory and populate it with the three source
+    #    files exactly as described in the task.
+    mkdir -p /home/user/artifacts_staging
+
+    printf 'appcli binary for x86_64 version 2.3.0\n' \
+        > /home/user/artifacts_staging/appcli-2.3.0-linux-x86_64.bin
+
+    printf 'appcli binary for arm64 version 2.3.0\n' \
+        > /home/user/artifacts_staging/appcli-2.3.0-linux-arm64.bin
+
+    cat > /home/user/artifacts_staging/CHANGELOG-2.3.0.md <<'EOF'
+# Changelog for v2.3.0
+
+- Feature A
+- Bug fix B
+EOF
+
+    # Ensure the files and directory are writable by the unprivileged user
+    chmod 0777 /home/user/artifacts_staging
+    chmod 0666 /home/user/artifacts_staging/*
+
+    # 2. Guarantee that /home/user/releases does NOT exist yet so the
+    #    student has to create it during their task.
+    rm -rf /home/user/releases
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal environment tweaks; do NOT override $HOME so that the host's
+    # home directory binds correctly when the container starts.
+    export LC_ALL=C.UTF-8
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

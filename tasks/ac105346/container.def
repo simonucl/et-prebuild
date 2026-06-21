@@ -1,0 +1,86 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install required software
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3 \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the evaluation framework
+    pip3 install --no-cache-dir pytest
+
+    ########################################################
+    # 1. Create runtime user and home directory structure
+    ########################################################
+    # Some runners expect a non-root user.  Create a generic
+    # ‘user’ account with UID 1000 and home /home/user.
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 -s /bin/bash user
+    fi
+
+    # Ensure /home/user exists even if useradd was skipped
+    mkdir -p /home/user
+    chown -R root:root /home/user
+    chmod 755 /home/user
+
+    ########################################################
+    # 2. Prepare initial task data
+    ########################################################
+    #   /home/user/databases/warehouse.db
+    #   (directory must be 755, DB must contain the products table)
+    ########################################################
+    mkdir -p /home/user/databases
+    chmod 755 /home/user/databases
+
+    # Build the SQLite database with correct schema & data
+    cat <<'SQL' | sqlite3 /home/user/databases/warehouse.db
+CREATE TABLE products(
+    id    INTEGER PRIMARY KEY,
+    name  TEXT,
+    stock INTEGER
+);
+INSERT INTO products(id,name,stock) VALUES
+    (1,'wrench',42),
+    (2,'hammer',17),
+    (3,'screwdriver',58);
+SQL
+
+    # Ensure readable owner/permissions on the DB file
+    chmod 644 /home/user/databases/warehouse.db
+
+    ########################################################
+    # 3. Provide (empty) backup directory, 755 perms
+    ########################################################
+    mkdir -p /home/user/backups
+    chmod 755 /home/user/backups
+
+%environment
+    # Propagate a minimal PATH that includes standard locations
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%runscript
+    # Default command simply opens a shell
+    exec /bin/bash "$@"
+
+%labels
+    Author backup-task-preparer
+    Description "Environment for SQLite backup task with pytest installed"
+
+%help
+    This container image provides the initial state for the SQLite
+    backup-administration task.  It includes:
+      • /home/user/databases/warehouse.db with the required schema/data
+      • An empty /home/user/backups directory (permissions 755)
+      • Python, sqlite3, and pytest pre-installed
+
+    No backup artefacts are present; the student is expected to create them.

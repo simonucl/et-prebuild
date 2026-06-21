@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the assessment framework
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the exercise
+    # -----------------------------------------------------------------
+    # Create the dedicated /home/user directory with world-writable perms
+    # so that whichever UID the learner has inside the container can
+    # freely manipulate its contents.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Create the legacy file with the exact required contents
+    cat <<'EOF' > /home/user/legacy_users.tmp
+old_alpha
+old_beta
+old_gamma
+EOF
+
+    # Ensure readable/writable by the non-root user running the exercise
+    chmod 0666 /home/user/legacy_users.tmp
+
+%environment
+    chmod 755 /home/user
+
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author exercise-preparer
+    Description Container image for user-account management exercise
+
+%runscript
+    echo "Container for account-management exercise. Use an interactive shell to begin."

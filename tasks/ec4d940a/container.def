@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # 1. Basic tooling --------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # 2. Python testing framework -------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # 3. Seed the required initial filesystem state --------------------------
+    #    Create /home/user plus the raw metrics directory and three CSV files.
+    mkdir -p /home/user/observability/raw_metrics
+
+    cat > /home/user/observability/raw_metrics/cpu_metrics.csv <<'EOF'
+timestamp,cpu_usage_percent
+2024-06-01T10:00:00Z,45.3
+2024-06-01T11:00:00Z,55.1
+2024-06-01T12:00:00Z,49.8
+EOF
+
+    cat > /home/user/observability/raw_metrics/memory_metrics.csv <<'EOF'
+timestamp,mem_used_mb
+2024-06-01T10:00:00Z,7832
+2024-06-01T11:00:00Z,8124
+2024-06-01T12:00:00Z,7998
+EOF
+
+    cat > /home/user/observability/raw_metrics/http_requests.csv <<'EOF'
+timestamp,method,status_code,latency_ms
+2024-06-01T10:00:00Z,GET,200,123
+2024-06-01T10:01:00Z,POST,200,256
+2024-06-01T10:02:00Z,GET,500,789
+2024-06-01T11:15:00Z,GET,200,101
+2024-06-01T12:22:00Z,POST,404,303
+EOF
+
+    # 4. Ensure everything is readable by any user that runs inside
+    chmod -R a+rX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep locale sane
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

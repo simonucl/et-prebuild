@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic development tools
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the expected base home directory exists and is readable
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Clean up APT caches to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    export PYTHONUNBUFFERED=1
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Base container for monitoring configuration exercise with pytest installed."
+
+%help
+    This container provides a clean Ubuntu 22.04 environment with Python 3 and
+    pytest pre-installed.  No monitoring configuration files are present so that
+    students can complete the assignment from a pristine starting state.

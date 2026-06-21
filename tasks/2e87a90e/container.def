@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        make \
+        zip \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Set up initial project directory structure and markdown files
+    mkdir -p /home/user/doc-project/markdown
+
+    # intro.md
+    cat > /home/user/doc-project/markdown/intro.md <<'EOF'
+# Introduction
+
+This is the introduction document.
+
+EOF
+
+    # setup.md
+    cat > /home/user/doc-project/markdown/setup.md <<'EOF'
+# Setup
+
+Follow these steps to set up the project.
+
+EOF
+
+    # Ensure the user running inside the container can modify project files
+    chmod -R a+rwX /home/user/doc-project
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

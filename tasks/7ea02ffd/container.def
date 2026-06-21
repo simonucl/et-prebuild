@@ -1,0 +1,68 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory structure and seed SQL files
+    # ------------------------------------------------------------------
+    BASE_DIR="/home/user/query_scripts"
+    mkdir -p "${BASE_DIR}"
+
+    # get_users.sql
+    cat > "${BASE_DIR}/get_users.sql" << 'EOF'
+SELECT * FROM users WHERE active = 1;
+-- some comment
+EOF
+
+    # get_orders.sql
+    cat > "${BASE_DIR}/get_orders.sql" << 'EOF'
+SELECT id, total FROM orders;
+EOF
+
+    # update_users.sql
+    cat > "${BASE_DIR}/update_users.sql" << 'EOF'
+UPDATE users SET active = 0 WHERE last_login < '2023-01-01';
+EOF
+
+    # archive_customers.sql
+    cat > "${BASE_DIR}/archive_customers.sql" << 'EOF'
+SELECT * FROM customers WHERE archived = 0;
+EOF
+
+    # delete_tmp.sql
+    cat > "${BASE_DIR}/delete_tmp.sql" << 'EOF'
+SELECT * FROM tmp_data;
+EOF
+
+    # Set permissions: directory 0755, files 0644
+    chmod 0755 "${BASE_DIR}"
+    find "${BASE_DIR}" -type f -name "*.sql" -exec chmod 0644 {} +
+
+    # Ensure refactor.log does NOT exist yet
+    rm -f "${BASE_DIR}/refactor.log"
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python tools are on PATH (should already be)
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+
+%labels
+    Author example
+    Description "Environment for SQL refactor task with pytest pre-installed"
+
+%help
+    This Apptainer image provides the starting environment for the SQL
+    refactoring assignment.  The directory /home/user/query_scripts contains
+    the legacy .sql files in their pristine state, and pytest is available
+    for the automated grader.

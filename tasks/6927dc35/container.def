@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Seed the initial filesystem that the student/agent will work on.
+    # ------------------------------------------------------------------
+    # Create data directory hierarchy (world-writable so the unprivileged
+    # runtime user can modify contents).
+    mkdir -p -m 0777 /home/user/data
+
+    # Create the three fixture files with approximate sizes.
+    truncate -s 1500000 /home/user/data/big1.txt    # ≈1.5 MiB
+    truncate -s 1700000 /home/user/data/big2.log    # ≈1.7 MiB
+    truncate -s    5000 /home/user/data/small.txt   # ≈5 KiB
+
+    # Create the processing list exactly as specified.
+    cat > /home/user/filelist.txt <<'EOF'
+/home/user/data/big1.txt
+/home/user/data/big2.log
+/home/user/data/missing.doc
+EOF
+    chmod 0666 /home/user/filelist.txt
+
+    # Ensure every path under /home/user is accessible for read/write/exec
+    # by the unprivileged user inside the running container.
+    chmod -R a+rwx /home/user
+
+    # NOTE: We intentionally do NOT create the following, as the student
+    # will have to create them:
+    #   /home/user/bin/
+    #   /home/user/archive/
+    #   /home/user/maintenance/
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PATH=/home/user/bin:$PATH

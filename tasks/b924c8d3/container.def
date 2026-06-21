@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author task-prep
+    Description "Base image for SQLite/pytest exercise – no solution artefacts present."
+
+%post
+    set -e
+
+    # Non-interactive APT setup
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install required utilities
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        sqlite3 \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # Ensure a writable home directory for the student user
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep a sensible PATH; do not modify HOME as per instructions
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%runscript
+    echo "Container for SQLite/pytest exercise. Open a shell with:"
+    echo "    apptainer exec <image.sif> /bin/bash"
+    echo
+    echo "Happy hacking!"

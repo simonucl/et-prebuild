@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating APT package index..."
+    apt-get update
+
+    echo "Installing required system packages..."
+    # iputils-ping provides the `ping` command.
+    # python3-pip is needed to install pytest.
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        iputils-ping \
+        python3 \
+        python3-pip
+
+    echo "Installing pytest for the grader..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating writable home directory for the student..."
+    mkdir -p /home/user
+    chmod 0777 /home/user   # allow the unprivileged agent to write here
+
+    echo "Cleaning up APT cache to reduce image size..."
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python user-installed binaries are discoverable
+    export PATH=$PATH:/usr/local/bin
+
+%runscript
+    echo "Container for the loopback latency benchmark assignment."
+    echo "Start an interactive shell with:  apptainer exec <image>.sif bash"
+
+%labels
+    Author="Apptainer Task Preparer"
+    Description="Base environment with ping and pytest for networking benchmark task."

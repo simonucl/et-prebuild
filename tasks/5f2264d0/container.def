@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # ------------------------------------------------------------------
+    # 1. Install Python tooling (pip) and pytest for the automated tests
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # 2. Create the required initial file structure and contents
+    # ------------------------------------------------------------------
+    # Make sure /home/user exists and is user-writable so that the
+    # student (non-root at runtime) can create additional directories.
+    mkdir -p /home/user
+    chmod 1777 /home/user        # world-writable with sticky bit
+
+    # Create the configuration directory and file
+    mkdir -p /home/user/config
+    chmod 755 /home/user/config
+
+cat >/home/user/config/system.cfg <<'EOF'
+[General]
+hostname=server01
+os=ubuntu
+version=20.04
+
+[Security]
+firewall=enabled
+selinux=disabled
+password_policy=weak
+
+[Compliance]
+data_encryption=aes256
+logging=disabled
+EOF
+
+    # Ensure correct file permissions (read-only is fine)
+    chmod 644 /home/user/config/system.cfg
+
+%environment
+    # Keep environment minimal; no overrides needed.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author ComplianceExercise
+    Description "Initial state for INI compliance report exercise"
+
+%help
+    This container image sets up the initial environment needed for the
+    compliance-report task.  It installs pytest for the test harness and
+    pre-creates /home/user/config/system.cfg with the exact contents
+    specified in the exercise.

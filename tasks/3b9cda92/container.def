@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tools and Python environment
+    apt-get update && \
+        apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Set up initial filesystem state required by the task
+    # ------------------------------------------------------------------
+    # 1. Ensure the working directory exists
+    mkdir -p /home/user
+
+    # 2. Pre-seed the source log file with the exact expected contents
+    cat >/home/user/images_to_migrate.log <<'EOF'
+nginx:1.19
+redis:6
+nginx:1.19
+mongo:4.4
+nginx:1.19
+redis:6
+postgres:12
+mongo:4.4
+redis:6
+redis:6
+postgres:12
+EOF
+
+    # 3. Set liberal permissions so the unprivileged
+    #    runtime user can create/modify files in /home/user
+    chmod 777 /home/user
+    chmod 666 /home/user/images_to_migrate.log
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python executes with python3 by default
+    export PYTHONIOENCODING=UTF-8
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    echo "Container for the 'Generate an image-frequency report with sort & uniq' task."
+    echo "Open a shell inside the container to begin working:"
+    echo "    apptainer exec <image>.sif /bin/bash"

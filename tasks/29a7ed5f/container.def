@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        git \
+        python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test-runner
+    pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Set up initial repository state in /home/user/app
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/app
+    cd /home/user/app
+
+    # VERSION file
+    printf '2.3.4\n' > VERSION
+
+    # CHANGELOG.md with two historical sections (newest → oldest)
+    cat > CHANGELOG.md <<'EOF'
+## 2.3.4 – 2024-02-10
+* Fix: Updated dependency versions.
+
+## 2.3.3 – 2024-02-01
+* Change: Improved logging around authentication.
+EOF
+
+    # Initialise Git repository, make initial commit and tag v2.3.4
+    git init
+    git config --local user.name  "Builder"
+    git config --local user.email "builder@example.com"
+    git add VERSION CHANGELOG.md
+    git commit -m "Initial commit for version 2.3.4"
+    git tag v2.3.4
+
+    # Ensure non-root users can modify the repo during the exercise
+    chmod -R a+rwX /home/user/app
+
+%labels
+    chmod 755 /home/user
+
+    Author OpsGenie_AI
+
+%help
+    Container prepared for the “semantic version bump & release tagging” task.
+    Initial repository is located in /home/user/app.

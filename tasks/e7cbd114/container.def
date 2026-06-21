@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Basic tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the forthcoming test harness
+    pip3 install --no-cache-dir pytest
+
+    ###############  Prepare legacy filesystem state  ###############
+    # Create normal, *real* directories (not symlinks)
+    mkdir -p /home/user/services/api
+    mkdir -p /home/user/services/web
+
+    # Populate placeholder README files with the exact expected text
+    printf "API service code lives here\n"  > /home/user/services/api/README.txt
+    printf "Web frontend code lives here\n" > /home/user/services/web/README.txt
+
+    # Ensure the /home/user tree is owned by an unprivileged user called 'user'
+    # (helps when the runner inside the container executes without root)
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -s /bin/bash user
+    fi
+    chown -R user:user /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author  Example Builder
+    Description "Environment for symlink migration task (pytest pre-state only)"
+
+%environment
+    # Make sure Python user base and standard paths are accessible
+    export PATH=/home/user/.local/bin:$PATH
+
+%runscript
+    # Default action when the container is executed with no command:
+    # spawn an interactive shell so the learner can work.
+    exec /bin/bash "$@"

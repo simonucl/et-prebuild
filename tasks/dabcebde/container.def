@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic OS dependencies
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        rsync \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Python tooling (pytest for the grader)
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the task
+    # ------------------------------------------------------------------
+    # Source artefacts
+    mkdir -p /home/user/mlops/experiments/exp123/logs
+
+    cat > /home/user/mlops/experiments/exp123/metrics.json <<'EOF'
+{"accuracy": 0.92, "loss": 0.21}
+EOF
+
+    printf 'DUMMY_MODEL_BINARY_CONTENT\n' \
+        > /home/user/mlops/experiments/exp123/model.pkl
+
+    cat > /home/user/mlops/experiments/exp123/logs/train.log <<'EOF'
+Epoch 1/5 – loss:0.34 – acc:0.78
+Epoch 5/5 – loss:0.21 – acc:0.92
+EOF
+
+    # Destination directory (must start empty)
+    mkdir -p /home/user/remote_server/exp_artifacts/exp123
+
+    # Permissions: allow non-root user to read/write where necessary
+    chmod -R 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default HOME binding; just make sure standard paths are available
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%runscript
+    echo "Container ready for the MLOps artefact synchronisation task."

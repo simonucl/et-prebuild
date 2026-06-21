@@ -1,0 +1,80 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Ensure the task’s working path exists and is write-able by any user
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Provide a non-privileged stub for the `crontab` command
+    mkdir -p /usr/local/bin
+    cat > /usr/local/bin/crontab << 'EOF'
+#!/usr/bin/env bash
+# Lightweight, user-space substitute for the system `crontab` utility.
+# Stores each user’s crontab in “$HOME/.crontab” and supports the
+# minimal option set required for this exercise:  -l  -r  -   <file>
+
+set -e
+
+CRONFILE="${HOME:-/tmp}/.crontab"
+
+usage() {
+    echo "Usage: crontab [-l|-r|-] [file]" >&2
+    exit 1
+}
+
+[[ $# -ge 1 ]] || usage
+
+case "$1" in
+    -l)
+        if [[ -f "$CRONFILE" ]]; then
+            cat "$CRONFILE"
+            exit 0
+        else
+            echo "no crontab for $USER" >&2
+            exit 1
+        fi
+        ;;
+    -r)
+        rm -f "$CRONFILE"
+        exit 0
+        ;;
+    -)
+        # Read new crontab from STDIN
+        cat - > "$CRONFILE"
+        exit 0
+        ;;
+    *)
+        # Install from file argument
+        [[ $# -eq 1 ]] || usage
+        [[ -f "$1" ]] || { echo "crontab: file $1 not found" >&2; exit 1; }
+        cat "$1" > "$CRONFILE"
+        exit 0
+        ;;
+esac
+EOF
+    chmod 0755 /usr/local/bin/crontab
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure our stub takes precedence
+    export PATH="/usr/local/bin:$PATH"
+
+%labels
+    Author devsecops-example
+
+%help
+    This container is prepared for the “policy-as-code via crontab” exercise.
+    • Python 3 and pytest are installed for automated assessment.
+    • A user-space stub of `crontab` is provided so that non-root users can
+      create, list, and remove cron entries without requiring set-uid binaries.

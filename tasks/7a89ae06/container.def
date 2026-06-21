@@ -1,0 +1,68 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    #---------------------------------------------------------------------
+    # 1. Install Python and pytest
+    #---------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    #---------------------------------------------------------------------
+    # 2. Create initial workspace under /home/user with required log files
+    #---------------------------------------------------------------------
+    mkdir -p /home/user/build_logs
+
+    # branch_main.log
+    cat >/home/user/build_logs/branch_main.log <<'EOF'
+BuildStart: 2023-08-15 14:23:11
+[INFO] Checking dependencies
+[ERROR:] Missing library xyz
+[INFO] Build aborted
+EOF
+
+    # branch_release.log
+    cat >/home/user/build_logs/branch_release.log <<'EOF'
+BuildStart: 2023-08-16 09:04:51
+[INFO] Preparing build
+[INFO] Compiling...
+[FAILURE:] Unit tests failed
+[ERROR:] Code signing failed
+[INFO] Build failed
+EOF
+
+    # branch_featureA.log
+    cat >/home/user/build_logs/branch_featureA.log <<'EOF'
+BuildStart: 2023-08-17 11:39:05
+[INFO] Setup...
+[INFO] Build succeeded
+[INFO] Cleaning up
+EOF
+
+    # Ensure the summary file is NOT present initially
+    rm -f /home/user/build_logs/error_summary.csv || true
+
+    #---------------------------------------------------------------------
+    # 3. Make sure the non-root runtime user can read/write the workspace
+    #---------------------------------------------------------------------
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default HOME binding behaviour; no overrides needed
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for mobile-app CI/CD log summarisation task."
+    echo "Use this container to run the student solution script."
+
+%labels
+    Author agent-setup
+    Description "Apptainer image with predefined build logs and pytest installed for CI/CD summarisation task."

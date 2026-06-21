@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python, pip, and pytest
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip python3-setuptools python3-wheel
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Seed data (will be copied to the user-writable location at runtime)
+    # ---------------------------------------------------------------------
+    mkdir -p /opt/seed
+    cat > /opt/seed/dashboard_hits.log <<'EOF'
+dashboard_cpu
+dashboard_memory
+dashboard_cpu
+dashboard_cpu
+dashboard_network
+dashboard_memory
+dashboard_disk
+dashboard_network
+dashboard_network
+dashboard_disk
+EOF
+    chmod 0644 /opt/seed/dashboard_hits.log
+
+    # ---------------------------------------------------------------------
+    # Prepare /home/user so that the non-root runtime user can write there.
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user
+    chmod 0777 /home/user    # world-writable so any invoking user can create files
+
+    # Clean up apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure the metrics directory and log file exist with correct permissions
+    if [ ! -f "/home/user/metrics/dashboard_hits.log" ]; then
+        mkdir -p /home/user/metrics
+        cp /opt/seed/dashboard_hits.log /home/user/metrics/dashboard_hits.log
+        chmod 0644 /home/user/metrics/dashboard_hits.log
+    fi
+
+    # Standard PATH
+    export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin"
+
+
+%labels
+    Author  "Apptainer Task Preparer"
+    Description "Container providing initial state for Grafana dashboard frequency task, plus pytest."

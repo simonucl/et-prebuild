@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the assignment
+    # ------------------------------------------------------------------
+
+    # Create the user home hierarchy
+    mkdir -p /home/user/api_test/logs
+    chmod 755 /home/user
+    chmod 755 /home/user/api_test
+    chmod 755 /home/user/api_test/logs
+
+    # Create the log file with exactly five lines and a trailing newline
+    cat >/home/user/api_test/logs/api_responses_20240314.log <<'EOF'
+2024-03-14T07:21:01Z,GET,/users,200,115ms
+2024-03-14T07:22:45Z,POST,/login,201,89ms
+2024-03-14T07:23:50Z,DELETE,/users/42,204,102ms
+2024-03-14T07:24:30Z,GET,/reports,500,321ms
+2024-03-14T07:25:10Z,PUT,/users/42,404,78ms
+EOF
+
+    # Set the exact permissions required by the tests
+    chmod 644 /home/user/api_test/logs/api_responses_20240314.log
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure Python binaries installed via pip are discoverable
+    export PATH="$PATH:/usr/local/bin"
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Initial state for API latency CSV manipulation exercise"
+
+%help
+    This Apptainer image provides the starting environment for the
+    API latency processing task.  It contains:
+      • The raw log file in /home/user/api_test/logs/
+      • Python and pytest pre-installed for automated grading.

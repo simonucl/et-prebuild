@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ###############
+    # OS PACKAGES #
+    ###############
+    apt-get update -y
+    # python3 is already in the base image, but ensure pip is present
+    apt-get install -y --no-install-recommends python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ##################
+    # PYTHON MODULES #
+    ##################
+    pip3 install --no-cache-dir pytest
+
+    ##############################
+    # PRE-EXISTING BACKUP FILES  #
+    ##############################
+    # Directory tree
+    mkdir -p /home/user/db_backups
+
+    # 1. hr_2023-05-01.sql  (0644)
+    cat >/home/user/db_backups/hr_2023-05-01.sql <<'EOF'
+-- HR Database dump
+CREATE TABLE employees(id int);
+CREATE ROLE hr_user WITH LOGIN PASSWORD 'secret123';
+-- End
+EOF
+    chmod 0644 /home/user/db_backups/hr_2023-05-01.sql
+
+    # 2. dev_2023-05-01.sql (0600)
+    cat >/home/user/db_backups/dev_2023-05-01.sql <<'EOF'
+-- Dev DB
+SELECT 1;
+EOF
+    chmod 0600 /home/user/db_backups/dev_2023-05-01.sql
+
+    # 3. sales_2023-05-01.sql.gz (0600) – a small, valid gzip stream
+    echo "Dummy sales backup" | gzip -c >/home/user/db_backups/sales_2023-05-01.sql.gz
+    chmod 0600 /home/user/db_backups/sales_2023-05-01.sql.gz
+
+%labels
+    chmod 755 /home/user
+
+    Author      quickscan-builder
+    Description Base image for PostgreSQL backup security-hygiene assignment. It
+                seeds three backup files in /home/user/db_backups and installs pytest.
+
+%help
+    This container image sets up the initial filesystem state required for the
+    “quick security-hygiene scan on PostgreSQL backups” assignment.  It contains:
+
+      • /home/user/db_backups/ with three sample backup files
+      • pytest (via pip) for the automated test harness

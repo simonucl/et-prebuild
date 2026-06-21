@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%environment
+    # Preset compliance-related environment variables required by the tests
+    export SEC_KEY=abc123
+    export COMPLIANCE_TOKEN=xyz789
+    export SEC_LEVEL=low
+
+%post
+    set -e
+
+    # Update APT index and install Python tooling
+    apt-get update \
+        && apt-get install -y --no-install-recommends python3-pip \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the expected home directory exists and is writable by non-root users
+    mkdir -p /home/user
+    chmod 1777 /home/user      # Like /tmp: any UID can write inside
+
+    # Make certain no premature compliance artifacts are present
+    rm -rf /home/user/compliance || true
+    rm -f  /home/user/.bashrc  || true  # Leave bashrc absent so tests can create/modify it as needed
+
+%runscript
+    chmod 755 /home/user
+
+    /bin/bash
+
+%help
+    Base container for the “environment-variable audit” exercise.
+    Provides:
+      • Required preset SEC_/COMPLIANCE_ variables
+      • Writable /home/user directory
+      • pytest installed for the grader

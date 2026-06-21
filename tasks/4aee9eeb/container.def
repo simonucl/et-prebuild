@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare starter filesystem expected by the assignment
+    # ------------------------------------------------------------------
+    # Create the fixed directory structure
+    mkdir -p /home/user/data
+    mkdir -p /home/user/monitoring
+
+    # Make sure the unprivileged runtime user can write here.  We use
+    # permissive bits so that, regardless of the UID inside the container,
+    # the directories remain writable.
+    chmod 777 /home/user
+    chmod 777 /home/user/data
+    chmod 777 /home/user/monitoring
+
+    # Populate the raw data file with the exact required content
+    cat > /home/user/data/raw_sales.csv <<'EOF'
+id,product,price,quantity
+1,Widget,19.99,5
+2,Gadget,,3
+3,Thingamabob,4.99,
+4,Widget,19.99,2
+5,Gizmo,8.49,0
+EOF
+    # Ensure readable for everyone
+    chmod 644 /home/user/data/raw_sales.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are in PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author "Your Name"
+    Description "Starter container for the data-cleaning and monitoring assignment. Includes pytest and the required raw dataset."
+
+%help
+    This container provides the initial filesystem state for the assignment:
+      • Directories /home/user/data and /home/user/monitoring
+      • The raw CSV at /home/user/data/raw_sales.csv
+    Pytest is installed so the automated grader can run its tests.

@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update apt and install Python and pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest via pip (latest version)
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the grading task
+    # ------------------------------------------------------------------
+
+    # Create the required directory structure
+    mkdir -p /home/user/builds
+
+    # Give broad write permissions so the (non-root) grader can add files
+    chmod 0755 /home/user
+    chmod 0777 /home/user/builds   # students need to create /home/user/builds/analysis
+
+    # Create the pre-existing log file with exactly three 'BUILD SUCCESS' lines
+    cat > /home/user/builds/jenkins_build.log <<'EOF'
+[2023-09-01 12:00:00] Starting build
+[2023-09-01 12:05:00] BUILD SUCCESS
+[2023-09-02 14:10:17] Starting build
+[2023-09-02 14:15:30] BUILD FAILURE
+[2023-09-03 09:00:00] Starting build
+[2023-09-03 09:07:42] BUILD SUCCESS
+[2023-09-04 11:22:10] Starting build
+[2023-09-04 11:29:58] BUILD SUCCESS
+EOF
+
+    # Ensure correct permissions on the log file
+    chmod 0644 /home/user/builds/jenkins_build.log
+
+    # Do NOT create /home/user/builds/analysis; it must be absent initially
+    true
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python and pip are in PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author build-eng-prep
+    Description "Container prepared for CI log-analysis shell task with pytest pre-installed"

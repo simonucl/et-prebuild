@@ -1,0 +1,76 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install Python tooling  (pytest + dependencies)
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory tree and seed files for the assignment
+    # ------------------------------------------------------------------
+    # Top-level home for the learner
+    mkdir -p /home/user
+    chmod 0777 /home/user        # allow the non-root learner to create new dirs
+
+    # Data directories
+    mkdir -p /home/user/data/finance/budget
+    mkdir -p /home/user/data/hr/policies
+
+    # Set directory permissions (0755)
+    find /home/user/data -type d -exec chmod 0755 {} \;
+
+    # ------------------------------------------------------------------
+    # Seed files with exact byte contents and permissions (0644)
+    # ------------------------------------------------------------------
+
+    # 1. /home/user/data/finance/accounts.txt
+    cat <<'EOF_ACCOUNTS' > /home/user/data/finance/accounts.txt
+Quarterly accounts receivable: Q4 2024
+Total: 123456
+EOF_ACCOUNTS
+
+    # 2. /home/user/data/finance/budget/2024_budget.xlsx
+    cat <<'EOF_BUDGET' > /home/user/data/finance/budget/2024_budget.xlsx
+dummy finance spreadsheet
+EOF_BUDGET
+
+    # 3. /home/user/data/hr/employees.csv
+    cat <<'EOF_EMP' > /home/user/data/hr/employees.csv
+id,name,department
+1,Alice,HR
+2,Bob,HR
+EOF_EMP
+
+    # 4. /home/user/data/hr/policies/leave_policy.md
+    cat <<'EOF_POLICY' > /home/user/data/hr/policies/leave_policy.md
+# Leave Policy
+All employees are entitled to 30 days of leave per year.
+EOF_POLICY
+
+    # Apply file permissions (0644)
+    find /home/user/data -type f -exec chmod 0644 {} \;
+
+%labels
+    chmod 755 /home/user
+
+    Author backup-admin-challenge
+    Description Container seed for “backup administrator” task. Provides the
+    required initial filesystem state and has pytest pre-installed.
+
+%help
+This Apptainer image contains the exact initial directory tree and files
+that the “backup administrator” assignment expects.  Pytest is pre-installed
+so that automated grading can run its test suite immediately.
+
+%environment
+    # Nothing special needed; keep the default environment.
+    :

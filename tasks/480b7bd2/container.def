@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+Author linux-support-bot
+Description Container prepared for “system snapshot” exercise.  Includes Python 3, pytest, and required system utilities.
+
+%post
+    set -e
+
+    echo "Updating package lists..."
+    apt-get update -y
+
+    echo "Installing required Debian/Ubuntu packages..."
+    # iproute2 supplies the `ss` command; python3 is already present but
+    # install pip so we can add pytest.
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        iproute2 \
+        python3-pip
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating /home/user with liberal permissions..."
+    mkdir -p /home/user
+    # Make it writable for any UID that might run inside the container.
+    chmod 0777 /home/user
+
+    echo "Cleaning up apt caches..."
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure pip-installed executables are on the PATH
+    export PATH="$PATH:/usr/local/bin"
+
+%runscript
+    # Default action: start an interactive shell
+    exec /bin/bash "$@"
+
+%help
+This container provides the environment required for the “system snapshot”
+task.  It includes:
+  • Python 3 (>=3.10)
+  • pytest
+  • Core GNU utilities plus iproute2 (for the `ss` command)
+
+The home directory /home/user exists and is writable.  The diagnostics
+artefacts that the learner must create are purposefully **not** present.

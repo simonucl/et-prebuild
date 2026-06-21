@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author deploybot-setup
+    Description "Container for CI/CD identity-file exercise – initial state preparation"
+
+%post
+    set -e
+
+    # Update package list and install Python tooling
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip python3-setuptools ca-certificates
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the exercise test suite
+    # ---------------------------------------------------------------------
+    # 1. Create the working directory tree
+    mkdir -p /home/user/ci_access
+
+    # 2. Populate users.csv with the two starter lines, each ending with \n
+    printf 'alice,ci-viewers\nbob,ci-operators\n' > /home/user/ci_access/users.csv
+
+    # 3. Ensure the student (non-root runtime user) has full write access
+    chmod 777 /home/user/ci_access
+    chmod 666 /home/user/ci_access/users.csv
+
+    # Do NOT create artifacts/ directory or audit.log file here; the student will.
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python is discoverable
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    # Default runscript does nothing; container is for assessment.
+    exec bash

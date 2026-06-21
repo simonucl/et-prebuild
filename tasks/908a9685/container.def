@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading tests
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the backup-integrity exercise
+    # ------------------------------------------------------------------
+
+    # Create required directory structure
+    mkdir -p /home/user/backups/daily
+    mkdir -p /home/user/backup_reports
+
+    # Create the three backup files with *exact* contents / byte-sizes
+    printf "[main]\nkey=value\n"            > /home/user/backups/daily/config_backup.conf
+    printf "CREATE TABLE test(id INT);\n"   > /home/user/backups/daily/db_dump.sql
+    printf "dummy tar content\n"            > /home/user/backups/daily/site_files.tar.gz
+
+    # Ensure correct permissions so the non-root runtime user can read them
+    chmod 755 /home/user /home/user/backups /home/user/backups/daily /home/user/backup_reports
+    chmod 644 /home/user/backups/daily/*
+
+%environment
+    # Ensure Python and pip are easily discoverable
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "This container is prepared for the backup-integrity spot-check exercise."
+    echo "Run the provided tasks or open a shell to begin."

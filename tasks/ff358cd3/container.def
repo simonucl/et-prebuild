@@ -1,0 +1,48 @@
+BootStrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Ensure apt is up-to-date and install Python + pip
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the mobile CI exercise
+    # ------------------------------------------------------------------
+    BASE=/home/user/mobile_ci
+
+    # Create directory tree
+    mkdir -p \
+        ${BASE}/builds/android \
+        ${BASE}/builds/ios \
+        ${BASE}/tools \
+        ${BASE}/reports
+
+    # Create placeholder APK files
+    touch ${BASE}/builds/android/app-release_1.2.1.apk
+    touch ${BASE}/builds/android/app-release_1.2.2.apk
+    touch ${BASE}/builds/android/app-release_1.2.3.apk
+
+    # Create placeholder IPA files
+    touch ${BASE}/builds/ios/app-release_1.2.1.ipa
+    touch ${BASE}/builds/ios/app-release_1.2.2.ipa
+    touch ${BASE}/builds/ios/app-release_1.2.3.ipa
+    touch ${BASE}/builds/ios/app-release_1.2.5.ipa
+
+    # Set permissions: directories 755, files 644
+    find /home/user/mobile_ci -type d -exec chmod 755 {} +
+    find /home/user/mobile_ci -type f -exec chmod 644 {} +
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are in the PATH (they already are, but be explicit)
+    PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+
+%runscript
+    echo "Container for the mobile CI reporting task."
+    echo "Nothing to run by default. Open a shell or execute your scripts."

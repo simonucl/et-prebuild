@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update -qq
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ---------------------------------------------------------------------
+    # Prepare project skeleton expected by the tests
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/project/config
+    mkdir -p /home/user/project/logs
+
+    # Ensure directory permissions (0755)
+    chmod 755 /home/user
+    chmod 755 /home/user/project
+    chmod 755 /home/user/project/config
+    chmod 755 /home/user/project/logs
+
+    # Create placeholder configuration files with exact content
+    cat > /home/user/project/config/cleaning.yml << 'EOF'
+remove_duplicates: false
+missing_value_strategy: mean
+columns: []
+EOF
+
+    cat > /home/user/project/config/cleaning.toml << 'EOF'
+remove_duplicates = false
+missing_value_strategy = "mean"
+columns = []
+EOF
+
+    # Set file permissions (0644)
+    chmod 644 /home/user/project/config/cleaning.yml
+    chmod 644 /home/user/project/config/cleaning.toml
+
+    # Do NOT create the log file; it must be absent initially.
+
+%environment
+    # Default environment; nothing to override.
+
+%runscript
+    exec /bin/bash "$@"

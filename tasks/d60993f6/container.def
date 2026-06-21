@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        bash
+
+    # Install pytest for the assessment framework
+    pip3 install --no-cache-dir pytest
+
+    # ----------------------------------------------------------------------------
+    # Prepare a non-root user environment at /home/user
+    # ----------------------------------------------------------------------------
+    # Create the user if it does not already exist
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -d /home/user -s /bin/bash user
+    fi
+
+    # Ensure the home directory exists with correct ownership and permissions
+    mkdir -p /home/user
+    chown -R user:user /home/user
+    chmod 755 /home/user
+
+    # Provide a minimal, clean ~/.bashrc.
+    # It must NOT contain the Post-greSQL export lines yet.
+    echo "# .bashrc prepared for task – initially empty of custom PostgreSQL settings" > /home/user/.bashrc
+    chown user:user /home/user/.bashrc
+    chmod 644 /home/user/.bashrc
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    # Default action: open a shell as the non-root 'user'
+    exec su - user "$@"

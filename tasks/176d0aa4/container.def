@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Ensure the base system is up to date and required packages are installed
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3 \
+        ca-certificates \
+        locales
+
+    # Configure a UTF-8 locale (needed by Python / pytest in some scenarios)
+    sed -i '/en_US.UTF-8/ s/^# //g' /etc/locale.gen
+    locale-gen
+    update-locale LANG=en_US.UTF-8
+
+    # Install pytest for the validation suite
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Prepare the filesystem structure expected by the exercise
+    # -----------------------------------------------------------------
+    # Create the /home/user directory tree
+    mkdir -p /home/user/logs
+
+    # Populate /home/user/logs/events.csv with the exact required contents
+    cat >/home/user/logs/events.csv <<'CSVEOF'
+timestamp,severity,message
+2023-07-10 10:00:00,INFO,Service started
+2023-07-10 10:05:00,WARNING,High memory usage
+2023-07-10 10:10:00,ERROR,Service crashed
+2023-07-10 10:15:00,INFO,Service restarted
+2023-07-10 10:20:00,ERROR,Missing config file
+2023-07-10 10:25:00,WARNING,Disk near capacity
+2023-07-10 10:30:00,INFO,Health check ok
+2023-07-10 10:35:00,ERROR,Service crashed
+CSVEOF
+
+    # Ensure safe, readable permissions for non-root users
+    chmod 755 /home /home/user /home/user/logs
+    chmod 644 /home/user/logs/events.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure /usr/local/bin (pip installs here) and /usr/bin are in PATH
+    export PATH="/usr/local/bin:/usr/bin:${PATH}"
+    export LANG="en_US.UTF-8"
+    export LC_ALL="en_US.UTF-8"
+
+%labels
+    Author="Container build for SQLite log analysis task"
+    Description="Provides initial data and tools (sqlite3, pytest) for the agent."

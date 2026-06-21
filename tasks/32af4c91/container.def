@@ -1,0 +1,102 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic tooling
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        file \
+        locales \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Ensure UTF-8 locale is available (helpful for pytest output)
+    locale-gen en_US.UTF-8
+
+    # ------------------------------------------------------------------
+    # Python testing framework
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial project structure
+    # ------------------------------------------------------------------
+    PROJECT_ROOT="/home/user/mobile_pipeline"
+    SRC_DIR="${PROJECT_ROOT}/i18n_source"
+
+    # Create directories with correct permissions
+    mkdir -p "${SRC_DIR}"
+    chmod 0755 /home
+    chmod 0755 /home/user
+    chmod 0755 "${PROJECT_ROOT}"
+    chmod 0755 "${SRC_DIR}"
+
+    # ------------------------------------------------------------------
+    # Helper function to write CRLF-terminated files
+    # ------------------------------------------------------------------
+    write_crlf () {
+        # $1 = target file; subsequent args = lines
+        local target="$1"
+        shift
+        # Build the CRLF content
+        {
+            for line in "$@"; do
+                printf '%s\r\n' "${line}"
+    chmod 755 /home/user
+
+            done
+        } > "${target}"
+    }
+
+    # ------------------------------------------------------------------
+    # Legacy ISO-8859-1 files (CRLF line endings)
+    # ------------------------------------------------------------------
+    # en_US.properties
+    write_crlf "${SRC_DIR}/en_US.properties" \
+        "greeting=Hello" \
+        "farewell=Goodbye" \
+        "currency=Dollar"
+
+    # es_ES.properties (contains an accented character ó)
+    # This character (ó) is valid in ISO-8859-1.
+    write_crlf "${SRC_DIR}/es_ES.properties" \
+        "greeting=Hola" \
+        "farewell=Adiós" \
+        "currency=Euro"
+
+    # jp_JP.properties – the original file contains Japanese characters
+    # that were saved on a system using ISO-8859-1, resulting in the
+    # bytes 0x3F ('?') for each non-representable character.  We mimic
+    # that situation with question marks.
+    write_crlf "${SRC_DIR}/jp_JP.properties" \
+        "greeting=??????" \
+        "farewell=??????" \
+        "currency=??"
+
+    # Ensure permission 0644 on each *.properties file
+    chmod 0644 "${SRC_DIR}"/*.properties
+
+    # ------------------------------------------------------------------
+    # README.txt (UTF-8, LF endings)
+    # ------------------------------------------------------------------
+    cat > "${PROJECT_ROOT}/README.txt" <<'EOF'
+This pipeline contains localisation resources.
+Do not edit files in i18n_source/ manually.
+EOF
+    chmod 0644 "${PROJECT_ROOT}/README.txt"
+
+%environment
+    export LC_ALL=en_US.UTF-8
+    export LANG=en_US.UTF-8
+    export LANGUAGE=en_US:en
+
+%runscript
+    echo "Container for the i18n transcoding exercise."
+    echo "Run your commands inside the container shell."

@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Ensure non-interactive apt installs
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install Python + pytest
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest via pip (ensures up-to-date version)
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------ #
+    # Prepare initial filesystem state expected by the grading tests
+    # ------------------------------------------------------------------ #
+
+    # Create logs directory and the firewall CSV file
+    mkdir -p /home/user/logs
+
+cat >/home/user/logs/fw-incident-20240612.csv <<'EOF'
+timestamp,src_ip,dst_ip,protocol,action,bytes
+2024-06-12T08:55:01Z,10.0.0.15,172.16.0.1,ICMP,Blocked,0
+2024-06-12T09:01:17Z,192.168.1.22,172.16.0.5,TCP,Allowed,1500
+2024-06-12T09:02:45Z,203.0.113.45,172.16.0.7,TCP,Blocked,0
+2024-06-12T09:05:30Z,198.51.100.12,172.16.0.9,UDP,Blocked,0
+EOF
+
+    # Set sensible permissions so the unprivileged user can read the files
+    chmod 755 /home/user
+    chmod 755 /home/user/logs
+    chmod 644 /home/user/logs/fw-incident-20240612.csv
+
+    # Clean up apt cache to shrink the image
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure Python is on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author="Container Build Script"
+    Description="Environment for firewall incident responder task with pytest pre-installed."

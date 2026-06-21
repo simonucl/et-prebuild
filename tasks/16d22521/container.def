@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the filesystem required by the exercise
+    # ------------------------------------------------------------------
+    # Create base directory structure
+    mkdir -p /home/user/configs/nginx
+    chmod 0755 /home/user
+    chmod 0755 /home/user/configs
+    chmod 0755 /home/user/configs/nginx
+
+    # ------------------------------------------------------------------
+    # Populate pre-existing configuration files with exact contents
+    # ------------------------------------------------------------------
+    cat > /home/user/configs/app.conf <<'EOF'
+# Application configuration
+port=8080
+debug=true
+EOF
+
+    cat > /home/user/configs/db.yml <<'EOF'
+database:
+  host: localhost
+  port: 5432
+  user: app
+  password: secret
+EOF
+
+    cat > /home/user/configs/nginx/nginx.conf <<'EOF'
+user www-data;
+worker_processes auto;
+events { worker_connections 1024; }
+http {
+    server {
+        listen 80;
+        location / {
+            proxy_pass http://127.0.0.1:8080;
+        }
+    }
+}
+EOF
+
+    # Set required permissions
+    chmod 0644 /home/user/configs/app.conf
+    chmod 0644 /home/user/configs/db.yml
+    chmod 0644 /home/user/configs/nginx/nginx.conf
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to declare; keep default environment so the agent
+    # inherits its host HOME and other variables.
+
+%runscript
+    echo "Container built for the configuration-backup exercise."
+    echo "Use your own script inside the container to perform the task."

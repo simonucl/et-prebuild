@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Set up initial repository state expected by the automated tests
+    # ------------------------------------------------------------------
+    REPO_DIR="/home/user/projects/infra-scripts"
+    mkdir -p "${REPO_DIR}/terraform"
+    mkdir -p "${REPO_DIR}/logs"
+
+    # VERSION file
+    printf "2.4.7\n" > "${REPO_DIR}/VERSION"
+
+    # terraform/main.tf with exactly two occurrences of v2.4.7
+    cat > "${REPO_DIR}/terraform/main.tf" <<'EOF'
+module "network" {
+  source = "git::https://example.com/network.git?ref=v2.4.7"
+}
+
+module "monitoring" {
+  source = "git::ssh://git@example.com/monitoring.git//modules/agent?ref=v2.4.7"
+}
+EOF
+
+    # CHANGELOG.md with historical entry for 2.4.7 only
+    cat > "${REPO_DIR}/CHANGELOG.md" <<'EOF'
+# Changelog
+All notable changes to this project will be documented in this file.
+
+## [2.4.7] - 2023-06-02
+### Added
+- Initial release of production blue/green deployment pipeline.
+EOF
+
+    # Ensure the logs directory is empty and writable by any user
+    chmod 777 "${REPO_DIR}/logs"
+
+    # Provide read/write access to all users for the whole repo so the
+    # non-root runtime user can modify contents during the task.
+    chmod -R go+rwX "${REPO_DIR}"
+
+%environment
+    chmod 755 /home/user
+
+    # Preserve the default environment; no overrides needed.
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author container-builder
+    Description "Apptainer image for semantic-version bump task with initial repo state and pytest installed."
+
+%runscript
+    # Default action when container is run without arguments: open a shell
+    exec /bin/bash "$@"

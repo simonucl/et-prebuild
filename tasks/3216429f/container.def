@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update apt index and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial workspace expected by the tests
+    # ------------------------------------------------------------------
+    # Create /home/user and the mobile_ci directory structure
+    mkdir -p /home/user/mobile_ci
+
+    # Create the build_pipeline.log with the exact required contents.
+    cat >/home/user/mobile_ci/build_pipeline.log <<'LOGEOF'
+[2023-08-21 10:01:03] BUILD 101: core - SUCCESS
+[2023-08-21 10:05:47] BUILD 102: ui - FAILED
+[2023-08-21 10:12:11] BUILD 103: networking - SUCCESS
+[2023-08-21 10:15:29] BUILD 104: feature-auth - FAILED
+[2023-08-21 10:22:58] BUILD 105: feature-payments - FAILED
+[2023-08-21 10:30:42] BUILD 106: analytics - SUCCESS
+[2023-08-21 10:33:27] BUILD 107: push-notifications - SUCCESS
+[2023-08-21 10:38:55] BUILD 108: ui - FAILED
+LOGEOF
+
+    # Ensure correct permissions so the non-root learner can read/write
+    chmod -R 0755 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python user installs will be found first in PATH
+    export PATH="/usr/local/bin:$PATH"
+
+%labels
+    Author Mobile-CI-Exercise
+    Description "Container with initial mobile CI workspace and pytest installed for grading."
+
+%help
+    This container supplies the initial state for the Mobile CI failure-report
+    exercise.  It includes:
+      • /home/user/mobile_ci/build_pipeline.log   (historical build log)
+      • pytest pre-installed for automated grading.
+
+    Learners should create:
+      • /home/user/mobile_ci/reports/failure_report_20230821.txt
+
+    Ensure your solutions run inside this container without root privileges.

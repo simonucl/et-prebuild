@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python with pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Prepare required directory structure and baseline log file
+    # ---------------------------------------------------------------------
+    # Ensure the /home/user path exists
+    mkdir -p /home/user
+
+    # Create capacity directory and make it world-writable so the unprivileged
+    # agent can create additional files later.
+    mkdir -p /home/user/capacity
+    chmod 777 /home/user/capacity
+
+    # Create the raw_usage.log file with the exact expected contents
+    cat > /home/user/capacity/raw_usage.log <<'EOF'
+2023-09-01T00:00 serverA 45 70
+2023-09-01T01:00 serverB 60 65
+2023-09-01T02:00 serverA 55 85
+2023-09-01T03:00 serverC N/A 40
+2023-09-01T04:00 serverB 75 82
+2023-09-01T05:00 serverC 30 90
+2023-09-01T06:00 serverA 65 75
+2023-09-01T07:00 serverB 50 79
+EOF
+
+    # Read-only suffices for the initial file; directory is already writable
+    chmod 644 /home/user/capacity/raw_usage.log
+
+%environment
+    chmod 755 /home/user
+
+    # Use Python 3 as default python if needed by the tests
+    export PYTHONPATH=/usr/local/lib/python3.10/site-packages:$PYTHONPATH
+    export PATH=/usr/local/bin:$PATH
+
+%runscript
+    # Default runscript does nothing; users will exec/inspect manually.
+    echo "Container for Capacity Planning task. Use apptainer exec/run to work."

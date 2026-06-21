@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ###############################################
+    # Basic OS packages
+    ###############################################
+    apt-get update
+    # Python, pip, ping (set-uid root binary) and parallel utilities
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        iputils-ping \
+        parallel \
+        ca-certificates
+
+    # Clean apt cache to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ###############################################
+    # Python packages (pytest for task validation)
+    ###############################################
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    ###############################################
+    # Prepare initial filesystem state
+    ###############################################
+    # Ensure /home/user exists with open permissions
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Create the required inventory file with exact content
+    cat > /home/user/iot_targets.csv <<'EOF'
+device01,127.0.0.1
+device02,10.255.255.1
+EOF
+    # Make sure the file ends with a newline and is world-readable
+    echo >> /home/user/iot_targets.csv
+    chmod 644 /home/user/iot_targets.csv
+
+    ###############################################
+    # Do NOT create /home/user/logs – must be absent
+    ###############################################
+
+%labels
+    Author edge-computing-task-builder
+    Description "Environment prepared for IoT gateway reachability task – contains initial inventory and pytest"
+
+%help
+    This Apptainer image provides the initial state for the IoT gateway
+    reachability task.  It contains:
+      • Ubuntu 22.04 base system
+      • python3, pip, pytest
+      • iputils-ping (set-uid root inside the container for ICMP)
+      • GNU parallel
+      • The inventory file at /home/user/iot_targets.csv
+
+    The /home/user/logs directory is intentionally absent.

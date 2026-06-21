@@ -1,0 +1,32 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python, pip and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Create non-privileged user and writable home directory
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -d /home/user -s /bin/bash user
+    fi
+    mkdir -p /home/user
+    chmod 777 /home/user   # Ensure the executing uid can write here
+
+%environment
+    chmod 755 /home/user
+
+    # Allow user-level Python packages (e.g. `pip install --user`) to be found
+    export PATH=$PATH:/home/user/.local/bin
+
+%labels
+    Author monitoring-platform-demo
+    Description Minimal base image for the monitoring-platform PoC exercise

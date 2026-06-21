@@ -1,0 +1,30 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install required packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        openssh-client \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    # Install pytest for the automated test harness
+    pip3 install --no-cache-dir pytest
+
+    # Create a writable home directory for the student
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Do NOT create the .ssh/uptime_monitor directory or any key/log files.
+    # The evaluation suite expects them to be absent initially.
+
+%runscript
+    chmod 755 /home/user
+
+    # Pass through to whatever the user wants to execute
+    exec "$@"

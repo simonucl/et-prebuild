@@ -1,0 +1,30 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Prepare a writable home directory for the exercises
+    mkdir -p /home/user
+    chmod 1777 /home/user    # world-writable with sticky bit so any UID can write
+
+    # Ensure the alerts path does NOT pre-exist (clean slate for the exercise)
+    rm -rf /home/user/alerts
+
+    # Clean up apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal PATH augmentation
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "This container is ready for the alert-file exercise."

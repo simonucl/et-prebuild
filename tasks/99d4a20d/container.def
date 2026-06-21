@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # --------------------------------------------------------------------- #
+    # System packages & Python testing tools                                #
+    # --------------------------------------------------------------------- #
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates  \
+        tzdata
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------- #
+    # Create a regular “user” account (uid/gid 1000) with home /home/user   #
+    # --------------------------------------------------------------------- #
+    groupadd  -g 1000 user
+    useradd   -m -d /home/user -s /bin/bash -u 1000 -g user user
+
+    # --------------------------------------------------------------------- #
+    # Populate the initial experiments directory tree                       #
+    # --------------------------------------------------------------------- #
+    base=/home/user/experiments
+    mkdir -p "${base}"/exp01/checkpoints
+    mkdir -p "${base}"/exp01/logs
+    mkdir -p "${base}"/exp02/checkpoints
+    mkdir -p "${base}"/exp03/checkpoints
+
+    # Create the checkpoint files with exact byte-for-byte contents
+    printf 'dummy checkpoint 1\n'  > "${base}/exp01/checkpoints/model_epoch_1.ckpt"
+    printf 'dummy checkpoint 2\n'  > "${base}/exp01/checkpoints/model_epoch_2.ckpt"
+    printf 'dummy checkpoint 10\n' > "${base}/exp02/checkpoints/model_epoch_10.ckpt"
+    printf 'best checkpoint data\n' > "${base}/exp03/checkpoints/best.ckpt"
+
+    # Other non-checkpoint artefacts
+    echo '(content irrelevant)' > "${base}/exp01/logs/train.log"
+
+    # Ensure regular user owns everything in /home/user so the grader (running
+    # as an unprivileged UID) has full access.
+    chown -R 1000:1000 /home/user
+
+    # Clean up apt cache to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal sensible PATH (do NOT override $HOME)
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author  your_name_here
+    Description "Environment for checkpoint-archiving task; contains initial experiment tree and pytest"
+
+%runscript
+    exec "$@"

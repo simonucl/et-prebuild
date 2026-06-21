@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test-runner
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Fixture data for the compliance-checking exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/logs
+
+    cat > /home/user/logs/app_2023-09-15.log <<'EOF'
+2023-09-15 09:01:02 [INFO] Startup complete
+2023-09-15 09:05:33 [ERROR] Failed to connect to database
+2023-09-15 09:06:01 [ERROR] Authentication service unavailable
+2023-09-15 09:10:45 [WARN] High memory usage detected
+2023-09-15 09:15:12 [ERROR] Disk write failure
+2023-09-15 09:25:37 [ERROR] Network timeout
+2023-09-15 09:40:22 [INFO] Scheduled job started
+2023-09-15 09:45:02 [ERROR] Cache synchronization failed
+2023-09-15 10:00:15 [ERROR] Unexpected null pointer exception
+2023-09-15 10:30:00 [INFO] Daily rotation complete
+2023-09-15 10:45:23 [ERROR] Backup process interrupted
+EOF
+
+    # Ensure world-writable home so the (non-root) agent can create files/dirs.
+    chmod 0777 /home/user
+    chmod 0755 /home/user/logs
+    chmod 0644 /home/user/logs/app_2023-09-15.log
+
+    # Make sure no compliance directory exists yet.
+    rm -rf /home/user/compliance
+
+%environment
+    chmod 755 /home/user
+
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author="Task setup for quick compliance spot-check exercise"

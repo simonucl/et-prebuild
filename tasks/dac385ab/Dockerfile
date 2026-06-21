@@ -1,0 +1,64 @@
+FROM ubuntu:22.04
+
+# Labels
+LABEL Author="Apptainer Build Script"
+LABEL Description="Environment for log-processing QA assignment. Contains raw logs and pytest pre-installed."
+
+# Post installation
+RUN set -e && \
+    echo "Updating apt repositories and installing prerequisites..." && \
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        gzip \
+        ca-certificates && \
+    echo "Installing pytest via pip..." && \
+    pip3 install --no-cache-dir pytest && \
+    echo "Preparing directory tree and raw log data..." && \
+    mkdir -p /home/user/logs/raw
+
+# Create raw01.log
+RUN cat > /home/user/logs/raw/raw01.log <<'EOF'
+127.0.0.1 - - [30/Sep/2023:23:59:59 +0000] "GET /index.html HTTP/1.1" 200 1024 "-" "Mozilla/5.0"
+192.168.1.10 - - [01/Oct/2023:00:00:01 +0000] "POST /api/login HTTP/1.1" 500 512 "-" "curl/7.68.0"
+10.0.0.5 - - [01/Oct/2023:00:05:21 +0000] "GET /api/order HTTP/1.1" 500 256 "-" "Mozilla/5.0"
+10.0.0.8 - - [01/Oct/2023:00:10:44 +0000] "GET /contact.html HTTP/1.1" 200 2048 "-" "Mozilla/5.0"
+192.168.1.10 - - [01/Oct/2023:01:15:07 +0000] "POST /api/login HTTP/1.1" 500 512 "-" "curl/7.68.0"
+EOF
+
+RUN gzip -c /home/user/logs/raw/raw01.log > /home/user/logs/raw/raw01.log.gz && \
+    rm /home/user/logs/raw/raw01.log
+
+# Create raw02.log
+RUN cat > /home/user/logs/raw/raw02.log <<'EOF'
+127.0.0.1 - - [01/Oct/2023:02:03:09 +0000] "GET /api/user HTTP/1.1" 500 300 "-" "Mozilla/5.0"
+127.0.0.1 - - [01/Oct/2023:02:04:10 +0000] "GET /api/user HTTP/1.1" 500 300 "-" "Mozilla/5.0"
+127.0.0.1 - - [01/Oct/2023:02:05:11 +0000] "GET /api/user HTTP/1.1" 500 300 "-" "Mozilla/5.0"
+10.0.0.6 - - [01/Oct/2023:03:00:00 +0000] "POST /api/login HTTP/1.1" 500 512 "-" "curl/7.68.0"
+10.0.0.7 - - [02/Oct/2023:00:00:01 +0000] "GET /api/user HTTP/1.1" 500 300 "-" "Mozilla/5.0"
+EOF
+
+RUN gzip -c /home/user/logs/raw/raw02.log > /home/user/logs/raw/raw02.log.gz && \
+    rm /home/user/logs/raw/raw02.log
+
+# Create raw03.log
+RUN cat > /home/user/logs/raw/raw03.log <<'EOF'
+10.0.0.10 - - [01/Oct/2023:04:10:44 +0000] "GET /api/order HTTP/1.1" 500 256 "-" "Mozilla/5.0"
+10.0.0.11 - - [01/Oct/2023:05:20:10 +0000] "GET /home HTTP/1.1" 200 1024 "-" "Mozilla/5.0"
+EOF
+
+RUN gzip -c /home/user/logs/raw/raw03.log > /home/user/logs/raw/raw03.log.gz && \
+    rm /home/user/logs/raw/raw03.log
+
+RUN echo "Setting permissions so the non-root user can write to /home/user..." && \
+    chmod -R a+rwX /home/user
+
+# Environment variables
+ENV PATH="/usr/bin:/usr/local/bin:$PATH"
+
+WORKDIR /home/user
+
+CMD echo "Container for the log-processing QA assignment." && \
+    echo "Raw logs are in /home/user/logs/raw/." && \
+    echo "Use this container to complete the tasks as described."

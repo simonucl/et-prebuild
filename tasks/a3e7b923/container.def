@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial help-desk data set expected by the grading tests
+    # ------------------------------------------------------------------
+    # Create /home/user and the helpdesk directory hierarchy
+    mkdir -p /home/user/helpdesk
+    chmod 0755 /home/user
+    chmod 0777 /home/user/helpdesk   # Must be writable by the non-root user
+
+    # Populate the raw ticket dump with the exact required content
+    cat > /home/user/helpdesk/tickets.csv << 'EOF'
+TicketID,User,Status,Priority,Date
+101,alice,Open,High,18/09/2023
+102,bob,Closed,Low,18-09-2023
+103,charlie,Open,Medium,2023/09/17
+104,dave,Closed,High,2023-09-17
+101,alice,Open,High,18/09/2023
+105,alice,Closed,Low,2023-09-16
+106,erin,Open,High,16-09-2023
+107,frank,Open,Low,2023/09/15
+106,erin,Open,High,16-09-2023
+EOF
+    chmod 0644 /home/user/helpdesk/tickets.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard paths are available
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    # Default action is to drop into whatever command the user specifies
+    exec "$@"

@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python with pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            python3-setuptools && \
+        pip3 install --no-cache-dir pytest && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Create a non-privileged user `user` (UID/GID 1000) and its home
+    # ------------------------------------------------------------------
+    groupadd -g 1000 user
+    useradd  -m -s /bin/bash -u 1000 -g 1000 user
+
+    # ------------------------------------------------------------------
+    # Populate the expected initial file structure
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/app
+    mkdir -p /home/user/logs
+
+    # config.yaml with the old credentials
+    cat > /home/user/app/config.yaml <<'EOF'
+---
+app_name: sampleapp
+database:
+  user: appuser
+  password: changeme123
+logging:
+  level: info
+---
+EOF
+
+    # secret.toml with the old token
+    cat > /home/user/app/secret.toml <<'EOF'
+# Internal secrets
+[api]
+token = "changeme123"
+EOF
+
+    # ------------------------------------------------------------------
+    # Permissions: make sure the `user` account owns everything and that
+    # /home/user/logs is writable by anyone (no root needed later)
+    # ------------------------------------------------------------------
+    chown -R 1000:1000 /home/user
+    chmod 0777 /home/user/logs
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure user-installed Python tools (if any) are found first
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%labels
+    Author="Apptainer Task Initialiser"
+    Description="Container preparing initial state for credential-rotation challenge"
+    Version="1.0"

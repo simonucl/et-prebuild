@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT and install Python & pip
+    apt-get update && \
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            ca-certificates && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create a non-root user that will own /home/user
+    groupadd -g 1000 user || true
+    useradd  -m -u 1000 -g 1000 -s /bin/bash user
+
+    # Set up the legacy web-site directory structure
+    mkdir -p /home/user/my_website/public
+
+    cat > /home/user/my_website/public/index.html <<'EOF'
+<html><body><h1>Index</h1></body></html>
+EOF
+
+    cat > /home/user/my_website/public/about.html <<'EOF'
+<html><body><h1>About</h1></body></html>
+EOF
+
+    cat > /home/user/my_website/public/contact.html <<'EOF'
+<html><body><h1>Contact</h1></body></html>
+EOF
+
+    # Ensure the new user owns everything under /home/user
+    chown -R 1000:1000 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export PYTHONUNBUFFERED=1

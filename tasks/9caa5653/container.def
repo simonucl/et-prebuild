@@ -1,0 +1,29 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python tooling and pytest
+    apt-get update
+    apt-get install -y python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    # Create the required directory structure
+    mkdir -p /home/user/monitoring/alert_rules
+
+    # Ensure the student (container run‐time UID) can write where needed
+    #   • /home/user              – for task.log
+    #   • /home/user/monitoring/alert_rules – for the alert rule file
+    chmod 1777 /home/user
+    chmod 1777 /home/user/monitoring/alert_rules
+
+%labels
+    chmod 755 /home/user
+
+    Author task-preparation
+    Description "Container for low-disk-space alert rule exercise with pytest pre-installed"

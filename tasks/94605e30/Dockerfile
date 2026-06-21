@@ -1,0 +1,57 @@
+FROM ubuntu:22.04
+
+# Help text
+# Container for the "Top Talkers" firewall-log analysis exercise.
+# Contains pre-staged logs in /home/user/syslogs and pytest for grading.
+# Author oncall-task-setup
+
+RUN set -e && \
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /home/user/syslogs && \
+    chmod 755 /home/user /home/user/syslogs
+
+RUN cat > /home/user/syslogs/systemA.log <<'EOF'
+2023-08-01T01:00:00Z SRC=10.0.0.1 STATUS=FAIL
+2023-08-01T01:05:00Z SRC=10.0.0.2 STATUS=FAIL
+2023-08-01T01:10:00Z SRC=10.0.0.1 STATUS=FAIL
+2023-08-01T01:15:00Z SRC=10.0.0.3 STATUS=FAIL
+2023-08-01T01:20:00Z SRC=10.0.0.1 STATUS=SUCCESS
+2023-08-01T01:25:00Z SRC=10.0.0.4 STATUS=FAIL
+2023-08-01T01:30:00Z SRC=10.0.0.2 STATUS=FAIL
+2023-08-01T01:35:00Z SRC=10.0.0.1 STATUS=FAIL
+2023-08-01T01:40:00Z SRC=10.0.0.5 STATUS=FAIL
+2023-08-01T01:45:00Z SRC=10.0.0.4 STATUS=SUCCESS
+EOF
+
+RUN cat > /home/user/syslogs/systemB.log <<'EOF'
+2023-08-01T02:00:00Z SRC=10.0.0.3 STATUS=FAIL
+2023-08-01T02:05:00Z SRC=10.0.0.4 STATUS=FAIL
+2023-08-01T02:10:00Z SRC=10.0.0.2 STATUS=FAIL
+2023-08-01T02:15:00Z SRC=10.0.0.1 STATUS=FAIL
+2023-08-01T02:20:00Z SRC=10.0.0.1 STATUS=FAIL
+2023-08-01T02:25:00Z SRC=10.0.0.3 STATUS=FAIL
+2023-08-01T02:30:00Z SRC=10.0.0.1 STATUS=FAIL
+2023-08-01T02:35:00Z SRC=10.0.0.5 STATUS=FAIL
+2023-08-01T02:40:00Z SRC=10.0.0.4 STATUS=FAIL
+2023-08-01T02:45:00Z SRC=10.0.0.2 STATUS=SUCCESS
+EOF
+
+RUN cat > /home/user/syslogs/systemC.log <<'EOF'
+2023-08-01T03:00:00Z SRC=10.0.0.1 STATUS=FAIL
+2023-08-01T03:05:00Z SRC=10.0.0.2 STATUS=FAIL
+2023-08-01T03:10:00Z SRC=10.0.0.3 STATUS=FAIL
+2023-08-01T03:15:00Z SRC=10.0.0.1 STATUS=FAIL
+2023-08-01T03:20:00Z SRC=10.0.0.2 STATUS=FAIL
+2023-08-01T03:25:00Z SRC=10.0.0.3 STATUS=FAIL
+2023-08-01T03:30:00Z SRC=10.0.0.1 STATUS=FAIL
+2023-08-01T03:35:00Z SRC=10.0.0.5 STATUS=FAIL
+2023-08-01T03:40:00Z SRC=10.0.0.4 STATUS=FAIL
+2023-08-01T03:45:00Z SRC=10.0.0.5 STATUS=FAIL
+EOF
+
+RUN chmod 644 /home/user/syslogs/systemA.log /home/user/syslogs/systemB.log /home/user/syslogs/systemC.log

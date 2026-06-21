@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Refresh package lists
+    apt-get update
+
+    # Install required tooling
+    DEBIAN_FRONTEND=noninteractive \
+        apt-get install -y --no-install-recommends \
+            curl \
+            python3 \
+            python3-pip
+
+    # Install pytest for grading
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the expected home directory exists and is writable
+    mkdir -p /home/user
+    chmod 0777 /home/user  # world-writable so the non-root runtime user can write here
+
+    # Clean up APT caches to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C
+    export LANG=C.UTF-8
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author health-check-template
+    Description "Baseline environment with curl and pytest for the health-check assignment."

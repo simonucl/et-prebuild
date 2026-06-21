@@ -1,0 +1,73 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author network-task-prep
+    Description "Environment prepared for the network normalisation task"
+
+%post
+    set -eux
+
+    # Update apt metadata and install needed packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3 \
+        ca-certificates
+
+    # Install pytest for the grading harness
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory tree and raw CSV files
+    # ------------------------------------------------------------------
+    BASE_DIR="/home/user/network_diag"
+    mkdir -p "${BASE_DIR}"
+    chmod 777 "${BASE_DIR}"
+
+    # devices.csv
+    cat > "${BASE_DIR}/devices.csv" <<'EOF'
+id,hostname,mgmt_ip,site
+1,edge-rt1,192.0.2.1,NYC
+2,core-sw1,192.0.2.2,NYC
+3,dist-sw1,192.0.2.3,SFO
+4,edge-rt2,192.0.2.4,SFO
+5,branch-rt1,192.0.2.5,LON
+EOF
+
+    # pings.csv
+    cat > "${BASE_DIR}/pings.csv" <<'EOF'
+id,device_id,rtt_ms,success,ts_utc
+1,1,4.22,1,2023-12-01T12:00:00Z
+2,1,4.10,1,2023-12-01T12:05:00Z
+3,1,,0,2023-12-01T12:10:00Z
+4,2,0.80,1,2023-12-01T12:00:00Z
+5,2,0.75,1,2023-12-01T12:05:00Z
+6,3,20.21,1,2023-12-01T12:00:00Z
+7,3,,0,2023-12-01T12:05:00Z
+8,3,,0,2023-12-01T12:10:00Z
+9,4,18.40,1,2023-12-01T12:00:00Z
+10,4,18.10,1,2023-12-01T12:05:00Z
+11,5,90.50,1,2023-12-01T12:00:00Z
+12,5,,0,2023-12-01T12:05:00Z
+EOF
+
+    # Make sure all initial files are world-writable so the non-root
+    # agent inside the container can freely modify them.
+    chmod 666 "${BASE_DIR}/devices.csv" "${BASE_DIR}/pings.csv"
+
+    # Also create /home/user (if it does not exist) and ensure it is writable.
+    mkdir -p /home/user
+    chmod 777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and SQLite are easily accessible
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    echo "This container is prepared for the network normalisation task."
+    echo "Invoke your own commands within the container or use an interactive shell."

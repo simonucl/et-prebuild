@@ -1,0 +1,30 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Prepare initial training data
+    mkdir -p /home/user/raw_images
+    for img in cat.jpg dog.jpg bird.jpg logo.png; do
+        echo "dummy data for $img" > "/home/user/raw_images/${img}"
+    done
+
+    # Ensure appropriate permissions
+    chmod -R a+rX /home/user/raw_images
+    chmod 755 /home/user
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author example
+    Description "Container for ML data-prep task: provides initial raw_images and pytest."

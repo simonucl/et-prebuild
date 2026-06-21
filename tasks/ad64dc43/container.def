@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the exercise test-suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state required by the exercise
+    # ------------------------------------------------------------------
+
+    # Create the /home/user/project directory tree that the student
+    # will work in.  Make it world-writable so that whichever UID the
+    # runtime user has, they can freely create files inside.
+    mkdir -p /home/user/project
+    chmod 0777 /home/user /home/user/project
+
+    # Ensure no artefact files are present at build time
+    rm -f /home/user/project/iot_devices.db \
+          /home/user/project/firmware_report.csv \
+          /home/user/project/deployment.log || true
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python user-install location is on PATH
+    export PATH="$PATH:$HOME/.local/bin"
+
+%runscript
+    # Default runscript: drop into a shell so the student can begin work.
+    exec /bin/bash "$@"
+
+%labels
+    Author  edge-computing exercise setup
+    Description "Container image for IoT fleet preparation exercise (initial pristine state)"

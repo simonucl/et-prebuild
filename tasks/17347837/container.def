@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state required by the task
+    # ------------------------------------------------------------------
+    # Create the source directory tree
+    mkdir -p /home/user/artifacts-source
+
+    # Create alpha.bin (ASCII "ALPHA\n", 6 bytes)
+    printf 'ALPHA\n' > /home/user/artifacts-source/alpha.bin
+
+    # Create beta.bin  (ASCII "BETA\n", 5 bytes)
+    printf 'BETA\n'  > /home/user/artifacts-source/beta.bin
+
+    # Ensure appropriate permissions
+    chmod 755 /home/user
+    chmod 755 /home/user/artifacts-source
+    chmod 644 /home/user/artifacts-source/alpha.bin /home/user/artifacts-source/beta.bin
+
+%environment
+    # Ensure Python and pip are in PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    echo "Container for the artifact-manager task. Use an interactive shell to begin."

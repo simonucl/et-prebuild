@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+  Author Maintainer
+
+%post
+    # Enable non-interactive front-end for APT
+    export DEBIAN_FRONTEND=noninteractive
+
+    apt-get update
+    # Install cron (for the `crontab` utility) and Python tooling
+    apt-get install -y --no-install-recommends \
+        cron \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grader and the agent
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create an unprivileged user called “user” with home /home/user
+    # ------------------------------------------------------------------
+    useradd -m -s /bin/bash -u 1000 user
+
+    # Ensure the HOME directory is owned by the user and is writable
+    chown -R user:user /home/user
+
+    # ------------------------------------------------------------------
+    # Prepare the cron spool so that the unprivileged user can manage
+    # their personal crontab without needing root privileges at runtime.
+    # The `cron` package usually creates these directories, but we make
+    # sure the permissions are correct just in case.
+    # ------------------------------------------------------------------
+    mkdir -p /var/spool/cron/crontabs
+    chmod 1730 /var/spool/cron/crontabs
+    chown root:crontab /var/spool/cron/crontabs
+
+    # Leave the user’s crontab empty for now—tests expect no entry yet.
+    touch /var/spool/cron/crontabs/user
+    chmod 600 /var/spool/cron/crontabs/user
+    chown user:crontab /var/spool/cron/crontabs/user
+
+%environment
+    chmod 755 /home/user
+
+    export HOME=/home/user
+    export PATH="$HOME/.local/bin:$PATH"
+
+%runscript
+    exec /bin/bash "$@"

@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install required packages
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        gawk \
+        sed \
+        --no-install-recommends
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # Create the data directory and specimen TSV file
+    mkdir -p /home/user/data
+
+    cat > /home/user/data/specimens.tsv <<'EOF'
+id	species	location	weight_g	notes
+SPC001	Mus musculus	LabA	23	pregnant
+SPC002	Rattus norvegicus	LabB	512	adult
+SPC003	Mus musculus	Field	712	juvenile
+SPC004	Rattus norvegicus	LabC	98	adult
+SPC005	Mus musculus	Field	501	adult
+EOF
+
+    # Set appropriate permissions
+    chmod 644 /home/user/data/specimens.tsv
+    chmod 755 /home/user /home/user/data
+
+%environment
+    # Ensure Python is in PATH
+    export PATH=/usr/bin:$PATH
+
+%labels
+    Author your_name
+    Description Container for heavy specimen extraction task
+
+%runscript
+    echo "This container is set up for the heavy specimen extraction task."
+    echo "Use awk/sed as described in the assignment."

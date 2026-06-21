@@ -1,0 +1,50 @@
+# syntax=docker/dockerfile:1
+FROM ubuntu:22.04
+
+# Author edge-iot-task-preparer
+# Description "Environment for IoT deployment report challenge"
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked --mount=type=cache,target=/var/lib/apt,sharing=locked set -eux && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN --mount=type=cache,target=/root/.cache/pip pip3 install --no-cache-dir pytest
+
+RUN mkdir -p /home/user/iot_deploy/data && \
+    mkdir -p /home/user/iot_deploy/output && \
+    chmod 755 /home/user && \
+    chmod 755 /home/user/iot_deploy && \
+    chmod 755 /home/user/iot_deploy/data && \
+    chmod 755 /home/user/iot_deploy/output
+
+RUN cat >/home/user/iot_deploy/data/sensors.csv <<'EOF'
+device_id,sensor_type,firmware_version,calibration_date
+D-1001,temperature,1.4.2,2022-11-01
+D-1002,humidity,2.0.0,2023-01-15
+D-1003,pressure,1.2.1,2022-07-22
+D-1004,temperature,1.4.2,2022-12-10
+D-1005,humidity,2.0.1,2023-02-05
+EOF
+
+RUN cat >/home/user/iot_deploy/data/config.csv <<'EOF'
+device_id,edge_location,cpu_arch,memory
+D-1001,EdgeRack-01,arm64,2048
+D-1002,EdgeRack-02,arm64,2048
+D-1003,EdgeRack-01,armv7,1024
+D-1004,EdgeRack-02,arm64,2048
+D-1005,EdgeRack-03,armv7,1024
+EOF
+
+RUN cat >/home/user/iot_deploy/data/connectivity.csv <<'EOF'
+device_id,ip_address,mac_address,last_seen
+D-1001,10.0.0.11,00:1A:C2:7B:00:11,2023-03-12T09:45:02Z
+D-1002,10.0.0.12,00:1A:C2:7B:00:12,2023-03-12T09:46:38Z
+D-1003,10.0.0.13,00:1A:C2:7B:00:13,2023-03-12T09:44:59Z
+D-1004,10.0.0.14,00:1A:C2:7B:00:14,2023-03-12T09:47:15Z
+D-1005,10.0.0.15,00:1A:C2:7B:00:15,2023-03-12T09:48:01Z
+EOF
+
+RUN chmod 644 /home/user/iot_deploy/data/*.csv
+
+ENV PATH=/usr/local/bin:/usr/bin:/bin:$PATH

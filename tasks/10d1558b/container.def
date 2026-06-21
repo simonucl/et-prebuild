@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------- #
+    # Create initial project structure expected by the tests
+    # --------------------------------------------------------------------- #
+    PROJECT_ROOT="/home/user/projects/backup-tool"
+    BACKUPS_DIR="${PROJECT_ROOT}/backups"
+
+    mkdir -p "${BACKUPS_DIR}"
+
+    # version.txt (exactly one line: '1.2.3\n')
+    printf '1.2.3\n' > "${PROJECT_ROOT}/version.txt"
+
+    # CHANGELOG.md – first line must be exactly as required by tests
+    cat > "${PROJECT_ROOT}/CHANGELOG.md" <<'EOF'
+## [1.2.3] - 2023-08-15
+- Added incremental backup feature.
+
+## [1.2.2] - 2023-07-01
+- Initial release.
+EOF
+
+    # Backup files with their specified contents
+    printf 'BACKUP DATA 2023-01-01\n' > "${BACKUPS_DIR}/backup_2023-01-01.txt"
+    printf 'BACKUP DATA 2023-02-01\n' > "${BACKUPS_DIR}/backup_2023-02-01.txt"
+    printf 'BACKUP DATA 2023-03-03\n' > "${BACKUPS_DIR}/backup_2023-03-01.txt"  # deliberate typo '03'
+
+    # Ensure all files are writable by the unprivileged runtime user
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PYTHONUNBUFFERED=1

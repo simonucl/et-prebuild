@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    #------------------------------------------------------------------
+    # Base system packages
+    #------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+    #------------------------------------------------------------------
+    # Python testing utilities
+    #------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest pytest-order
+
+    #------------------------------------------------------------------
+    # Create the non-privileged user that the grading agent will use
+    #------------------------------------------------------------------
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g 1000 user
+
+    #------------------------------------------------------------------
+    # Prepare the required initial filesystem layout
+    #------------------------------------------------------------------
+    # Root directory for the data-pipeline
+    mkdir -p /home/user/data_pipeline/logs
+
+    # Empty configuration file (0-byte)
+    : > /home/user/data_pipeline/config.yaml
+
+    # Set permissions exactly as specified
+    chmod 0755 /home/user
+    chmod 0755 /home/user/data_pipeline
+    chmod 0755 /home/user/data_pipeline/logs
+    chmod 0644 /home/user/data_pipeline/config.yaml
+
+    # Ensure the non-privileged user owns everything under /home/user
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python prints immediately and PATH is sane
+    export PYTHONUNBUFFERED=1
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    # Default runscript: start a shell as the non-privileged user
+    exec /bin/bash "$@"
+
+%labels
+    Author="container-build system"
+    Description="Environment for the audit-trail configuration task (pytest included)"

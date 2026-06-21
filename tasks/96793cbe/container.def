@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package list and install Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the runtime tests
+    pip3 install --no-cache-dir pytest
+
+    # Create a non-root user `user` with UID 1000 (if it does not yet exist)
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 -s /bin/bash user
+    fi
+
+    # Ensure the home directory has the correct permissions
+    chmod 0755 /home/user
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem objects required by the assignment
+    # ------------------------------------------------------------------
+
+    # 1. Directory: /home/user/dns_testset  (mode 0755)
+    install -d -m 0755 /home/user/dns_testset
+
+    # 2. File: expected_hosts.txt  (mode 0644, exact two lines, no NL at EOF)
+    printf 'localhost=127.0.0.1\nip6-localhost=::1' \
+        > /home/user/dns_testset/expected_hosts.txt
+    chmod 0644 /home/user/dns_testset/expected_hosts.txt
+
+    # Ensure ownership is delegated to the non-root user
+    chown -R 1000:1000 /home/user/dns_testset
+
+    # 3. Guarantee that /home/user/audit does NOT exist yet
+    rm -rf /home/user/audit || true
+
+%environment
+    chmod 755 /home/user
+
+    # Add user-local Python packages (if any) to PATH for convenience
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%labels
+    Author "Auto-generated for DNS audit task"

@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # -------------------------------------------------------------------------
+    # 1. Base system utilities and Python tooling
+    # -------------------------------------------------------------------------
+    apt-get update && \
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            ca-certificates && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the assessment framework
+    pip3 install --no-cache-dir pytest
+
+    # -------------------------------------------------------------------------
+    # 2. Prepare initial filesystem state for the assignment
+    # -------------------------------------------------------------------------
+    # Directory tree: /home/user/data/raw
+    mkdir -p /home/user/data/raw
+
+    # Provide full write permissions under /home/user so the non-root agent
+    # can create additional artefacts during the task.
+    chmod -R 0777 /home/user
+
+    # -------------------------------------------------------------------------
+    # 3. Seed the required raw CSV file
+    # -------------------------------------------------------------------------
+    cat > /home/user/data/raw/net_diag_2023-09.csv <<'EOF'
+timestamp,source,destination,transmitted,received,packet_loss_percent,min_ms,avg_ms,max_ms,mdev_ms
+2023-09-15T10:00:00Z,etl1,db.internal,10,10,0,0.23,0.50,0.75,0.05
+2023-09-15T10:05:00Z,etl1,db.internal,10,9,10,0.24,0.55,1.20,0.12
+2023-09-15T10:10:00Z,etl1,api.internal,10,10,0,0.30,0.45,0.70,0.07
+2023-09-15T10:15:00Z,etl1,api.internal,10,8,20,0.35,0.60,1.10,0.10
+EOF
+
+    # Read permissions for everyone
+    chmod 0644 /home/user/data/raw/net_diag_2023-09.csv
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author="Apptainer Setup Script"
+    Description="Container for network-health diagnostics task – provides initial data, pytest, and writable workspace."

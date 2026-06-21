@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # --- Install Python 3, pip and pytest ------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # --- Prepare initial workspace state ------------------------------------
+    # Create the /home/user hierarchy and the required sample artifact file.
+    mkdir -p /home/user
+
+    cat > /home/user/sample_artifact.txt <<'EOF'
+This is a sample artifact file for the experiment.
+EOF
+
+    # Ensure permissive permissions so the non-root runtime user can access them.
+    chmod 755 /home
+    chmod 755 /home/user
+    chmod 644 /home/user/sample_artifact.txt
+
+%environment
+    # Make sure `python` command is available (some systems expect it).
+    if [ ! -e /usr/bin/python ] && [ -e /usr/bin/python3 ]; then
+        ln -sf /usr/bin/python3 /usr/local/bin/python
+    fi
+    export PATH=/usr/local/bin:$PATH
+
+%runscript
+    echo "Apptainer container for the experiment-tracking task."
+    echo "Start an interactive shell to begin:"
+    exec /bin/bash

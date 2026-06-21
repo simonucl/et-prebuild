@@ -1,0 +1,72 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tools
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 python3-pip \
+        diffutils patch \
+        ca-certificates && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory tree and sample configurations
+    # ------------------------------------------------------------------
+    BASEDIR="/home/user/network_configs"
+    mkdir -p "${BASEDIR}/baseline" \
+             "${BASEDIR}/current" \
+             "${BASEDIR}/logs" \
+             "${BASEDIR}/patches"
+
+    # ------------------ baseline/router.conf (good) --------------------
+    cat > "${BASEDIR}/baseline/router.conf" <<'EOF'
+hostname Router01
+interface eth0
+ ip address 10.0.0.1/24
+ no shutdown
+!
+interface eth1
+ ip address 192.168.1.1/24
+ shutdown
+!
+router ospf
+ network 10.0.0.0 0.0.0.255 area 0
+ network 192.168.1.0 0.0.0.255 area 0
+!
+EOF
+
+    # ------------------ current/router.conf (broken) -------------------
+    cat > "${BASEDIR}/current/router.conf" <<'EOF'
+hostname Router01
+interface eth0
+ ip address 10.0.0.2/24
+ shutdown
+!
+interface eth1
+ ip address 192.168.1.1/24
+ shutdown
+!
+router ospf
+ network 10.0.0.0 0.0.0.255 area 0
+!
+EOF
+
+    # Permissions: ensure everything is readable & writable by the user.
+    chmod -R 755 /home/user
+    find /home/user -type f -exec chmod 644 {} \;
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python and pip binaries are in PATH
+    export PATH="$PATH:/usr/local/bin"
+
+%runscript
+    echo "This container is prepared for the network configuration patch task."
+    echo "You can now follow the instructions to create and apply the patch."

@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # --------------------------------------------------------------------- #
+    # Base tools and Python environment                                     #
+    # --------------------------------------------------------------------- #
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-venv \
+        python3-pip
+
+    # Install pytest for the automated grader
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------- #
+    # Prepare initial filesystem state expected by the assignment           #
+    # --------------------------------------------------------------------- #
+    # Create the working directory structure
+    mkdir -p /home/user/db_queries
+
+    # Make sure the student (non-root inside container) can freely write here
+    chmod -R 0777 /home/user
+
+    # Provide the raw SQL file that must exist when the assignment starts
+    cat > /home/user/db_queries/raw_queries.sql <<'EOF'
+SELECT * from employees where salary>50000;
+select name, department from employees where department='Sales';
+EOF
+
+    # Allow write access to the starting file as well
+    chmod 0666 /home/user/db_queries/raw_queries.sql
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default HOME; ensure common binaries are on PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author="SQL optimisation task base image"

@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the non-privileged user expected by the exercise
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 user
+    fi
+
+    # Base directory structure for the capacity-planning task
+    CAPACITY_BASE=/home/user/capacity
+    mkdir -p "${CAPACITY_BASE}/raw"
+    mkdir -p "${CAPACITY_BASE}/reports"
+
+    # Pre-populate the two January-2023 raw log files
+    cat > "${CAPACITY_BASE}/raw/server1_202301.log" <<'EOF'
+CPU_USED=42
+MEM_USED=76
+DISK_USED=63
+EOF
+
+    cat > "${CAPACITY_BASE}/raw/server2_202301.log" <<'EOF'
+CPU_USED=58
+MEM_USED=68
+DISK_USED=57
+EOF
+
+    # Ownership and permissions (directories 755, files 644, owned by user:user)
+    chown -R user:user /home/user
+    chmod 755 "${CAPACITY_BASE}"
+    chmod 755 "${CAPACITY_BASE}/raw"
+    chmod 755 "${CAPACITY_BASE}/reports"
+    chmod 644 "${CAPACITY_BASE}/raw/"*.log
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default environment; no HOME override required.
+    export LC_ALL=C.UTF-8
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%runscript
+    echo "Container for the January-2023 capacity-planning exercise."
+    echo "Invoke your own commands with 'apptainer exec' as needed."
+
+%labels
+    Author Capacity-Planning-Exercise
+    Description "Environment prepared for January 2023 capacity report automation task."

@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python & pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grader and the student
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the base workspace exists but stays empty for the exercise
+    mkdir -p /home/user
+    chmod 0777 /home/user   # Make it writable for whatever UID executes inside the container
+
+    # Clean up apt caches to keep image size small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Use Python 3 by default
+    export PYTHONIOENCODING=utf-8
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author demo
+    Description "Base image for daily cron task staging exercise. Installs pytest and prepares writable /home/user without pre-creating any task files."
+
+%help
+    This container provides a clean Ubuntu 22.04 environment with pytest
+    installed and an empty /home/user directory ready for the student to
+    perform the daily cron task staging exercise.

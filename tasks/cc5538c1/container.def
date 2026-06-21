@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt repositories and installing Python tooling..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        locales
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Creating non-root user 'user' with home directory /home/user ..."
+    useradd -m -s /bin/bash user
+
+    echo "Installing pytest for the runtime user..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Setting up initial support log files ..."
+    mkdir -p /home/user/support/logs
+
+    cat >/home/user/support/logs/app.log <<'EOF'
+[2023-07-01 10:00:01] INFO Starting service
+[2023-07-01 10:01:15] ERROR Failed to connect to database
+[2023-07-01 10:02:20] WARN Low disk space
+[2023-07-01 10:03:25] INFO Service running
+[2023-07-01 10:04:30] ERROR Timeout while reading response
+EOF
+
+    cat >/home/user/support/logs/app2.log <<'EOF'
+2023-07-01T11:00:00Z INFO scheduled job start
+2023-07-01T11:00:05Z ERROR job crashed with code 1
+2023-07-01T11:00:10Z INFO scheduled job end
+2023-07-01T11:05:00Z ERROR unable to send email
+EOF
+
+    # Ensure correct ownership so the non-root runtime user can read/write
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are in PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    echo "Container for support-engineer task."
+    echo "Switch to the 'user' account to work:"
+    echo "    apptainer exec --pwd /home/user <container> /bin/bash"
+
+%labels
+    Author task-preparer
+    Description Container image for support-engineer log analysis task.

@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # 1. Install Python and pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+    pip3 install --no-cache-dir pytest
+
+    # 2. Prepare the initial exercise state
+    mkdir -p /home/user/cloud-migration
+
+cat << 'EOF' > /home/user/cloud-migration/service.ini
+[compute]
+instance_type=t3.medium
+region=us-east-1
+
+[database]
+engine=postgres
+version=13
+storage=100
+
+[network]
+cidr=10.0.0.0/16
+ports=22,80,443
+EOF
+
+    # 3. Set sane permissions (agent runs unprivileged)
+    chmod 755 /home/user
+    chmod 755 /home/user/cloud-migration
+    chmod 644 /home/user/cloud-migration/service.ini
+
+%environment
+    # Keep environment simple; don't override HOME.
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

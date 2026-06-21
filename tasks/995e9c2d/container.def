@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install required packages
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        curl \
+        ca-certificates \
+        --no-install-recommends
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Install pytest for the grading framework
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory structure and seed files
+    # ------------------------------------------------------------------
+    # Create an unprivileged user that owns /home/user
+    useradd -m -s /bin/bash user
+
+    # Project directory with single README.md file
+    mkdir -p /home/user/project
+    printf 'Project README\n' > /home/user/project/README.md
+
+    # Ensure correct ownership so the non-root agent can modify files
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python is on the PATH for all users
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"

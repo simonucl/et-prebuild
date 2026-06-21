@@ -1,0 +1,102 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # ------------------------------------------------------------------
+    # 1. Base system packages + pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        gzip \
+        coreutils \
+        findutils
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Create required directory tree and populate initial files
+    # ------------------------------------------------------------------
+    BASE=/home/user/projects/benchmarks
+    mkdir -p \
+        "${BASE}/app1/profiles" \
+        "${BASE}/app2/perf_logs" \
+        "${BASE}/legacy" \
+        "${BASE}/newapp"
+
+    # --- File 1: 240 B (10 × 24 B lines) --------------------------------
+    cat > "${BASE}/app1/profiles/2023-01-15_run1.perf" <<'EOF'
+PERF SAMPLE DATA FILE 1
+PERF SAMPLE DATA FILE 1
+PERF SAMPLE DATA FILE 1
+PERF SAMPLE DATA FILE 1
+PERF SAMPLE DATA FILE 1
+PERF SAMPLE DATA FILE 1
+PERF SAMPLE DATA FILE 1
+PERF SAMPLE DATA FILE 1
+PERF SAMPLE DATA FILE 1
+PERF SAMPLE DATA FILE 1
+EOF
+
+    # --- File 2: 109 B ---------------------------------------------------
+    cat > "${BASE}/app2/perf_logs/performance.perf" <<'EOF'
+# callgraph-flat
+# event: cycles:u
+# captured on CI runner
+0.01  sys_openat
+0.02  sys_read
+0.97  app_compute
+EOF
+
+    # --- File 3: 71 B ----------------------------------------------------
+    cat > "${BASE}/legacy/old_perf.perf" <<'EOF'
+Legacy profiling dump
+time=12345, cycles=67890
+branch-misses=1024
+
+EOF
+    # blank line intentionally left above; add EOF marker line:
+    printf 'EOF\n' >> "${BASE}/legacy/old_perf.perf"
+
+    # --- Recent file (must remain ≤30 days old) --------------------------
+    echo 'Raw profile – keep this one uncompressed!' \
+        > "${BASE}/newapp/newrun.perf"
+
+    # --- Non-.perf file --------------------------------------------------
+    echo 'This directory holds profiling output for app1.' \
+        > "${BASE}/app1/readme.txt"
+
+    # ------------------------------------------------------------------
+    # 3. Adjust modification times
+    #    • Old files  -> fixed date well over 30 days ago
+    #    • New file   -> current timestamp (already set by echo)
+    # ------------------------------------------------------------------
+    OLD_DATE='2023-02-01 12:00:00'
+    touch -d "${OLD_DATE}" "${BASE}/app1/profiles/2023-01-15_run1.perf"
+    touch -d "${OLD_DATE}" "${BASE}/app2/perf_logs/performance.perf"
+    touch -d "${OLD_DATE}" "${BASE}/legacy/old_perf.perf"
+
+    # ------------------------------------------------------------------
+    # 4. Prepare archival log directory (empty for now)
+    # ------------------------------------------------------------------
+    mkdir -p  /home/user/archival_logs
+
+    # ------------------------------------------------------------------
+    # 5. Make everything user-writable so the non-root learner can work
+    # ------------------------------------------------------------------
+    chmod -R a+rwx /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author    LearningContainerBot
+    Project   Perf-housekeeping-initial-state
+
+%help
+    Container prepared for the “periodic housekeeping” assignment.
+    All initial *.perf files, directories and permissions are set up,
+    and pytest is installed for the automated grader.

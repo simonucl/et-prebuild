@@ -1,0 +1,80 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #-----------------------------------------------------------------
+    # 1. Basic utilities and pytest
+    #-----------------------------------------------------------------
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -qq
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #-----------------------------------------------------------------
+    # 2. Create the workspace skeleton
+    #-----------------------------------------------------------------
+    # Make sure /home/user exists
+    mkdir -p /home/user
+
+    # Core workspace paths
+    mkdir -p /home/user/dev_pipeline/incoming
+    mkdir -p /home/user/dev_pipeline/archive
+
+    # Permissions: directories = 700
+    chmod 700 /home/user
+    chmod 700 /home/user/dev_pipeline
+    chmod 700 /home/user/dev_pipeline/incoming
+    chmod 700 /home/user/dev_pipeline/archive
+
+    #-----------------------------------------------------------------
+    # 3. Seed the incoming/ directory with two non-empty dummy CSV files
+    #-----------------------------------------------------------------
+    cat > /home/user/dev_pipeline/incoming/data_alpha.csv <<'EOF'
+alpha_col1,alpha_col2
+1,2
+EOF
+
+    cat > /home/user/dev_pipeline/incoming/data_beta.csv <<'EOF'
+beta_col1,beta_col2
+3,4
+EOF
+
+    # File permissions = 600
+    chmod 600 /home/user/dev_pipeline/incoming/data_alpha.csv
+    chmod 600 /home/user/dev_pipeline/incoming/data_beta.csv
+
+    #-----------------------------------------------------------------
+    # 4. Create the exact manifest file (three lines, final newline)
+    #-----------------------------------------------------------------
+    printf 'data_alpha.csv\ndata_beta.csv\ndata_gamma.csv\n' \
+        > /home/user/dev_pipeline/file_manifest.txt
+    chmod 600 /home/user/dev_pipeline/file_manifest.txt
+
+    #-----------------------------------------------------------------
+    # 5. Ensure no output files from the student task exist yet
+    #-----------------------------------------------------------------
+    rm -f /home/user/dev_pipeline/processed.log \
+          /home/user/dev_pipeline/error.log
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal PATH – python & pytest already on /usr/bin via apt
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author "ChatGPT"
+    Description "Container for the dev_pipeline mini data-processing task."
+
+%help
+This Apptainer image sets up the initial state for the dev_pipeline task.
+Directories:
+  /home/user/dev_pipeline/
+    incoming/   (contains data_alpha.csv and data_beta.csv)
+    archive/    (empty)
+    file_manifest.txt with three filenames; data_gamma.csv intentionally missing.
+Pytest is pre-installed for automated grading.

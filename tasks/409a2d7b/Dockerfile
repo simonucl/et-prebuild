@@ -1,0 +1,33 @@
+FROM ubuntu:22.04
+
+# Help:
+# This image sets up the initial filesystem state required for the
+# “Employee Summary” shell-scripting assignment. Two CSV files are pre-loaded
+# in /home/user/data, and pytest is installed so the automated grader can run its tests.
+
+LABEL Author="YourName"
+LABEL Description="Container with initial CSV datasets and pytest installed for the employee summary assignment."
+
+RUN set -e && apt-get update -y && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3 python3-pip
+
+RUN pip3 install --no-cache-dir pytest
+
+RUN mkdir -p /home/user/data && chmod 755 /home/user && chmod 755 /home/user/data
+
+RUN cat >/home/user/data/employees.csv <<'EOF'
+EmployeeID,FirstName,LastName,Department
+101,John,Smith,Engineering
+102,Alice,Johnson,Marketing
+103,Bob,Brown,Sales
+104,Carol,Davis,HR
+EOF
+
+RUN cat >/home/user/data/salaries.csv <<'EOF'
+EmployeeID,BaseSalary,Bonus
+101,75000,5000
+102,68000,4500
+103,72000,4800
+104,65000,4200
+EOF
+
+RUN chmod 644 /home/user/data/employees.csv /home/user/data/salaries.csv

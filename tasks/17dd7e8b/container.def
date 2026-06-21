@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install utilities
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ###############
+    # File system #
+    ###############
+    # Create required directory structure and files for the initial state
+    mkdir -p /home/user/utils
+    mkdir -p /home/user/.config/systemd/user
+
+    # Create the heartbeat script with exact contents
+    cat > /home/user/utils/heartbeat.sh <<'EOF'
+#!/usr/bin/env bash
+date +"%Y-%m-%d %H:%M:%S - heartbeat"
+EOF
+    chmod 755 /home/user/utils/heartbeat.sh
+
+    # Set directory permissions
+    chmod 755 /home/user/utils
+    chmod 700 /home/user/.config/systemd/user
+
+    # Ensure output artefacts do NOT exist
+    rm -f /home/user/.config/systemd/user/my_utility.service \
+          /home/user/my_utility_service_creation.log
+
+%environment
+    # No changes to HOME; rely on Apptainer defaults
+
+%labels
+    Author production
+
+%help
+    This container sets up the initial environment for the “user-level systemd
+    service” task. It pre-installs pytest for the grader, prepares the
+    heartbeat utility script, and creates the expected directory layout under
+    /home/user without the output artefacts.

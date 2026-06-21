@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update -y
+    apt-get install -y python3 python3-pip
+
+    # Install pytest for the validation suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------ #
+    # Create a non-root user that will own the diagnostic files
+    # ------------------------------------------------------------------ #
+    groupadd -g 1000 user || true
+    useradd  -m -u 1000 -g 1000 user || true
+
+    # ------------------------------------------------------------------ #
+    # Set up the diagnostics input directory structure and files
+    # ------------------------------------------------------------------ #
+    install -d -m 764 /home/user/diagnostics/raw
+
+    # pods.txt
+    cat <<'EOF' > /home/user/diagnostics/raw/pods.txt
+NAME                        READY   STATUS              RESTARTS   AGE
+webapp-74f5d8b6f6-7h8k9     1/1     Running             0          5m
+webapp-74f5d8b6f6-8i9j0     1/1     Running             0          5m
+webapp-74f5d8b6f6-l2m3n     0/1     CrashLoopBackOff    3          5m
+EOF
+
+    # services.txt
+    cat <<'EOF' > /home/user/diagnostics/raw/services.txt
+NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+webapp-svc   ClusterIP   10.96.0.100     <none>        80/TCP         5m
+kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP        1d
+EOF
+
+    # nodes.txt
+    cat <<'EOF' > /home/user/diagnostics/raw/nodes.txt
+NAME       STATUS     ROLES                  AGE   VERSION
+master-1   Ready      control-plane,master   25d   v1.24.0
+worker-1   Ready      worker                 25d   v1.24.0
+worker-2   Ready      worker                 25d   v1.24.0
+EOF
+
+    # Permissions
+    chmod 644 /home/user/diagnostics/raw/*.txt
+    chown -R user:user /home/user/diagnostics
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to override; keep default HOME handling.
+
+%runscript
+    echo "Container for Kubernetes diagnostics exercise."
+    echo "Raw diagnostic files are in /home/user/diagnostics/raw"
+    echo "Install pytest is available for test execution."

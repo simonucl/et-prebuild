@@ -1,0 +1,63 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Update APT and install required system packages
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        jq \
+        csvkit \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Install pytest for the validation suite
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the required source data directory and CSV files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/compliance_data
+
+    cat > /home/user/compliance_data/transactions_q1.csv <<'EOF'
+id,user_id,amount,status,date
+1,alice,120.00,COMPLETED,2023-01-15
+2,bob,75.50,FAILED,2023-02-03
+3,charlie,560.20,COMPLETED,2023-03-22
+EOF
+
+    cat > /home/user/compliance_data/transactions_q2.csv <<'EOF'
+id,user_id,amount,status,date
+4,alice,310.00,FAILED,2023-04-02
+5,bob,40.00,COMPLETED,2023-05-14
+6,diana,88.10,FAILED,2023-06-30
+EOF
+
+    # Ensure readable permissions
+    chmod 755 /home/user
+    chmod 755 /home/user/compliance_data
+    chmod 644 /home/user/compliance_data/transactions_q1.csv /home/user/compliance_data/transactions_q2.csv
+
+%environment
+    # Nothing to set here; keep the default environment so that
+    # host $HOME binding behaves normally.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for Compliance Data Processing task."
+    echo "Run your shell commands inside an interactive shell:"
+    echo "    apptainer exec <container>.sif /bin/bash"
+    echo
+    echo "Source CSVs:"
+    echo "  /home/user/compliance_data/transactions_q1.csv"
+    echo "  /home/user/compliance_data/transactions_q2.csv"
+    echo
+    echo "Create your output in /home/user/output as per the task instructions."

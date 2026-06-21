@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install necessary packages
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        make \
+        ca-certificates
+
+    # Install pytest for the automated checker
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the FinOps Makefile exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/finops/raw
+
+    cat > /home/user/finops/raw/usage_2023-07.csv <<'EOF'
+date,service,cost_usd
+2023-07-01,Compute,200.00
+2023-07-02,Compute,300.00
+2023-07-03,Storage,500.00
+2023-07-04,Network,23.45
+2023-07-05,Compute,500.00
+EOF
+
+    # Ensure the student (non-root) can write inside /home/user
+    chmod -R 0777 /home/user
+
+    # Clean up apt caches to reduce image size
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=utf-8
+
+%labels
+    Author="Apptainer Task Auto-Builder"
+    Description="Environment for FinOps Makefile task with pytest pre-installed."

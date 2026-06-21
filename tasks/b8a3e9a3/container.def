@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing dependencies..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        jq \
+        ca-certificates
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating project directory structure..."
+    mkdir -p /home/user/project/assets
+    mkdir -p /home/user/project/exports
+
+    echo "Adding initial users.json dataset..."
+    cat > /home/user/project/assets/users.json <<'EOF'
+[
+  {"id":1,"name":"Ada Lovelace","email":"ada@example.com"},
+  {"id":2,"name":"Linus Torvalds","email":"linus@example.com"},
+  {"id":3,"name":"Grace Hopper","email":"grace@example.com"}
+]
+EOF
+
+    echo "Setting permissive permissions so non-root runtime users can write exports..."
+    chmod -R a+rX /home/user
+    chmod -R a+w  /home/user/project/exports
+
+    echo "Tidying up apt caches..."
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and system utilities are on PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Environment for converting users.json to users.csv"
+
+%help
+    This container provides the starting point for the JSON → CSV conversion task.
+    The dataset is located at /home/user/project/assets/users.json
+    Write your CSV to  /home/user/project/exports/users.csv
+    pytest is installed for test execution.

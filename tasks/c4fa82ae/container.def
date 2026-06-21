@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Create directory hierarchy for the localization project
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/project/localization
+
+    # ------------------------------------------------------------------
+    # Write the source TSV files with exact, line-terminated contents
+    # ------------------------------------------------------------------
+    cat > /home/user/project/localization/translations_master.tsv << 'EOF'
+key	en_US	fr_FR	es_ES
+greeting	Hello	Bonjour	Hola
+farewell	Goodbye	Au revoir	Adiós
+thanks	Thank you	Merci	Gracias
+yes	Yes	Oui	Sí
+no	No	Non	No
+EOF
+
+    cat > /home/user/project/localization/fr_updates.tsv << 'EOF'
+fr_FR
+Salut
+Au revoir
+Merci
+Oui
+Non
+EOF
+
+    # ------------------------------------------------------------------
+    # Ensure write permissions for the future, non-root agent
+    # ------------------------------------------------------------------
+    chmod 0777 /home/user/project/localization
+    chmod 0666 /home/user/project/localization/*.tsv
+
+    # ------------------------------------------------------------------
+    # Install Python, pip, and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%labels
+    Author localization-task-builder
+    Description "Container for the French localization update task."

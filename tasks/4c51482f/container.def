@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic tooling that the grading framework and the student will need
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        jq \
+        ca-certificates \
+        curl
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare starter project structure and files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/dev/config
+
+    # JSON-Schema (single-line text EXACTLY as supplied)
+    cat > /home/user/dev/config/project.schema.json <<'EOF'
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "required": ["name", "version", "dependencies"], "properties": {"name": {"type": "string"}, "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}, "dependencies": {"type": "object", "additionalProperties": {"type": "string"}}}, "additionalProperties": false}
+EOF
+
+    # Manifest file (also a single line)
+    cat > /home/user/dev/config/project.json <<'EOF'
+{"name":"sample-poc","version":"0.1.3","dependencies":{"express":"4.18.2","lodash":"4.17.21"}}
+EOF
+
+    # ------------------------------------------------------------------
+    # Permissions: make sure the non-root runtime user can work here
+    # ------------------------------------------------------------------
+    chmod -R a+rwx /home/user/dev
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure any user-local Python tools are reachable
+    export PATH="/home/user/.local/bin:$PATH"

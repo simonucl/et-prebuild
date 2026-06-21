@@ -1,0 +1,89 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package lists and installing Python tooling..."
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the validation suite
+    pip3 install --no-cache-dir --upgrade pip pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the required directory layout and mock input data
+    # ------------------------------------------------------------------
+    echo "Creating required directories and mock data files..."
+
+    # Ensure the /home directory exists
+    mkdir -p /home
+
+    # Create the main workspace for the student
+    mkdir -p /home/user/sample_data
+    mkdir -p /home/user/reports
+
+    # Make the reports directory world-writable so the unprivileged user
+    # running the container can create new artefacts there.
+    chmod 0777 /home/user/reports
+
+    # ------------------------------------------------------------------
+    # Populate mock_netstat.txt
+    # ------------------------------------------------------------------
+    cat >/home/user/sample_data/mock_netstat.txt <<'EOF'
+Proto LocalAddress  State  PID/Program
+tcp   0.0.0.0:22    LISTEN 123/sshd
+tcp   0.0.0.0:8080  LISTEN 456/nginx
+udp   0.0.0.0:53           789/dnsmasq
+EOF
+
+    # ------------------------------------------------------------------
+    # Populate mock_passwd
+    # ------------------------------------------------------------------
+    cat >/home/user/sample_data/mock_passwd <<'EOF'
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+user1:x:1000:1000:User One:/home/user1:/bin/bash
+EOF
+
+    # Ensure correct permissions (read-only files, writable directory)
+    chmod 0644 /home/user/sample_data/mock_netstat.txt
+    chmod 0644 /home/user/sample_data/mock_passwd
+    chmod 0755 /home/user/sample_data
+
+    # Just in case, remove any pre-existing artefacts that should *not*
+    # be present when the student starts.
+    rm -f /home/user/reports/run_security_scan.sh \
+          /home/user/reports/infra_security_report.yml \
+          /home/user/reports/scan_exec_time.log || true
+
+%labels
+    chmod 755 /home/user
+
+    Author security-baseline-setup
+    Description "Container image prepared for the security-scan automation task"
+
+%environment
+    # Ensure python3 is available as 'python' for convenience
+    export PYTHONIOENCODING="utf-8"
+    if ! command -v python >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
+        alias python=python3
+    fi
+
+%help
+This Apptainer image provides the initial workspace for the
+"parallelised security-scan" assignment.
+
+Pre-created resources:
+  • /home/user/sample_data/mock_netstat.txt
+  • /home/user/sample_data/mock_passwd
+  • /home/user/reports/  (writable, initially empty)
+
+Python 3 and pytest are installed for automated validation.

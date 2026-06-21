@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author DevOps-Apptainer-Setup
+    Description Base image with Python, pip and pytest installed. \
+    Provides writable /home/user for the student; leaves \
+    /home/user/logs absent as required by the assignment.
+
+%post
+    set -e
+
+    # Update package lists and install Python and pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the automated test-harness
+    pip3 install --no-cache-dir pytest
+
+    # Create writable home directory for the student.
+    # Do NOT create /home/user/logs so initial state remains clean.
+    mkdir -p /home/user
+    chmod 777 /home/user
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure deterministic locale and timezone are available for the student
+    export LANG=C
+    export TZ=UTC
+
+%runscript
+    echo "Container built for timestamp-logging assignment."
+    echo "Python version: $(python3 --version)"
+    echo "pytest version: $(pytest --version | head -n 1)"

@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ## ------------------------------------------------------------------
+    ## 1. Install needed packages (rsync for the task; pytest for testing)
+    ## ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        rsync
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ## ------------------------------------------------------------------
+    ## 2. Create prerequisite directory structure and files
+    ## ------------------------------------------------------------------
+    # Application log and config directories
+    mkdir -p /home/user/app/logs
+    mkdir -p /home/user/app/config
+
+    # Log file
+    printf 'Log Start\n' > /home/user/app/logs/app.log
+    chmod 0644 /home/user/app/logs/app.log
+
+    # Settings file
+    printf 'setting1=value1\nsetting2=value2\n' > /home/user/app/config/settings.conf
+    chmod 0644 /home/user/app/config/settings.conf
+
+    ## ------------------------------------------------------------------
+    ## 3. Prepare the “remote-drop” location
+    ## ------------------------------------------------------------------
+    mkdir -p /home/user/remote-drop
+    chmod 0755 /home/user/remote-drop
+
+    ## ------------------------------------------------------------------
+    ## 4. Ensure a non-root user exists and owns /home/user
+    ## ------------------------------------------------------------------
+    # Create user account with UID 1000 if it does not already exist.
+    if ! id -u 1000 >/dev/null 2>&1; then
+        useradd -m -u 1000 -s /bin/bash user
+    fi
+
+    # Give ownership of everything under /home/user to UID 1000
+    chown -R 1000:1000 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep standard paths; prepend /usr/local/bin so that pip-installed
+    # utilities (e.g. pytest) are available.
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author      diagnostic-setup
+    Description Initial state container for “diagnostic snapshot” exercise

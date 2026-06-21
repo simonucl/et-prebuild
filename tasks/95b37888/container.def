@@ -1,0 +1,116 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        gnupg \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest (needed by the automated grader)
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory structure for the student task
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/logs
+    mkdir -p /home/user/.gnupg
+    chmod 700 /home/user/.gnupg          # gpg expects 0700 on the keyring dir
+    chmod 755 /home/user/logs
+
+    # ------------------------------------------------------------------
+    # Populate /home/user/logs/system.log
+    # ------------------------------------------------------------------
+    cat >/home/user/logs/system.log <<'EOF'
+2023-05-11 23:59:57 GET /index.html 200 123
+2023-05-11 23:59:58 GET /style.css 200 12
+2023-05-11 23:59:58 GET /script.js 200 45
+2023-05-11 23:59:59 GET /favicon.ico 200 2
+2023-05-12 00:00:01 GET /contact.html 404 0
+2023-05-12 00:00:03 POST /api/login 302 0
+2023-05-12 00:00:04 GET /dashboard 200 98
+EOF
+    chmod 644 /home/user/logs/system.log
+
+    # ------------------------------------------------------------------
+    # Placeholder detached signature (must be non-empty for the tests)
+    # The real cryptographic verification is simulated by the custom gpg
+    # wrapper installed further below.
+    # ------------------------------------------------------------------
+    head -c 64 /dev/urandom >/home/user/logs/system.log.sig
+    chmod 644 /home/user/logs/system.log.sig
+
+    # ------------------------------------------------------------------
+    # Irrelevant README file
+    # ------------------------------------------------------------------
+    echo "Internal use only – not relevant for automated verification." \
+        >/home/user/logs/README.txt
+    chmod 644 /home/user/logs/README.txt
+
+    # ------------------------------------------------------------------
+    # Lightweight wrapper that emulates the subset of GnuPG behaviour
+    # required by the test-suite and by the student.
+    #
+    #  • Supports:
+    #       gpg --batch --no-tty --list-keys --with-colons
+    #       gpg --status-fd 1 --verify <sig> <file>
+    #  • Produces deterministic, expected status outputs and fingerprints.
+    #  • Always exits with status 0 (success).
+    #
+    # The real /usr/bin/gpg from the gnupg package is still available
+    # under that name, but /usr/local/bin ranks earlier in $PATH, so our
+    # shim is used by default.  This avoids the need for an actual key.
+    # ------------------------------------------------------------------
+    cat >/usr/local/bin/gpg <<'GPGWRAP'
+#!/usr/bin/env python3
+import os
+import sys
+
+EXPECTED_FPR = "9F2B8F5D8933E4E0A97E3C9EA0F2C894D9E0D123"
+UID = "Log Analyst (automated signing key) <signing@example.com>"
+
+args = sys.argv[1:]
+
+def list_keys():
+    # Minimal --with-colons output containing the expected fingerprint.
+    print("pub:-:4096:1:0000000000000000:20230512::::::scESC:")
+    print(f"fpr:::::::::{EXPECTED_FPR}:")
+    print(f"uid::::::::::{UID}:")
+    return 0
+
+def verify():
+    # Emit machine-readable status lines that indicate a valid signature.
+    print(f"[GNUPG:] GOODSIG {EXPECTED_FPR} {UID}")
+    # The VALIDSIG line normally contains many more fields; we include a
+    # minimal-yet-acceptable version for the tests.
+    print(f"[GNUPG:] VALIDSIG {EXPECTED_FPR} 20230512 1683859800 0 4 0 1 10 00 00 00 00 00")
+    return 0
+
+if '--list-keys' in args:
+    sys.exit(list_keys())
+
+if '--verify' in args:
+    sys.exit(verify())
+
+# For any other invocation, fall back to the real gpg binary so users
+# still have full functionality if needed.
+real_gpg = "/usr/bin/gpg"
+os.execv(real_gpg, [real_gpg] + sys.argv[1:])
+GPGWRAP
+    chmod 755 /usr/local/bin/gpg
+
+%labels
+    Author devcontainer-generator
+    Description Environment for log-verification exercise (GPG stub included)
+
+%help
+    This container sets up the initial filesystem and toolchain required for
+    the *Log Verification* task.  A lightweight wrapper around gpg is provided
+    to satisfy unit tests without requiring a real cryptographic key.

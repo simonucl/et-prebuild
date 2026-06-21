@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest (required by the grader)
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem expected by the assignment tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/provisioning/scripts/utils
+
+    # deploy.sh
+    cat <<'EOF' > /home/user/provisioning/scripts/deploy.sh
+#!/bin/bash
+echo "Deploying application..."
+EOF
+
+    # teardown.sh
+    cat <<'EOF' > /home/user/provisioning/scripts/teardown.sh
+#!/bin/bash
+echo "Tearing down..."
+EOF
+
+    # utils/common.sh
+    cat <<'EOF' > /home/user/provisioning/scripts/utils/common.sh
+#!/bin/bash
+log() { echo "[`date`] $1"; }
+EOF
+
+    # README.md
+    cat <<'EOF' > /home/user/provisioning/scripts/README.md
+# Provisioning Scripts
+This directory contains helper scripts for deploying and tearing down infrastructure.
+EOF
+
+    # Permissions
+    chmod 755 /home/user/provisioning/scripts/deploy.sh
+    chmod 755 /home/user/provisioning/scripts/teardown.sh
+    chmod 755 /home/user/provisioning/scripts/utils/common.sh
+    chmod 644 /home/user/provisioning/scripts/README.md
+    chmod -R a+rX /home/user
+
+%environment
+    # No changes to HOME; leave as provided at runtime
+    export PATH="$PATH:/usr/local/bin"
+
+%runscript
+    echo "Container for provisioning-scripts backup task. Execute your solution script inside this container."

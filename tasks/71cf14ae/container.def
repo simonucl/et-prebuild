@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        nodejs \
+        npm \
+        ca-certificates \
+        git \
+        curl
+
+    # Install Python testing framework
+    pip3 install --no-cache-dir pytest
+
+    # Install markdownlint CLI (also provides the `markdownlint` command)
+    npm install -g markdownlint-cli
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory structure and seed files for the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/operator-manifests
+
+    # deployment.yaml
+    cat > /home/user/operator-manifests/deployment.yaml <<'EOF'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-deployment
+  namespace: default
+EOF
+
+    # service.yaml
+    cat > /home/user/operator-manifests/service.yaml <<'EOF'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sample-service
+  namespace: default
+EOF
+
+    # Ensure permissions so the non-root container user can work freely
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep HOME as provided by Apptainer; just ensure Python user base bin is available
+    export PATH="$HOME/.local/bin:$PATH"
+
+%runscript
+    # Default runscript just opens a shell; can be overridden by the runner
+    exec /bin/bash "$@"

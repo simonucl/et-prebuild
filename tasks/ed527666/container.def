@@ -1,0 +1,75 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # -----------------------------------------------------------------
+    # System packages
+    # -----------------------------------------------------------------
+    apt-get update -y
+    # python3 is already present in Ubuntu 22.04, but make sure pip and rsync
+    # (needed by the exercise itself) are installed.
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        rsync
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # -----------------------------------------------------------------
+    # Python tooling
+    # -----------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Non-root user setup
+    # -----------------------------------------------------------------
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g 1000 -s /bin/bash user
+
+    # -----------------------------------------------------------------
+    # Exercise initial-state directory tree
+    # -----------------------------------------------------------------
+    # Remote “staging” area
+    mkdir -p /home/user/remote_server/training_data/images
+    mkdir -p /home/user/remote_server/training_data/labels
+
+    cat >/home/user/remote_server/training_data/images/image1.jpg <<'EOF'
+fakejpeg1
+EOF
+
+    cat >/home/user/remote_server/training_data/images/image2.jpg <<'EOF'
+fakejpeg22
+EOF
+
+    cat >/home/user/remote_server/training_data/labels/image1.txt <<'EOF'
+label: cat
+EOF
+
+    cat >/home/user/remote_server/training_data/labels/image2.txt <<'EOF'
+label: dog
+EOF
+
+    cat >/home/user/remote_server/training_data/README.md <<'EOF'
+# Demo dataset
+EOF
+
+    # Local project root (must exist but be empty apart from this dir)
+    mkdir -p /home/user/local_project
+
+    # -----------------------------------------------------------------
+    # Permissions: make everything owned by the non-root user so that the
+    # student (who won't have root) can read/write as required.
+    # -----------------------------------------------------------------
+    chown -R 1000:1000 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure the user’s PATH finds locally installed Python utilities
+    export HOME=/home/user
+    export PATH="$HOME/.local/bin:$PATH"
+
+%labels
+    Author          ChatGPT
+    Description     Initial container setup for the “training-data rsync” task

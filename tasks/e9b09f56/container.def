@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Refresh package index and install system dependencies
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        iputils-ping \
+        dnsutils \
+        ca-certificates
+
+    # Install pytest so the auto-grader can run its checks
+    pip3 install --no-cache-dir pytest
+
+    # Create the unprivileged user expected by the grader
+    useradd --create-home --shell /bin/bash user
+
+    # Prepare (empty) directory for future artefacts; do NOT create the file
+    mkdir -p /home/user/incidents
+    chown -R user:user /home/user/incidents
+
+    # Clean up APT caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export PYTHONUNBUFFERED=1
+    export PATH=/home/user/.local/bin:$PATH
+
+%runscript
+    # Default entrypoint: just execute whatever the caller supplied
+    exec "$@"

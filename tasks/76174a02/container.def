@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the test suite
+    # -----------------------------------------------------------------
+
+    # Ensure /home/user exists with correct permissions
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Create the helpdesk directory
+    mkdir -p /home/user/helpdesk
+    chmod 755 /home/user/helpdesk
+
+    # Build the SQLite database with the required schema and data
+    cat <<'SQL' | sqlite3 /home/user/helpdesk/helpdesk.db
+    CREATE TABLE tickets (
+        id      INTEGER PRIMARY KEY,
+        title   TEXT,
+        status  TEXT
+    );
+    INSERT INTO tickets VALUES
+        (1,'Cannot connect to VPN','open'),
+        (2,'Email not syncing','open'),
+        (3,'Forgot password','resolved'),
+        (4,'Printer jam','in_progress');
+SQL
+
+    # Set database file permissions
+    chmod 644 /home/user/helpdesk/helpdesk.db
+
+%environment
+    # No special environment variables are required
+    :

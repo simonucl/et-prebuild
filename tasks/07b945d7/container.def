@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    #---------------------------------------------------------------------
+    # 1. Install Python and pytest so that the autograder can run tests
+    #---------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #---------------------------------------------------------------------
+    # 2. Create the initial file-system state expected *before* the agent
+    #    begins the deployment (release 1.2.2 already in place, symlink set)
+    #---------------------------------------------------------------------
+    mkdir -p /home/user/app/releases/1.2.2
+
+    # Non-empty placeholder JAR (size > 0 so the sanity-check passes)
+    echo 'dummy bytecode for version 1.2.2' > /home/user/app/releases/1.2.2/app.jar
+    chmod 644 /home/user/app/releases/1.2.2/app.jar
+
+    # Symlink “current” → 1.2.2   (no trailing slash!)
+    ln -sf /home/user/app/releases/1.2.2 /home/user/app/current
+
+    #---------------------------------------------------------------------
+    # 3. Ensure any unprivileged user can write to /home/user so the agent
+    #    (who will *not* have root access) can create new releases, files,
+    #    and update the symlink.
+    #---------------------------------------------------------------------
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep Python output unbuffered for clearer grading logs
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author  = TaskSetup
+    Purpose = Initial state for deployment-automation exercise (version 1.2.3 prep)
+
+%help
+    This container provides the starting file-system layout for the
+    "deploy version 1.2.3" exercise.  It already contains:
+      • /home/user/app/releases/1.2.2/app.jar
+      • /home/user/app/current  →  /home/user/app/releases/1.2.2
+
+    Students are expected to create the 1.2.3 release, update the symlink,
+    and write the deployment log as described in the assignment.  Pytest is
+    pre-installed so that the autograder can validate their work.

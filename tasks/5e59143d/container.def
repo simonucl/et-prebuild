@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Refresh package lists
+    apt-get update
+
+    # Install required packages: ping utility and Python tooling
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        iputils-ping \
+        python3 \
+        python3-pip
+
+    # Install pytest via pip (latest version)
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the /home/user directory exists and is writable by all
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Make sure the ping binary is usable by unprivileged users
+    # (setuid root is normally provided by iputils-ping, but enforce just in case)
+    if [ -x /usr/bin/ping ]; then
+        chmod u+s /usr/bin/ping || true
+    elif [ -x /bin/ping ]; then
+        chmod u+s /bin/ping || true
+    fi
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C
+    export LANG=C

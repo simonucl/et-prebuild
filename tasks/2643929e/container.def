@@ -1,0 +1,63 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author          TaskSetup
+    Description     "Initial container state for the UTF-8 → Latin-1 conversion assignment"
+
+%post
+    set -e
+
+    # --------------------------------------------------------------------- #
+    # Base tools and Python/pytest
+    # --------------------------------------------------------------------- #
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip locales ca-certificates
+
+    # Enable a UTF-8 locale so that Unicode bytes are handled predictably
+    sed -i 's/^# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+    locale-gen
+    update-locale LANG=en_US.UTF-8
+
+    # pytest for the autograder
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------- #
+    # Prepare directory tree and initial file
+    # --------------------------------------------------------------------- #
+    INSTALL_DIR="/home/user/project/pipelines/mobile"
+    mkdir -p "${INSTALL_DIR}"
+
+    # Make the path writable for the unprivileged user who will run the task
+    chmod 0777 /home/user
+    chmod 0777 /home/user/project || true
+    chmod 0777 /home/user/project/pipelines || true
+    chmod 0777 "${INSTALL_DIR}"
+
+    # Create the UTF-8 source file with the exact required contents (97 bytes)
+    cat > "${INSTALL_DIR}/build-notes-utf8.txt" <<'EOF'
+Release: 1.2.3
+Changelog: Fixed résumé parsing, improved UI for Zürich
+Author: José Álvarez
+EOF
+
+    # Sanity-check byte size (must be 97)
+    BYTES=$(wc -c < "${INSTALL_DIR}/build-notes-utf8.txt")
+    if [ "${BYTES}" -ne 97 ]; then
+        echo "build-notes-utf8.txt is ${BYTES} bytes, expected 97." >&2
+        exit 1
+    fi
+
+    # Read-only permissions for the source file; others stay writable
+    chmod 0644 "${INSTALL_DIR}/build-notes-utf8.txt"
+
+    # Clean up apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8

@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package list and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the automated test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial fixture for the disk-usage workflow
+    # ------------------------------------------------------------------
+    # Create a writable home for the unprivileged runtime user.
+    mkdir -p /home/user
+    # Give all users write permission so the non-root agent can
+    # create the required output directory later on.  Use the sticky
+    # bit (1777) to avoid one user deleting another user’s files.
+    chmod 1777 /home/user
+
+    # Create the fixture directory and files
+    mkdir -p /home/user/disk_demo
+
+    # file1.txt : 5,120 bytes of ASCII "A"
+    yes A | head -c 5120 > /home/user/disk_demo/file1.txt
+
+    # file2.bin : 20,480 bytes of random data
+    dd if=/dev/urandom bs=1024 count=20 of=/home/user/disk_demo/file2.bin conv=notrunc status=none
+
+    # Set permissions: directory 0755, files 0644
+    chmod 755 /home/user/disk_demo
+    chmod 644 /home/user/disk_demo/file1.txt /home/user/disk_demo/file2.bin
+
+%environment
+    # Make sure Python and pip are on PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author "GPT-4"
+    Description "Container for a disk-usage workflow exercise with pytest pre-installed and fixture data prepared."
+
+%help
+    This Apptainer image contains the initial filesystem state for the
+    “disk-usage analysis” workflow.  It provides:
+    • Python 3 and pytest for automated grading
+    • /home/user/disk_demo with two files totalling 25,600 bytes

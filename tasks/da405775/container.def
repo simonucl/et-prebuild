@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install Python, pip and pytest (needed by the grading harness)
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the required directory structure
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/configs
+    mkdir -p /home/user/task_logs
+
+    # Ensure everything under /home/user is writable by the runtime user
+    chmod -R 777 /home/user
+
+    # ------------------------------------------------------------------
+    # Create initial configuration files with their pristine contents
+    # ------------------------------------------------------------------
+
+    # api-gateway.yaml (original state)
+    cat > /home/user/configs/api-gateway.yaml <<'EOF'
+server:
+  port: 8080
+  host: "0.0.0.0"
+logging:
+  level: "INFO"
+  enabled: false
+security:
+  cors:
+    allowed_origins:
+      - "https://example.com"
+    allow_credentials: false
+EOF
+
+    # db-service.toml (original state)
+    cat > /home/user/configs/db-service.toml <<'EOF'
+[database]
+host = "127.0.0.1"
+port = 5432
+username = "dbuser"
+password = "oldpassword"
+max_connections = 100
+
+[features]
+connection_pooling = true
+logging = false
+EOF
+
+%environment
+    chmod 755 /home/user
+
+    # Expose Python and pip in PATH (Ubuntu already sets this, but be explicit)
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%help
+    This container provides the initial filesystem state for the
+    “parallel YAML & TOML change” exercise and includes pytest for
+    automated grading.

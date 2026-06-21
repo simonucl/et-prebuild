@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # 1. Install required packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        git \
+        python3 \
+        python3-pip \
+        ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    # 2. Install pytest (needed for the grading tests)
+    pip3 install --no-cache-dir pytest
+
+    # 3. Prepare filesystem layout
+    mkdir -p /home/user/remote
+
+    # 4. Seed the bare Git repository with the initial commit
+    TEMP_WORK=/tmp/sample-app-seed
+    mkdir -p "${TEMP_WORK}"
+    cd "${TEMP_WORK}"
+
+    git init
+    git config user.name  "Builder"
+    git config user.email "builder@example.com"
+
+    printf "2.0.0\n" > VERSION
+    git add VERSION
+    git commit -m "Initial version 2.0.0"
+
+    # Ensure the default branch is 'main'
+    git branch -M main
+
+    # Create the bare repository at the required location
+    git clone --bare . /home/user/remote/sample-app.git
+
+    # For absolute certainty, make HEAD in the bare repo point to refs/heads/main
+    git --git-dir=/home/user/remote/sample-app.git symbolic-ref HEAD refs/heads/main
+
+    # 5. Clean up temporary directory
+    cd /
+    rm -rf "${TEMP_WORK}"
+
+    # 6. Make sure /home/user is world-readable/executable (no root needed by agent)
+    chmod -R a+rX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Allow user-installed Python packages (if any) to be found
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%labels
+    Author ChatGPT
+    Description Seed environment for Git deployment task with initial bare repo and pytest installed.

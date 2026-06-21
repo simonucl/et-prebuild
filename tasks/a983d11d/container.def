@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Basic development tooling
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Upgrade pip and install pytest for the autograder
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    # Create unprivileged user “user” with home directory /home/user
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -s /bin/bash user
+    fi
+
+    # Ensure the home directory has safe permissions
+    chmod 755 /home/user
+
+    # Guarantee a clean slate for the learner:
+    #   – no pre-existing backup directory
+    #   – no pre-populated audit log
+    #   – .bashrc does NOT already contain the required export line
+    rm -rf /home/user/db_backups || true
+    rm -f  /home/user/backup_setup.log || true
+
+    EXPORT_LINE='export BACKUP_DIR="/home/user/db_backups"'
+    if [ -f /home/user/.bashrc ]; then
+        # Remove the exact line if, for any reason, it is present.
+        sed -i "\|${EXPORT_LINE}|d" /home/user/.bashrc
+    fi
+
+%environment
+    # Minimal environment; do not override HOME.
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    # Default action when the container is executed without arguments
+    /bin/bash -l "$@"
+
+%labels
+    Author chatbot
+    Description "Environment for database-backup shell task. Pytest pre-installed."

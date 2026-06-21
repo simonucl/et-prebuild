@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ############################################
+    # 1. Install Python tooling and pytest
+    ############################################
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ############################################
+    # 2. Prepare initial filesystem state
+    ############################################
+    # Ensure the /home/user hierarchy exists
+    mkdir -p /home/user/audit
+
+    # Allow the runtime (non-root) user to create further files
+    chmod 755 /home/user
+    chmod 777 /home/user/audit
+
+    # Create the source CSV with **exactly** the required content
+    cat >/home/user/audit/source_permissions.csv <<'EOF'
+path,user,group,perms
+/etc/passwd,root,root,644
+/etc/shadow,root,root,640
+/var/log/syslog,syslog,adm,640
+/home/user/.bashrc,user,user,600
+/usr/bin/sudo,root,root,4755
+/tmp/shared.txt,guest,guest,666
+/var/www/html/index.html,www-data,www-data,644
+EOF
+
+    # Default read permissions are sufficient
+    chmod 644 /home/user/audit/source_permissions.csv
+
+%labels
+    Author  = ChatGPT
+    Purpose = Initial state for audit-permissions task (pytest pre-checks ready)
+
+%help
+    Container providing the starting environment for the “file-system permission
+    audit” task.  Includes:
+      • /home/user/audit/source_permissions.csv with the exact required content.
+      • pytest installed for the grading engine.
+    Students are expected to create /home/user/audit/perm_overview.log.

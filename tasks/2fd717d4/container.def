@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create a non-privileged user that will own the working files
+    # (UID/GID 1000 is the de-facto default on most systems).
+    # ------------------------------------------------------------------
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 -s /bin/bash user
+    fi
+
+    # ------------------------------------------------------------------
+    # Prepare the initial directory structure and seed files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/app/config
+    mkdir -p /home/user/rotate
+    mkdir -p /home/user/security
+
+    # Initial production database configuration
+    cat > /home/user/app/config/database.ini <<'EOF'
+[database]
+user = appuser
+password = OldPassw0rd!
+host = 127.0.0.1
+port = 5432
+EOF
+
+    # New password to be rotated in
+    cat > /home/user/rotate/new_pass.txt <<'EOF'
+N3wP@ssw0rd-2024!
+EOF
+
+    # Ensure the “user” account owns everything under /home/user
+    chown -R user:user /home/user
+
+    # Give directories sensible default access so the non-root user can
+    # read/write as required during the exercise.
+    chmod 755 /home/user
+    chmod 755 /home/user/app /home/user/app/config
+    chmod 755 /home/user/rotate
+    chmod 755 /home/user/security
+
+%environment
+    # Keep a sane PATH; do NOT override $HOME so it follows the runtime user.
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author="Security Engineering Task – Credential Rotation"

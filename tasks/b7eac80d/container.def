@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python 3 and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state for the “notifyd” exercise
+    # ------------------------------------------------------------------
+    # Create the user area and configuration for notifyd
+    mkdir -p /home/user/.config/notifyd
+
+    # Initial configuration: notifyd disabled (no trailing spaces)
+    echo -n 'enabled=0' > /home/user/.config/notifyd/notifyd.conf
+
+    # Set reasonable permissions so the (non-root) learner can read/write
+    chmod 0755 /home/user
+    chmod 0755 /home/user/.config
+    chmod 0755 /home/user/.config/notifyd
+    chmod 0644 /home/user/.config/notifyd/notifyd.conf
+
+    # NOTE: Do NOT create /home/user/log/notifyd/ or any log files;
+    # those are intentionally left for the learner to make.
+
+%environment
+    chmod 755 /home/user
+
+    # Basic PATH; do not override HOME
+    PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author notifyd_setup
+    Description "Base image for the notifyd configuration challenge (with pytest pre-installed)."

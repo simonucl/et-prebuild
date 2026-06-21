@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare filesystem layout required by the autograder
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/app
+    chmod 0755 /home/user/app
+
+    # 1. config.yml  (0644)
+    cat <<'EOF' > /home/user/app/config.yml
+# Example configuration for the prototype web-app
+database: sqlite:///db.sqlite
+EOF
+    chmod 0644 /home/user/app/config.yml
+
+    # 2. db.sqlite   (0666 — world-writable)
+    : > /home/user/app/db.sqlite
+    chmod 0666 /home/user/app/db.sqlite
+
+    # 3. script.sh   (0755)
+    cat <<'EOF' > /home/user/app/script.sh
+#!/usr/bin/env bash
+echo "Hello, World!"
+EOF
+    chmod 0755 /home/user/app/script.sh
+
+    # Ensure /home/user itself exists and is accessible
+    chmod 0755 /home/user || true
+
+%environment
+    chmod 755 /home/user
+
+    export PATH="/home/user/.local/bin:$PATH"
+
+%labels
+    Author "Container Auto-Builder"
+    Description "Environment for the world-writable file enumeration task with pytest pre-installed."

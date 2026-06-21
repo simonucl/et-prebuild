@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-jsonschema \
+        jq \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install Python testing framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial exercise data
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/incident_responder
+
+    # incidents.json
+    cat > /home/user/incident_responder/incidents.json <<'JSONDATA'
+[
+  {"id": 1001, "timestamp": "2024-05-21T13:33:12Z", "severity": "low",    "message": "Disk usage at 70%"},
+  {"id": 1002, "timestamp": "2024-05-21T13:35:44Z", "severity": "high",   "message": "Unauthorized login attempt detected"},
+  {"id": 1003, "timestamp": "2024-05-21T13:36:00Z", "severity": "medium", "message": "CPU load exceeds threshold"},
+  {"id": 1004, "timestamp": "2024-05-21T13:37:10Z", "severity": "high",   "message": "Suspicious outbound traffic detected"}
+]
+JSONDATA
+
+    # incident_schema.json
+    cat > /home/user/incident_responder/incident_schema.json <<'SCHEMADATA'
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "timestamp", "severity", "message"],
+    "properties": {
+      "id":        { "type": "integer" },
+      "timestamp": { "type": "string",  "format": "date-time" },
+      "severity":  { "type": "string",  "enum": ["low", "medium", "high"] },
+      "message":   { "type": "string" }
+    }
+  }
+}
+SCHEMADATA
+
+    # Set permissions (world-readable, dir executable)
+    chmod 644 /home/user/incident_responder/incidents.json \
+              /home/user/incident_responder/incident_schema.json
+    chmod 755 /home/user/incident_responder
+
+%runscript
+    echo "Incident responder exercise container."
+    echo "Initial data is located in /home/user/incident_responder."

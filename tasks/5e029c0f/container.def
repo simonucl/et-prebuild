@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the directory structure and seed the required raw log file
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/incidents/raw_logs
+
+    cat > /home/user/incidents/raw_logs/network_2023-03-17.log <<'EOF'
+2023-03-17T02:45:00Z 192.168.1.10 -> 10.23.45.67 TCP 450
+2023-03-17T03:15:22Z 10.23.45.67 -> 192.168.1.10 TCP 1024
+2023-03-17T03:45:10Z 10.23.45.67 -> 192.168.1.15 UDP 2048
+2023-03-17T04:05:00Z 172.16.0.5 -> 10.23.45.67 TCP 300
+2023-03-17T04:15:10Z 10.23.45.67 -> 192.168.1.20 TCP 512
+2023-03-17T04:40:55Z 10.23.45.67 -> 192.168.1.30 TCP 256
+2023-03-17T05:10:00Z 10.23.45.67 -> 192.168.1.35 UDP 400
+EOF
+
+    # Ensure sensible permissions so the non-root agent can read the data
+    chmod 644 /home/user/incidents/raw_logs/network_2023-03-17.log
+    chmod -R 755 /home/user/incidents
+
+%labels
+    chmod 755 /home/user
+
+    Author="Container preparer for incident-response exercise"
+
+%help
+    This container provides the initial filesystem state for the
+    incident-response CSV-extraction task.  The necessary raw log file
+    is pre-loaded under /home/user/incidents/raw_logs/, and pytest is
+    available for internal validation.

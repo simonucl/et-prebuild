@@ -1,0 +1,73 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create required directory hierarchy under /home/user
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/containers/proxy
+    mkdir -p /home/user/containers/api
+    mkdir -p /home/user/vuln_db
+
+    # ------------------------------------------------------------------
+    # Populate container bundle JSON files
+    # ------------------------------------------------------------------
+    cat > /home/user/containers/proxy/container.json <<'EOF'
+{
+  "Config": {
+    "ExposedPorts": {
+      "80/tcp": {},
+      "443/tcp": {},
+      "8080/tcp": {}
+    }
+  }
+}
+EOF
+
+    cat > /home/user/containers/api/container.json <<'EOF'
+{
+  "Config": {
+    "ExposedPorts": {
+      "3000/tcp": {},
+      "22/tcp": {}
+    }
+  }
+}
+EOF
+
+    # ------------------------------------------------------------------
+    # Populate vulnerability CSV
+    # ------------------------------------------------------------------
+    cat > /home/user/vuln_db/vuln_ports.csv <<'EOF'
+Port,Service,Severity
+22,OpenSSH,Medium
+80,HTTP,Low
+443,HTTPS,Low
+3000,NodeJS-Dev-Server,Critical
+8080,JBoss,Critical
+EOF
+
+    # ------------------------------------------------------------------
+    # Set permissions
+    # ------------------------------------------------------------------
+    chmod 644 /home/user/containers/proxy/container.json
+    chmod 644 /home/user/containers/api/container.json
+    chmod 644 /home/user/vuln_db/vuln_ports.csv
+
+    # Ensure the agent (non-root at runtime) can create /home/user/scan_logs
+    chmod 0777 /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author  "Automated Build"
+    Description "Environment for container-based vulnerability correlation task"

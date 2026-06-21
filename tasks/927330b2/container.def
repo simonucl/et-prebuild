@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt and installing required packages..."
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        jq
+    pip3 --no-cache-dir install pytest
+
+    echo "Creating initial project structure..."
+    mkdir -p /home/user/projects/react-auth/src
+
+    cat > /home/user/projects/react-auth/package.json <<'EOF'
+{"name":"react-auth","version":"0.1.0","private":true,"dependencies":{"react":"^18.2.0","react-dom":"^18.2.0"},"devDependencies":{"env-cmd":"^10.1.0","react-scripts":"5.0.1"},"scripts":{"test":"echo \"Error: no test specified\" && exit 1"}}
+EOF
+
+    # Ensure the future, non-root agent can modify the project
+    chmod -R a+rwX /home/user/projects
+
+    # Clean up to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export PATH="/home/user/.local/bin:$PATH"
+
+%runscript
+    exec "$@"

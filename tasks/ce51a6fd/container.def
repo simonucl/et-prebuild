@@ -1,0 +1,97 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #------------------------------------------------------------------
+    # Basic OS packages
+    #------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tzdata \
+        bash
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #------------------------------------------------------------------
+    # Python tooling for the grader / student
+    #------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    #------------------------------------------------------------------
+    # Create non-privileged user 'user'
+    #------------------------------------------------------------------
+    useradd -m -s /bin/bash user
+
+    #------------------------------------------------------------------
+    # Pre-populate the experiment directories and INI files
+    #------------------------------------------------------------------
+    mkdir -p /home/user/experiments/exp001
+    mkdir -p /home/user/experiments/exp002
+    mkdir -p /home/user/experiments/exp003
+
+    # ----- exp001 -----
+    cat > /home/user/experiments/exp001/config.ini <<'EOF'
+[metadata]
+experiment_id = exp001
+owner = alice
+created = 2023-08-10
+
+[dataset]
+name = imagenet
+version = 1.2
+
+[model]
+architecture = resnet50
+param_count = 25557032
+EOF
+
+    # ----- exp002 -----
+    cat > /home/user/experiments/exp002/config.ini <<'EOF'
+[metadata]
+experiment_id = exp002
+owner = bob
+created = 2023-08-11
+
+[dataset]
+name = cifar10
+version = 3.0
+
+[model]
+architecture = mobilenet_v2
+param_count = 3504875
+EOF
+
+    # ----- exp003 -----
+    cat > /home/user/experiments/exp003/config.ini <<'EOF'
+[metadata]
+experiment_id = exp003
+owner = carol
+created = 2023-08-12
+
+[dataset]
+name = mnist
+version = 1.0
+
+[model]
+architecture = lenet
+param_count = 60000
+EOF
+
+    #------------------------------------------------------------------
+    # Permissions: make sure the non-root user can access everything
+    #------------------------------------------------------------------
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PATH="/home/user/.local/bin:$PATH"
+
+%labels
+    Author="Apptainer Task Generator"
+    Description="Container with pre-populated experiment INI files and pytest installed for student exercises."

@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author deployment-task-initializer
+    Description "Container image prepared for CSV deployment task (inventory & updates input only)."
+
+%post
+    set -e
+
+    # Update apt and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the directory structure and the two required input files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/release
+    chmod 755 /home/user
+    chmod 755 /home/user/release
+
+    # inventory.csv
+    cat > /home/user/release/inventory.csv <<'EOF'
+server_id,hostname,env,current_version
+1,web-1,production,2.4.10
+2,web-2,production,2.4.10
+3,db-1,staging,12.1.0
+4,cache-1,production,1.9.3
+5,api-1,staging,3.2.1
+EOF
+
+    # updates.csv
+    cat > /home/user/release/updates.csv <<'EOF'
+server_id,target_version,window
+1,2.4.11,2024-06-20
+2,2.4.11,2024-06-20
+3,12.1.1,2024-06-21
+4,1.9.4,2024-06-20
+5,3.2.2,2024-06-21
+EOF
+
+    # Ensure world-readable permissions so the unprivileged agent can access them
+    chmod 644 /home/user/release/inventory.csv /home/user/release/updates.csv
+
+%environment
+    # Ensure Python and pip are on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    echo "This image provides the initial state for the deployment task."
+    echo "Inventory and update CSVs are located in /home/user/release."
+    echo "Activate a shell to begin working on the assignment."
+    exec /bin/bash

@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update base image and install Python + PyPI tooling
+    apt-get update \
+        && apt-get install -y --no-install-recommends python3 python3-pip \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest (required by the evaluation harness)
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory structure and configuration seed files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/provisioning/config
+
+    # 1) Initial /home/user/provisioning/config/app.yml
+    cat > /home/user/provisioning/config/app.yml <<'EOF'
+service:
+  name: webapp
+  port: 8000
+  debug: false
+EOF
+
+    # 2) Initial /home/user/provisioning/config/db.toml
+    cat > /home/user/provisioning/config/db.toml <<'EOF'
+[connection]
+user = "admin"
+password = "secret"
+host = "localhost"
+port = 5432
+max_connections = 100
+EOF
+
+    # Ensure non-root users inside the container can read/write/modify
+    chmod -R 777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

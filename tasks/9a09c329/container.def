@@ -1,0 +1,29 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install required system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        sqlite3
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # Prepare writable working area for the unprivileged user
+    mkdir -p /home/user/projects
+    chmod 0777 /home/user
+    chmod 0777 /home/user/projects
+
+    # Clean up APT cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author task-prep-bot
+    Description "Container for SQLite local database task – includes sqlite3 and pytest."

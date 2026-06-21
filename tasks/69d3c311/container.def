@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------------------
+    # Prepare initial project structure for the agent
+    # ------------------------------------------------------------------------------
+
+    # Base directory
+    mkdir -p /home/user/secure-app/config
+
+    # VERSION file (exact content + trailing newline)
+    printf '3.2.0\n' > /home/user/secure-app/VERSION
+
+    # Initial CHANGELOG.md (exact content + trailing newline)
+    cat > /home/user/secure-app/CHANGELOG.md <<'EOF'
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [3.2.0] - 2024-01-15
+### Added
+- Initial public release.
+EOF
+
+    # credentials.json with exactly one trailing newline
+    cat > /home/user/secure-app/config/credentials.json <<'EOF'
+{
+  "api_key": "OLD_SECRET_KEY",
+  "db_password": "unchanged"
+}
+EOF
+
+    # Ensure files and directories are readable/writable by the unprivileged user
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PYTHONPATH=/home/user
+
+%labels
+    Author="task-preparation"
+    Description="Environment for rotate-sensitive-credentials task"

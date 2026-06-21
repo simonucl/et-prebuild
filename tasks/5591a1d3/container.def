@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author observability-task-prep
+    Description "Base image for the heartbeat-style metric collector exercise"
+
+%post
+    set -eux
+
+    # Update package lists and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        cron \
+        ca-certificates
+
+    # Install pytest for the forthcoming automated checks
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # Create a writable home directory for the student user.
+    # Nothing that belongs to the final solution is created here;
+    # we only ensure that the path exists and is writable.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up APT caches to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip use UTF-8 by default
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for the observability exercise.  Start an interactive shell with:"
+    echo "    apptainer exec <image>.sif /bin/bash"
+    /bin/bash
+
+%test
+    # Make sure pytest is importable
+    python3 -c "import pytest, sys; sys.exit(0)"

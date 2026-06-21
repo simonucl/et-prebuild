@@ -1,0 +1,85 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # --------------------------------------------------------------------- #
+    # Fundamental system packages and Python tooling
+    # --------------------------------------------------------------------- #
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    pip install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------- #
+    # Prepare fixture directory tree and files under /home/user
+    # --------------------------------------------------------------------- #
+    mkdir -p /home/user/network_logs/region1
+    mkdir -p /home/user/network_logs/region2/backup
+
+    # region1/router1.trace
+    cat > /home/user/network_logs/region1/router1.trace << 'EOF'
+PING 10.0.0.1
+success
+timeout
+timeout
+timeout
+end
+EOF
+
+    # region1/router2.trace
+    cat > /home/user/network_logs/region1/router2.trace << 'EOF'
+PING 10.0.0.2
+success
+end
+EOF
+
+    # region2/router3.trace
+    cat > /home/user/network_logs/region2/router3.trace << 'EOF'
+TRACE 10.1.0.1
+timeout
+ok
+timeout
+end
+EOF
+
+    # region2/backup/router4.trace
+    cat > /home/user/network_logs/region2/backup/router4.trace << 'EOF'
+PROBE 10.2.0.1
+timeout
+timeout
+timeout
+timeout
+timeout
+done
+EOF
+
+    # --------------------------------------------------------------------- #
+    # Permissions
+    #   • Directories: 755 (rwxr-xr-x)
+    #   • .trace files: 666 (rw-rw-rw-) so the non-root test user can edit
+    # --------------------------------------------------------------------- #
+    find /home/user/network_logs -type d -exec chmod 755 {} \;
+    find /home/user/network_logs -type f -name "*.trace" -exec chmod 666 {} \;
+
+    # Ensure /home/user itself is accessible
+    chmod 755 /home/user
+
+%labels
+    Author NetworkLogsFixture
+    Description Container supplying initial network traceroute log fixture and pytest for grading.
+
+%runscript
+    echo "This container provides the initial state for the networking timeout census task."
+    echo "Invoke an interactive shell to begin working:"
+    echo "    apptainer exec <this_image.sif> /bin/bash"
+
+%help
+    This Apptainer image contains the exact initial on-disk fixture required for
+    the "timeout census" task.  It also has Python and pytest installed so that
+    the automated grader can verify both the initial state and the student’s
+    eventual solution.

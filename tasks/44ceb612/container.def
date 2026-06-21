@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+maintainer "Container Prep Bot"
+
+%post
+    set -eux
+
+    # Update package lists and install required utilities
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        openssh-client \
+        ca-certificates
+
+    # Clean up apt cache to shrink the image a bit
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # Create writable playground directory for the student’s files
+    mkdir -p /home/user
+    # Sticky-bit 1777 makes it writable by any unprivileged UID that will
+    # execute inside the container while still giving each creator ownership
+    chmod 1777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure user-level Python tools (if installed later) are on PATH
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%runscript
+    # Default runscript: just execute whatever command was passed
+    exec "$@"

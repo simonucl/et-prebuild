@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python tooling.
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-venv
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness.
+    pip3 install --no-cache-dir pytest
+
+    # Prepare the project directory that the learner will work in.
+    mkdir -p /home/user/webapp
+    # Ensure the learner (non-root inside the container) can write here.
+    chmod -R 0777 /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author="Apptainer task image generator"
+    Description="Base image for virtual-environment setup exercise"
+
+%help
+This container provides:
+  • Python 3 with venv and pip
+  • pytest for automated grading
+  • A writable project directory at /home/user/webapp
+
+Learners will create their own virtual environment and related files inside
+/home/user/webapp as described in the assignment.

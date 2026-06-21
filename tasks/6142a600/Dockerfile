@@ -1,0 +1,57 @@
+# syntax=docker/dockerfile:1
+FROM ubuntu:22.04
+
+# ------------------------------------------------------------------
+# 1. Base utilities and Python tooling
+# ------------------------------------------------------------------
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked --mount=type=cache,target=/var/lib/apt,sharing=locked --mount=type=cache,target=/root/.cache/pip apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------------------------
+# 2. Create runtime user and directory skeleton
+# ------------------------------------------------------------------
+RUN useradd -m -d /home/user -s /bin/bash user || true && \
+    mkdir -p /home/user/documents/drafts
+
+# ------------------------------------------------------------------
+# 3. Populate the three source TSV files with exact byte-for-byte contents
+# ------------------------------------------------------------------
+RUN cat > /home/user/documents/drafts/chapter_data.tsv <<'EOF'
+ChapterID	Seq	Title
+CH01	1	Introduction
+CH02	2	Installation
+CH03	3	Configuration
+EOF
+
+RUN cat > /home/user/documents/drafts/author_data.tsv <<'EOF'
+ID	AuthorName	Email
+11	Alice Johnson	alice@example.com
+12	Bob Smith	bob@example.com
+13	Carol Chen	carol@example.com
+EOF
+
+RUN cat > /home/user/documents/drafts/release_data.tsv <<'EOF'
+Ref	Stage	TargetDate
+a	draft	2023-10-01
+b	review	2023-10-15
+c	final	2023-11-01
+EOF
+
+# ------------------------------------------------------------------
+# 4. Permissions
+# ------------------------------------------------------------------
+RUN chmod -R 777 /home/user
+
+# ------------------------------------------------------------------
+# Environment settings
+# ------------------------------------------------------------------
+RUN chmod 755 /home/user
+ENV PATH=/usr/local/bin:$PATH
+
+# ------------------------------------------------------------------
+# Labels
+# ------------------------------------------------------------------
+LABEL Author="TSV-merge exercise container" \
+      Description="Provides the initial filesystem state and pytest for the task."

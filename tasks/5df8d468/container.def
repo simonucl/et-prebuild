@@ -1,0 +1,30 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        apt-get clean && rm -rf /var/lib/apt/lists/*
+    pip3 install --no-cache-dir pytest
+
+    # Create the initial directory structure and version files
+    mkdir -p /home/user/opt_solvers
+
+    echo "2.10.7" > /home/user/opt_solvers/cbc.version
+    echo "5.0"    > /home/user/opt_solvers/glpk.version
+    echo "9.6"    > /home/user/opt_solvers/ortools.version
+
+    # Set permissions so the (non-root) agent can write to /home/user
+    chmod 777 /home/user
+    chmod 755 /home/user/opt_solvers
+    chmod 644 /home/user/opt_solvers/*.version
+
+%environment
+    # No environment variables need to be changed for this task.
+
+%labels
+    Author           "ComplianceTaskSetup"
+    Description      "Container for solver audit task with pytest pre-installed"

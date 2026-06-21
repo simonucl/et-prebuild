@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install system packages and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        tar \
+        gzip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory structure and files for the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/incoming
+
+    # expected_release.txt with final newline
+    cat > /home/user/expected_release.txt <<'EOF'
+core-1.0
+util-1.2
+gui-3.5
+EOF
+
+    # Build core-1.0.tar.gz
+    mkdir -p /tmp/core_pkg
+    printf 'This is the core artifact\n' > /tmp/core_pkg/core.txt
+    tar -czf /home/user/incoming/core-1.0.tar.gz -C /tmp/core_pkg core.txt
+    rm -rf /tmp/core_pkg
+
+    # Build util-1.2.tar.gz
+    mkdir -p /tmp/util_pkg
+    printf 'This is the util artifact\n' > /tmp/util_pkg/util.txt
+    tar -czf /home/user/incoming/util-1.2.tar.gz -C /tmp/util_pkg util.txt
+    rm -rf /tmp/util_pkg
+
+    # Ensure the runtime (non-root) user can modify /home/user
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Maintainer="Apptainer Task Setup"

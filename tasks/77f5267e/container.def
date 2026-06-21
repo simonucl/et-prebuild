@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package list and install Python + pytest requirements
+    apt-get update -qq
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ##############  Prepare initial filesystem state  ##############
+    # Base directory for the exercise
+    mkdir -p /home/user
+
+    # 1. Create /home/user/data/live and a placeholder SQLite file
+    mkdir -p /home/user/data/live
+    : > /home/user/data/live/important.db   # create empty file
+
+    # 2. Create archives directory and the *broken* symlink
+    mkdir -p /home/user/archives
+    ln -sf /home/user/data/old_live /home/user/archives/snap_latest
+
+    # 3. Make sure the student (non-root) can modify everything under /home/user
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author Backup-Integrity Exercise
+
+%help
+    This Apptainer image sets up the initial state for the
+    “symbolic-link integrity” exercise.
+    Pre-installed: Python 3 + pytest.
+    Pre-created:
+      • /home/user/data/live/important.db
+      • /home/user/archives/snap_latest  (broken symlink -> /home/user/data/old_live)
+    Students will repair and validate the links as described in the task.

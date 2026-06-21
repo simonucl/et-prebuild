@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Basic tooling
+    apt-get update -qq
+    apt-get install -y --no-install-recommends python3 python3-pip ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # Seed data for the required initial state
+    mkdir -p /opt/initial_state/logs
+    cat > /opt/initial_state/logs/app.log <<'EOF'
+2023-08-21T14:32:07Z ERROR Failed login for user 'admin' from 10.0.0.23
+2023-08-21T14:33:58Z INFO User 'alice' authenticated successfully from 10.0.0.11
+2023-08-21T14:34:12Z WARN Unauthorized access attempt to /secure/data by user 'bob'
+2023-08-21T14:35:47Z ERROR Reflected XSS attempt detected in parameter 'q'
+2023-08-21T14:36:02Z DEBUG Cache miss for key 'session_123'
+2023-08-21T14:36:15Z INFO User 'alice' logged out
+2023-08-21T14:37:00Z WARN Rate limit exceeded for IP 10.0.0.23
+EOF
+    chmod 644 /opt/initial_state/logs/app.log
+    chmod 755 /opt/initial_state/logs
+
+    # Create placeholder /home/user so permissions are correct even
+    # when host home is not bound to this path.
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+%environment
+    # Ensure the required initial log structure exists inside the (possibly
+    # host-bound) /home/user path each time the container is entered.
+    if [ ! -f "/home/user/logs/app.log" ]; then
+        mkdir -p "/home/user/logs"
+        cp /opt/initial_state/logs/app.log "/home/user/logs/app.log"
+        chmod 755 "/home/user/logs"
+        chmod 644 "/home/user/logs/app.log"
+    fi
+
+%labels
+    Author dev

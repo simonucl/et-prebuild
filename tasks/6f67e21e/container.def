@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # Create non-root user `user` (UID 1000 is conventional)
+    useradd -m -u 1000 -s /bin/bash user
+
+    # Directory structure for the exercise
+    install -d -o user -g user -m 0755 /home/user/microservices/api
+    install -d -o user -g user -m 0700 /home/user/microservices/worker
+    # NOTE: /home/user/task_logs *must not* exist initially
+
+    # Initial deployment.yaml (0644)
+    cat > /home/user/microservices/api/deployment.yaml <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  labels:
+    app: api
+    version: "v1"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+        version: "v1"
+    spec:
+      containers:
+        - name: api
+          image: registry.example.com/api:v1.3.4
+          env: []
+EOF
+    chown user:user /home/user/microservices/api/deployment.yaml
+    chmod 0644 /home/user/microservices/api/deployment.yaml
+
+    # Ensure ownership of the entire home tree
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # No explicit HOME override; rely on Apptainer defaults
+    export LC_ALL=C.UTF-8
+    export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+
+%labels
+    Author dev
+    Description "Provision initial state for microservice config editing task with pytest installed"
+
+%help
+    This container sets up the initial filesystem and tooling required for the
+    micro-service configuration editing exercise.

@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author      AI_Apptainer_Agent
+    Description Base image for "tiny build system" task with initial filesystem state
+
+%post
+    set -e
+
+    echo "Updating package index and installing required packages..."
+    apt-get update -y
+    # Install make (needed for the assignment) and python3-pip for pytest
+    apt-get install -y --no-install-recommends make python3-pip
+    # Clean apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Setting up directory structure and dummy log files..."
+    # Create the user home directory hierarchy
+    mkdir -p /home/user/disk_admin/reports
+    chmod -R 0777 /home/user   # Ensure the non-root runtime user can write here
+
+    # Create the two required dummy log files with their specific contents
+    printf "dummy1\n" > /home/user/disk_admin/reports/old_app1.log
+    printf "dummy2\n" > /home/user/disk_admin/reports/old_app2.log
+
+    # Double-check permissions so the runtime (non-root) user can modify/delete as required
+    chmod 666 /home/user/disk_admin/reports/old_app1.log
+    chmod 666 /home/user/disk_admin/reports/old_app2.log
+
+    echo "Initial setup complete. The archives directory, Makefile, "
+    echo "and generated report files are intentionally absent."
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and Make are available in PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for the 'tiny build system' task."
+    echo "To start working, open a shell inside the container:"
+    echo "    apptainer exec <image.sif> /bin/bash"

@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic OS tools + pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the grading tests
+    # ------------------------------------------------------------------
+    # Create /home/user and make it writable for any non-root user so
+    # that students can create /home/user/security_scan later on.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Directory hierarchy
+    mkdir -p /home/user/data/logs
+    mkdir -p /home/user/data/backup
+    mkdir -p /home/user/data/public
+    mkdir -p /home/user/data/private
+
+    # Helper function for trimmed file creation (use sparse files)
+    create_file() {
+        truncate -s "$2" "$1"
+        chmod "$3" "$1"
+    }
+
+    # Files with exact sizes and permissions
+    create_file /home/user/data/logs/app.log          62914560 0666
+    create_file /home/user/data/backup/db.dump       125829120 0600
+    create_file /home/user/data/public/video.mp4      73400320 0666
+    create_file /home/user/data/public/readme.txt          1024 0666
+    create_file /home/user/data/private/secret.txt    57671680 0600
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is on PATH
+    export PATH=/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author        ExampleAuthor
+    Description   Initial state for “security-meets-capacity” spot-check task

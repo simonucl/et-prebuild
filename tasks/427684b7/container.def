@@ -1,0 +1,28 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python and supporting tools
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # Ensure a writable home directory for the learner
+    mkdir -p /home/user
+    chmod 777 /home/user
+
+    # Convenience symlink so `python` invokes Python 3
+    ln -sf /usr/bin/python3 /usr/local/bin/python
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

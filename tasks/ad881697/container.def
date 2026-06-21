@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic OS packages and Python tooling
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        coreutils
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the validation suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Project skeleton setup
+    # ------------------------------------------------------------------
+    PROJECT_DIR="/home/user/project"
+    mkdir -p "${PROJECT_DIR}/data" "${PROJECT_DIR}/src"
+
+    # Create the three placeholder files (empty, zero-byte)
+    : > "${PROJECT_DIR}/README.md"
+    : > "${PROJECT_DIR}/data/sample.txt"
+    : > "${PROJECT_DIR}/src/main.py"
+
+    # ------------------------------------------------------------------
+    # Pre-generated checksum manifest
+    # ------------------------------------------------------------------
+    cat > "${PROJECT_DIR}/checksums.sha256" <<'EOF'
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  README.md
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  data/sample.txt
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  src/main.py
+EOF
+
+    # ------------------------------------------------------------------
+    # Pre-generated verification log
+    # ------------------------------------------------------------------
+    cat > "${PROJECT_DIR}/checksum_verification.log" <<'EOF'
+README.md: OK
+data/sample.txt: OK
+src/main.py: OK
+EOF
+
+    # Ensure world-readable permissions so the unprivileged agent can access everything
+    chmod -R a+rX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author      example@example.com
+    Description "Container for checksum-manifest exercise (pytest preinstalled)"

@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        pip3 install --no-cache-dir pytest && \
+        apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Set up initial directory structure and CSV file
+    mkdir -p /home/user/data
+
+    cat > /home/user/data/user_accounts.csv <<'EOF'
+username,email,role
+alice,alice@example.com,editor
+bob,bob@example.com,admin
+carol,carol@example.com,viewer
+dave,dave@example.com,editor
+EOF
+
+    # Ensure broad read permissions for the non-root user
+    chmod 755 /home/user
+    chmod 755 /home/user/data
+    chmod 644 /home/user/data/user_accounts.csv
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author  YourName
+    Description  "Environment for the user-accounts task with initial data and pytest installed."
+
+%help
+This container provides the starting state for the “user-accounts” task.
+It includes:
+  • /home/user/data/user_accounts.csv (pre-populated with 5 lines)
+  • pytest installed for automated grading

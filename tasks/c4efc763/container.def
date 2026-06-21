@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install Python tooling (pytest will be used by the grader)
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        locales
+    pip3 install --no-cache-dir pytest
+
+    # Generate and set a UTF-8 locale so Python behaves nicely.
+    locale-gen en_US.UTF-8
+    update-locale LANG=en_US.UTF-8
+
+    # ------------------------------------------------------------------
+    # 2. Prepare the initial filesystem state expected by the tests
+    # ------------------------------------------------------------------
+    # Create /home/user/conf with open permissions so the unprivileged
+    # agent (whose UID is not known at build time) can write there.
+    mkdir -p /home/user/conf
+    chmod 0777 /home/user
+    chmod 0777 /home/user/conf
+
+    # Create the UTF-8 configuration file exactly as specified (44 bytes).
+    cat >/home/user/conf/settings.conf <<'EOF'
+nombre=José
+ciudad=Málaga
+clave=paßwörd
+EOF
+
+    # Ensure the logs directory does NOT exist at start-up.
+    rm -rf /home/user/logs || true
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+    export PYTHONIOENCODING=UTF-8
+
+%runscript
+    exec "$@"

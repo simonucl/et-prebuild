@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package lists and installing Python + pip ..."
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest ..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating legacy SQL file in the expected location ..."
+    mkdir -p /home/user/projects/sql_work
+    cat >/home/user/projects/sql_work/original.sql <<'EOF'
+-- original.sql
+CREATE TABLE employees (
+    id INT PRIMARY KEY,
+    name TEXT,
+    department TEXT
+);
+
+SELECT * FROM employees WHERE department = 'Engineering';
+EOF
+
+    # Ensure read permissions for non-root users
+    chmod 644 /home/user/projects/sql_work/original.sql
+    chmod 755 /home/user /home/user/projects /home/user/projects/sql_work
+
+%runscript
+    echo "Container for SQL optimisation exercise."
+    echo " Python available at: $(command -v python3)"
+    echo " pytest available at: $(command -v pytest)"
+    exec "$@"
+
+%labels
+    Author="Exercise Template Generator"
+    Description="Base image for SQL optimisation task with pytest pre-installed."

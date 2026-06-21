@@ -1,0 +1,70 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. System packages and Python tooling
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Create a regular, non-privileged “user” account
+    #    (UID 1000 is the most common default on Linux desktops.)
+    # ------------------------------------------------------------------
+    if ! id -u 1000 >/dev/null 2>&1; then
+        useradd -m -u 1000 -s /bin/bash user
+    fi
+
+    # ------------------------------------------------------------------
+    # 3. Prepare the initial dataset directory structure
+    # ------------------------------------------------------------------
+    # Ensure /home/user exists with sensible permissions
+    chmod 755 /home/user || true
+
+    # Create /home/user/data/raw and place the customers.csv file inside
+    mkdir -p /home/user/data/raw
+
+    cat > /home/user/data/raw/customers.csv <<'EOF'
+customer_id,first_name,last_name,email,age
+1,John,Doe,john.doe@example.com,28
+2,Jane,NULL,jane@example.com,34
+3,Bob,Smith,NULL,45
+4,Anna,Adams,anna.adams@example.com,31
+5,NULL,White,white@example.com,27
+6,Mark,Brown,mark.brown@example.com,NULL
+EOF
+
+    # Permissions and ownership
+    chmod 644 /home/user/data/raw/customers.csv
+    chown 1000:1000 /home/user/data/raw/customers.csv || true
+
+    # Give write access on /home/user/data so the learner can create /clean
+    mkdir -p /home/user/data
+    chmod 777 /home/user/data
+    chown 1000:1000 /home/user/data || true
+
+    # Just to be explicit: make sure the /clean directory does NOT exist
+    rm -rf /home/user/data/clean || true
+
+%environment
+    # Keep Python on the path
+    export PATH="$PATH:/usr/local/bin"
+
+%labels
+    Author="container-prep bot"
+    Description="Environment for the 'clean customers CSV' exercise with pytest pre-installed."
+
+%help
+    This container image is pre-configured for the “clean customers CSV”
+    coding exercise.
+    • Dataset location: /home/user/data/raw/customers.csv
+    • pytest is available for the test harness.

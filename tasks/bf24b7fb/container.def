@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest (plus procps for `ps`)
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        procps
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the deployment-engineer task
+    # ------------------------------------------------------------------
+    # Create the required directory tree (world-writable so the runtime
+    # user—whose UID/GID is unknown at build time—can write to it).
+    mkdir -p /home/user/deployment
+    chmod 0777 /home/user /home/user/deployment
+
+    # Create the long-running helper script with exact contents and mode.
+    cat >/home/user/deployment/deploy_app.sh <<'EOF'
+#!/bin/bash
+while true; do
+    echo "Deploying..." >> /home/user/deployment/app.log
+    sleep 60
+done
+EOF
+    chmod 755 /home/user/deployment/deploy_app.sh
+
+%environment
+    # Keep PATH clean; don't override HOME.
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin

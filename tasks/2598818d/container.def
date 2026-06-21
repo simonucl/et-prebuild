@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # --------------------------------------------------------------------- #
+    # Basic tools                                                           #
+    # --------------------------------------------------------------------- #
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 python3-pip rsync
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------- #
+    # Create the initial dataset that the exercise relies on                #
+    # --------------------------------------------------------------------- #
+    # Local (source) dataset – five files with exact contents
+    mkdir -p /home/user/ml_data/raw_dataset/train/images
+    mkdir -p /home/user/ml_data/raw_dataset/train/labels
+    mkdir -p /home/user/ml_data/raw_dataset/val/images
+    mkdir -p /home/user/ml_data/raw_dataset/val/labels
+
+    printf 'IMG1\n'    > /home/user/ml_data/raw_dataset/train/images/img1.jpg
+    printf 'IMG2\n'    > /home/user/ml_data/raw_dataset/train/images/img2.jpg
+    printf 'label1\n'  > /home/user/ml_data/raw_dataset/train/labels/img1.txt
+    printf 'IMG3\n'    > /home/user/ml_data/raw_dataset/val/images/img3.jpg
+    printf 'label3\n'  > /home/user/ml_data/raw_dataset/val/labels/img3.txt
+
+    # Remote (staging) dataset – two outdated files only
+    mkdir -p /home/user/remote_host/staging/dataset/train/images
+    mkdir -p /home/user/remote_host/staging/dataset/train/labels
+
+    printf 'OLD_IMG1\n' > /home/user/remote_host/staging/dataset/train/images/img1.jpg
+    printf 'oldlbl1\n'  > /home/user/remote_host/staging/dataset/train/labels/img1.txt
+
+    # --------------------------------------------------------------------- #
+    # Permissions: make everything under /home/user writable by the runtime #
+    # (non-root) user so the agent can modify/sync/delete as needed.        #
+    # --------------------------------------------------------------------- #
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default HOME; only ensure Python is on PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    exec "$@"

@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Install Python and pytest
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Set up directory structure and initial pipeline files
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/projects/pipeline
+
+    # pipeline.yaml (initial state)
+    cat > /home/user/projects/pipeline/pipeline.yaml <<'EOF'
+version: 1
+stages:
+  - build
+  - test
+jobs:
+  build_app:
+    stage: build
+    script:
+      - echo "Building Android app"
+  run_tests:
+    stage: test
+    script:
+      - echo "Running unit tests"
+EOF
+
+    # config.toml (initial state)
+    cat > /home/user/projects/pipeline/config.toml <<'EOF'
+[build]
+android_sdk = "/opt/android/sdk"
+ios_sdk     = "/Applications/Xcode.app"
+
+[release]
+version_code = 42
+track        = "beta"
+EOF
+
+    # Ensure the current (non-root) user will have read/write access
+    chmod -R a+rwx /home/user/projects
+
+%labels
+    chmod 755 /home/user
+
+    Author   pipeline-setup
+    Purpose  "Initial state for CI/CD maintenance task"

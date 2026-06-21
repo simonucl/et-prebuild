@@ -1,0 +1,86 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #------------------------------------------------------------------
+    # 1. Install required packages (python3 & pytest for the grader)
+    #------------------------------------------------------------------
+    apt-get update -qq
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    #------------------------------------------------------------------
+    # 2. Construct the cloud-migration developer scaffold
+    #------------------------------------------------------------------
+    ROOT="/home/user/cloud-migration"
+    mkdir -p "${ROOT}/configs" \
+             "${ROOT}/scripts" \
+             "${ROOT}/logs"
+
+    # --- dev-context.yaml ---
+    cat > "${ROOT}/configs/dev-context.yaml" <<'EOF'
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: https://dev.k8s.local
+  name: dev-cluster
+contexts:
+- context:
+    cluster: dev-cluster
+    user: dev-user
+  name: dev-context
+current-context: dev-context
+users:
+- name: dev-user
+  user:
+    token: DEV123TOKEN
+EOF
+
+    # --- set-dev-env.sh ---
+    cat > "${ROOT}/scripts/set-dev-env.sh" <<'EOF'
+#!/usr/bin/env bash
+export K8S_CLUSTER_NAME=dev-cluster
+export K8S_NAMESPACE=default
+export IMAGE_TAG=v1.0.0
+EOF
+    chmod +x "${ROOT}/scripts/set-dev-env.sh"
+
+    # --- Dockerfile ---
+    cat > "${ROOT}/Dockerfile" <<'EOF'
+FROM alpine:3.17
+RUN apk add --no-cache python3 py3-pip
+COPY . /app
+WORKDIR /app
+CMD ["python3", "-m", "http.server", "8080"]
+EOF
+
+    # --- README.md ---
+    cat > "${ROOT}/README.md" <<'EOF'
+# Cloud Migration Dev Environment
+This repository provides the minimal scaffolding required to reproduce our
+development Kubernetes context locally. It includes:
+* kubectl context for the `dev-cluster`
+* helper script for environment variables
+* lightweight Alpine-based Dockerfile for service prototyping
+EOF
+
+    #------------------------------------------------------------------
+    # 3. Generate a setup log with at least 5 correctly-formatted lines
+    #------------------------------------------------------------------
+    LOG="${ROOT}/logs/setup.log"
+    {
+        echo "2024-01-01 10:00:00 | mkdir -p /home/user/cloud-migration"
+        echo "2024-01-01 10:00:01 | mkdir -p /home/user/cloud-migration/configs"
+        echo "2024-01-01 10:00:02 | mkdir -p /home/user/cloud-migration/scripts"
+        echo "2024-01-01 10:00:03 | mkdir -p /home/user/cloud-migration/logs"
+        echo "2024-01-01 10:00:04 | touch /home/user/cloud-migration/configs/dev-context.yaml"
+    } > "${LOG}"
+
+%labels
+    chmod 755 /home/user
+
+    Author Cloud-Migration-Scaffold
+    Description "Container pre-configured with cloud-migration developer scaffold and pytest"

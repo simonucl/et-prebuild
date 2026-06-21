@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        coreutils
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial evidence directory and files expected by the tests
+    # ------------------------------------------------------------------
+    # Create /home/user if it does not exist
+    mkdir -p /home/user
+
+    # Create the evidence directory with required permissions (0755)
+    mkdir -p /home/user/evidence
+    chmod 755 /home/user/evidence
+
+    # Create the empty suspicious artifact with required permissions (0644)
+    : > /home/user/evidence/suspicious.bin
+    chmod 644 /home/user/evidence/suspicious.bin
+
+%labels
+    Author incident-response-exercise
+    Description "Container for incident-response checksum exercise"
+
+%help
+    This container sets up the initial state for the incident-response
+    checksum exercise. The evidence directory and the suspicious binary
+    are pre-created so that students can calculate and log its SHA-256
+    digest as instructed.

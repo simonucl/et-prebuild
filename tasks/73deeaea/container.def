@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # --------------------------------------------------------------------- #
+    # System packages                                                       #
+    # --------------------------------------------------------------------- #
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        sqlite3 \
+        python3 \
+        python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # --------------------------------------------------------------------- #
+    # Python tooling                                                        #
+    # --------------------------------------------------------------------- #
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------- #
+    # Directory structure required by the task                              #
+    # --------------------------------------------------------------------- #
+    mkdir -p /home/user/projects/loc/db
+    mkdir -p /home/user/projects/loc/report
+
+    chmod 700 /home/user/projects/loc/db
+    chmod 700 /home/user/projects/loc/report
+
+    # --------------------------------------------------------------------- #
+    # Pre-populated SQLite database                                         #
+    # --------------------------------------------------------------------- #
+    sqlite3 /home/user/projects/loc/db/translations.db <<'SQLINIT'
+    PRAGMA foreign_keys = OFF;
+    BEGIN TRANSACTION;
+    CREATE TABLE strings(
+        id    INTEGER PRIMARY KEY AUTOINCREMENT,
+        key   TEXT UNIQUE NOT NULL,
+        en    TEXT NOT NULL,
+        es    TEXT
+    );
+    INSERT INTO strings(key, en, es) VALUES
+        ('hello_msg',   'Hello!',  '¡Hola!'),
+        ('goodbye_msg', 'Goodbye!', NULL);
+    COMMIT;
+SQLINIT
+
+%environment
+    chmod 755 /home/user
+
+    # Default environment stays unchanged; nothing to override
+    export LC_ALL=C
+
+%runscript
+    exec /bin/bash "$@"
+
+%labels
+    Author example
+    Description Localization database update task – initial state setup

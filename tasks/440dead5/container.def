@@ -1,0 +1,21 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package list and install Python with pip
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading infrastructure
+    pip3 install --no-cache-dir pytest
+
+    # Prepare an empty, writable workspace for the student
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+%runscript
+    chmod 755 /home/user
+
+    exec /bin/bash

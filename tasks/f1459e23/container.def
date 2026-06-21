@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update apt cache and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the automated tests
+    # ------------------------------------------------------------------
+
+    # Create raw-data directory and CSV file
+    mkdir -p /home/user/data
+    chmod 0755 /home/user
+    chmod 0755 /home/user/data
+
+    cat > /home/user/data/sales_q1.csv <<'EOF'
+Date,Region,Product,Quantity,Unit_Price
+2023-01-03,North,Widget,30,9.99
+2023-01-05,South,Gadget,20,14.95
+2023-02-10,East,Widget,45,9.99
+2023-02-14,West,Doohickey,50,4.50
+2023-03-01,North,Gadget,25,14.95
+2023-03-12,South,Widget,75,9.99
+2023-03-20,East,Doohickey,40,4.50
+EOF
+    chmod 0644 /home/user/data/sales_q1.csv
+
+    # Ensure the output directory does NOT yet contain any artefacts.
+    # We simply make sure it doesn't exist.
+    rm -rf /home/user/output
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure user-installed Python tools are on PATH
+    export PATH="/usr/local/bin:$PATH"
+
+%labels
+    Author  Your Name
+    Description  Container with raw sales CSV pre-loaded and pytest installed for student exercise.
+
+%help
+    This Apptainer image contains:
+      • /home/user/data/sales_q1.csv  (raw input)
+      • pytest installed system-wide
+
+    The /home/user/output directory is intentionally absent so that
+    students create it during their exercise.

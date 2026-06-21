@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python, pip, and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the default user
+    useradd -m -s /bin/bash user
+
+    # --------------------------------------------------------------------
+    # Seed experiment data expected by the assessment tests
+    # --------------------------------------------------------------------
+    mkdir -p /home/user/experiments/exp_alpha
+    mkdir -p /home/user/experiments/exp_beta
+    mkdir -p /home/user/experiments/exp_gamma
+
+    # exp_alpha metrics.csv
+    cat > /home/user/experiments/exp_alpha/metrics.csv <<'EOF'
+epoch,loss,accuracy
+1,0.65,0.70
+2,0.60,0.75
+3,0.58,0.78
+EOF
+
+    # exp_beta metrics.csv
+    cat > /home/user/experiments/exp_beta/metrics.csv <<'EOF'
+epoch,loss,accuracy
+1,0.55,0.72
+2,0.50,0.80
+3,0.48,0.82
+4,0.47,0.83
+5,0.46,0.84
+EOF
+
+    # exp_gamma metrics.csv
+    cat > /home/user/experiments/exp_gamma/metrics.csv <<'EOF'
+epoch,loss,accuracy
+1,0.70,0.68
+2,0.65,0.70
+3,0.63,0.72
+4,0.62,0.74
+EOF
+
+    # --------------------------------------------------------------------
+    # Permissions
+    # --------------------------------------------------------------------
+    # Make everything under /home/user/experiments world-readable.
+    chmod -R a+rX /home/user/experiments
+    # Allow any user to create the summary directory later.
+    chmod a+w /home/user/experiments
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/home/user/.local/bin:$PATH
+
+%labels
+    Author="Container prepared for ML dashboard task"

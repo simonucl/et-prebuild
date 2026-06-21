@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package index and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        gnupg \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading tests
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial workspace for the student in /home/user
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data_to_backup/subdir
+
+    # File: /home/user/data_to_backup/report1.txt
+    cat > /home/user/data_to_backup/report1.txt <<'EOF'
+Quarterly revenue report Q1 2024
+Total: 1,234,567 USD
+EOF
+
+    # File: /home/user/data_to_backup/report2.txt
+    cat > /home/user/data_to_backup/report2.txt <<'EOF'
+Quarterly revenue report Q2 2024
+Total: 1,345,678 USD
+EOF
+
+    # File: /home/user/data_to_backup/subdir/config.cfg
+    cat > /home/user/data_to_backup/subdir/config.cfg <<'EOF'
+[settings]
+mode=production
+version=2.3.4
+EOF
+
+    # Ensure the files all end with a single trailing newline
+    sed -i -e '$a\' /home/user/data_to_backup/report1.txt
+    sed -i -e '$a\' /home/user/data_to_backup/report2.txt
+    sed -i -e '$a\' /home/user/data_to_backup/subdir/config.cfg
+
+    # Make sure the future non-privileged user can work inside /home/user
+    chmod -R a+rX /home/user           # Read & traverse for everyone
+    chmod a+rwx  /home/user            # Write permission on /home/user only
+
+%labels
+    chmod 755 /home/user
+
+    Author  backup-sandbox-preparer
+    Description  "Environment pre-populated for backup/restore exercise"
+
+%help
+This container provides the initial filesystem state required for the
+backup/restore exercise.  All work must be done inside /home/user at runtime.
+Pytest is installed so the automated grader can verify the initial conditions.

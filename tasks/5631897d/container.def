@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the assignment
+    # ------------------------------------------------------------------
+    # Create the audit directory and populate the raw log file
+    mkdir -p /home/user/audit
+
+    cat > /home/user/audit/raw_login_attempts.log <<'EOF'
+192.168.1.10
+10.0.0.5
+192.168.1.10
+8.8.8.8
+10.0.0.5
+10.0.0.5
+203.0.113.1
+8.8.8.8
+192.168.1.10
+198.51.100.2
+203.0.113.1
+203.0.113.1
+127.0.0.1
+192.168.1.10
+127.0.0.1
+EOF
+
+    # Ensure the runtime (non-root) user can create the required report file
+    chmod 0777 /home/user/audit
+    chmod 0644 /home/user/audit/raw_login_attempts.log
+    chmod 0755 /home/user   || true
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure pip-installed tools (pytest) are on PATH
+    export PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
+
+%labels
+    Author="Apptainer Task Generator"
+    Description="Container with initial state for IP frequency report assignment"

@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python and pytest
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial project structure required by the test suite
+    # ------------------------------------------------------------------
+    PROJECT_DIR="/home/user/projects/helloapp"
+    mkdir -p "${PROJECT_DIR}"
+
+    # 1. Create the template unit file with the required placeholders
+    cat > "${PROJECT_DIR}/helloapp.service.template" <<'EOF'
+[Unit]
+Description=Hello App Service
+
+[Service]
+Type=simple
+ExecStart=@SCRIPT_PATH@
+EnvironmentFile=@ENV_PATH@
+
+[Install]
+WantedBy=default.target
+EOF
+
+    # 2. Create a minimal executable shell script
+    cat > "${PROJECT_DIR}/helloapp.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "Hello, world!"
+EOF
+    chmod +x "${PROJECT_DIR}/helloapp.sh"
+
+    # 3. Ensure /home/user exists and is writable by the runtime user
+    chmod -R a+rwx /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author oncall-config-assistant
+
+%help
+    Container providing the initial state for the “helloapp” configuration-management task.
+    Includes:
+      • Project directory at /home/user/projects/helloapp/
+      • Template systemd unit with placeholders
+      • Executable helloapp.sh script
+    Pytest is installed for validation.

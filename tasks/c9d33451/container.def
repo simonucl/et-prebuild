@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python with pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates
+
+    # Install pytest via pip to ensure a recent version
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial filesystem state expected by the tests
+    # ------------------------------------------------------------------
+
+    # Create /home/user/data directory structure
+    mkdir -p /home/user/data
+
+    # Create the canonical CSV file with the required contents
+    cat > /home/user/data/transactions_2021-12-31.csv <<'EOF'
+transaction_id,user_id,amount,currency
+T1001,U23,150.00,USD
+T1002,U19,75.50,USD
+T1003,U11,20.00,EUR
+T1004,U23,125.00,USD
+EOF
+
+    # Set sensible permissions: directories 755, files 644
+    chmod 755 /home/user
+    chmod 755 /home/user/data
+    chmod 644 /home/user/data/transactions_2021-12-31.csv
+
+    # Clean up apt cache to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure Python and pip are on the PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    # Default runscript just opens a shell; users/agents can override
+    exec /bin/bash "$@"
+
+%help
+    This container provides the initial state for the audit-trail task.
+    It contains:
+      • /home/user/data/transactions_2021-12-31.csv  (canonical source CSV)
+    Python 3 and pytest are pre-installed for automated grading.

@@ -1,0 +1,28 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # Prepare writable home directory expected by the tests
+    mkdir -p /home/user
+    chmod 0777 /home/user    # Ensure any non-root user can write here
+
+    # Clean up apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure user-level Python binaries (if any) are on PATH
+    export PATH="/home/user/.local/bin:${PATH}"

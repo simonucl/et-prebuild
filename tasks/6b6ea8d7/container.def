@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    apt-get update
+    # Install Python and pytest
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create required directory structure and CSV files
+    mkdir -p /home/user/data
+
+    cat >/home/user/data/raw_run1.csv <<'EOF'
+timestamp,endpoint,latency_ms
+2023-09-01T10:00:00Z,/api/login,120
+2023-09-01T10:00:01Z,/api/items,200
+2023-09-01T10:00:02Z,/api/login,110
+2023-09-01T10:00:03Z,/api/items,220
+2023-09-01T10:00:04Z,/api/items,180
+EOF
+
+    cat >/home/user/data/raw_run2.csv <<'EOF'
+timestamp,endpoint,latency_ms
+2023-09-01T11:00:00Z,/api/login,130
+2023-09-01T11:00:01Z,/api/items,210
+2023-09-01T11:00:02Z,/api/login,140
+2023-09-01T11:00:03Z,/api/items,190
+2023-09-01T11:00:04Z,/api/login,150
+EOF
+
+    # Set appropriate permissions so non-root users can read the files
+    chmod 0755 /home/user
+    chmod 0755 /home/user/data
+    chmod 0644 /home/user/data/raw_run1.csv /home/user/data/raw_run2.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Keep locale simple and predictable
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8

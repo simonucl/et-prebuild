@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Basic packages and tools
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        openssh-client \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tzdata
+
+    # Install pytest for the forthcoming test-suite
+    pip3 install --no-cache-dir pytest
+
+    # Create a non-root user named "user" with home directory /home/user
+    useradd -m -s /bin/bash user
+
+    # Ensure correct ownership and sane permissions on the new home
+    chown -R user:user /home/user
+    chmod 755 /home/user
+
+    # Clean up APT cache to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Add Python user base directory to PATH for convenience
+    export PATH="$PATH:/home/user/.local/bin"
+
+%runscript
+    exec /bin/bash "$@"
+
+%labels
+    Author    SSH-Key-Pair Setup Task Container
+    Purpose   Provide a clean environment with ssh-keygen and pytest installed.

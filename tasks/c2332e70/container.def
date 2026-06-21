@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install required packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel \
+        findutils \
+        gzip
+
+    # Install pytest for the verification suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/support-logs
+    chmod 777 /home/user/support-logs     # grant write so the learner can modify contents
+
+    # Create the three log files
+    printf 'System rebooted OK\n' > /home/user/support-logs/ticket_123.log
+    printf 'Disk cleanup completed'      > /home/user/support-logs/ticket_124.log
+    printf 'VPN credentials reset'       > /home/user/support-logs/ticket_125.log
+
+    # Create README.txt
+    echo 'These are daily support logs. Compress old ones regularly.' \
+        > /home/user/support-logs/README.txt
+
+    # Reasonable permissions: readable by everyone; directory already writable
+    chmod 644 /home/user/support-logs/ticket_123.log \
+              /home/user/support-logs/ticket_124.log \
+              /home/user/support-logs/ticket_125.log \
+              /home/user/support-logs/README.txt
+
+    # Clean up apt caches to keep the image small (optional)
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author  Bulk-compress exercise bootstrap
+    Description  Environment with initial ticket logs for compression task.
+
+%environment
+    # No HOME override; default environment is fine
+    export LC_ALL=C.UTF-8
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

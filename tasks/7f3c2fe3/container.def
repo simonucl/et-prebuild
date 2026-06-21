@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package index and install Python + pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the autograder
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the tests
+    # ------------------------------------------------------------------
+
+    # Create the user home and Kubernetes manifest directory tree
+    mkdir -p /home/user/k8s/manifests
+
+    # Make /home/user writable by whatever unprivileged UID runs inside
+    chmod 0777 /home/user
+
+    # Exact-size manifest files
+    truncate -s 500  /home/user/k8s/manifests/configmap_env.yaml
+    truncate -s 2310 /home/user/k8s/manifests/deploy_backend.yaml
+    truncate -s 1560 /home/user/k8s/manifests/deploy_frontend.yaml
+    truncate -s 830  /home/user/k8s/manifests/service_backend.yaml
+    truncate -s 780  /home/user/k8s/manifests/service_frontend.yaml
+
+    # Ensure no report directory/file exists yet (clean slate)
+    rm -rf /home/user/k8s-reports
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python user-installed scripts are discoverable
+    export PATH="/usr/local/bin:${PATH}"
+
+%labels
+    Author platform-engineer-task-setup
+    Description "Baseline container for Kubernetes manifest disk-usage reporting task"

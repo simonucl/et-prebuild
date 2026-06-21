@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install system packages and Python tooling
+    apt-get update && \
+        apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            file \
+            locales \
+            ca-certificates && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # Generate UTF-8 locale so Unicode characters work consistently
+    sed -i 's/^# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+    locale-gen
+
+    # ------------------------------------------------------------------
+    # Set up initial filesystem state expected by the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/cloud/reports
+    mkdir -p /home/user/cloud/logs
+
+    # Create the UTF-8 source text, then convert it to ISO-8859-1
+    cat >/tmp/monthly_cost_utf8.csv <<'EOF'
+Name,Service,Cost(USD)
+José Martínez,Compute Engine,1234.56
+Zoë François,Cloud Storage,789.10
+René Dupont,BigQuery,456.78
+EOF
+
+    # Convert UTF-8 file to ISO-8859-1 encoding for the exercise
+    iconv -f UTF-8 -t ISO-8859-1 /tmp/monthly_cost_utf8.csv \
+        -o /home/user/cloud/reports/monthly_cost_iso.csv
+
+    rm /tmp/monthly_cost_utf8.csv  # Ensure the target UTF-8 file does NOT exist yet
+
+    # Ensure the student can write into these directories at run-time
+    chmod -R 0777 /home/user/cloud
+    chmod 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Use UTF-8 locale by default
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8

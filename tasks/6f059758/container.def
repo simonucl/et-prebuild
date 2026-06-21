@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/project/config
+
+    # site_config.yaml — development (initial) version
+    cat > /home/user/project/config/site_config.yaml <<'EOF'
+site_name: "My Portfolio"
+production: false
+assets:
+  js_minify: false
+  css_minify: false
+EOF
+
+    # database.toml — development (initial) version
+    cat > /home/user/project/config/database.toml <<'EOF'
+[database]
+host = "localhost"
+port = 5432
+user = "admin"
+password = "admin"
+pool_size = 5
+EOF
+
+    # Ensure correct permissions (read-only for files, readable dirs)
+    chmod 755 /home/user
+    chmod -R 755 /home/user/project
+    chmod 644 /home/user/project/config/site_config.yaml
+    chmod 644 /home/user/project/config/database.toml
+
+    # DO NOT create /home/user/update_logs — it must be absent initially
+
+%environment
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8

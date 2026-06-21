@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python & pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the evaluation tests
+    # ------------------------------------------------------------------
+    # Create /home/user and the images directory
+    mkdir -p /home/user/images
+
+    # Create the three empty placeholder .sif files
+    touch /home/user/images/ubuntu_latest.sif
+    touch /home/user/images/alpine_3.18.sif
+    touch /home/user/images/node_18.sif
+
+    # Ensure /home/user and its contents are writable by the
+    # (non-root) user who will run inside the container.
+    chmod -R a+rwX /home/user
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Keep a sane PATH; prepend common binary locations
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+
+%labels
+    Author          "Container Prep"
+    Description     "Environment for the Container Image Inventory task with pytest pre-installed."

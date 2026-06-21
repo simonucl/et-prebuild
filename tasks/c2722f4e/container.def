@@ -1,0 +1,68 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    apt-get update
+    # Basic Python tooling
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        locales
+
+    # Ensure a UTF-8 locale is generated and set
+    sed -i 's/^# *\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen
+    locale-gen
+    update-locale LANG=en_US.UTF-8
+
+    # Install pytest for the validation suite
+    pip3 install --no-cache-dir pytest
+
+    # Create the non-root user that the exercise will run as
+    useradd -m -s /bin/bash user
+
+    # Create provisioning directory structure and the pre-existing log file
+    install -d -o user -g user /home/user/provisioning
+
+    cat <<'EOF' > /home/user/provisioning/instance_requests.log
+t2.micro
+m5.large
+t2.micro
+c5.xlarge
+t2.micro
+m5.large
+c5.large
+EOF
+    chown user:user /home/user/provisioning/instance_requests.log
+
+    # Make sure no report directory exists yet
+    rm -rf /home/user/provisioning/report || true
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+    # Ensure python & pip are found first
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    # Work in the non-root home directory by default
+    cd /home/user
+
+%runscript
+    exec /bin/bash
+
+%labels
+    Author someone@example.com
+    Description "Environment for EC2 instance-type frequency summarisation exercise"
+
+%help
+    This container image sets up the initial state for the provisioning-summary
+    task.  It ships:
+      • a non-privileged user  :  user
+      • the instance_requests.log file in /home/user/provisioning
+      • pytest pre-installed for the validation suite
+
+    The /home/user/provisioning/report directory is intentionally absent; the
+    student’s solution must create it along with the required output file.

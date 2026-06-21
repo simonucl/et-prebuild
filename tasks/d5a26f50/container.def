@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #--------------------------------------------------------------------
+    # Install required packages
+    #--------------------------------------------------------------------
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #--------------------------------------------------------------------
+    # Create initial directory structure and raw diagnostic files
+    #--------------------------------------------------------------------
+    mkdir -p /home/user/diag/raw
+    mkdir -p /home/user/diag/summary
+    mkdir -p /home/user/diag/working
+
+    # memory_stat.log
+    cat > /home/user/diag/raw/memory_stat.log <<'EOF'
+MemTotal:       8173400 kB
+MemFree:        204800 kB
+MemAvailable:   3500000 kB
+Buffers:        512000 kB
+Cached:         1024000 kB
+EOF
+
+    # disk_stat.log
+    cat > /home/user/diag/raw/disk_stat.log <<'EOF'
+Filesystem      Size  Used Avail Use% Mounted_on
+    chmod 755 /home/user
+
+/dev/sda1        40G   20G   18G  55% /
+/dev/sda2        80G   60G   18G  77% /var
+tmpfs           3.9G     0  3.9G   0% /run/user/1000
+EOF
+
+    # Ensure directories are readable and (owner)-writable
+    chmod -R 755 /home/user/diag
+
+%environment
+    # Keep default HOME binding; just ensure common tools are on PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="AI Generated"
+    Description="Container for diag CSV task – provides initial raw data and pytest."

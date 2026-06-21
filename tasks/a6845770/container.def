@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install required utilities
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        jq \
+        python3-pip
+
+    # Install pytest for the automated checker
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the DevSecOps exercise
+    # ------------------------------------------------------------------
+
+    # Ensure the /home/user hierarchy exists
+    mkdir -p /home/user
+
+    # Core exercise directory tree
+    mkdir -p /home/user/devsecops/policy_input
+    mkdir -p /home/user/devsecops/policy_output
+    mkdir -p /home/user/devsecops/logs
+
+    # Create the CSV input file with exact required contents
+    cat > /home/user/devsecops/policy_input/services.csv <<'EOF'
+service,port,protocol,approved
+ssh,22,tcp,yes
+http,80,tcp,yes
+telnet,23,tcp,no
+smtp,25,tcp,yes
+ftp,21,tcp,no
+EOF
+
+    # Make everything under /home/user/devsecops writable by the
+    # non-root user that will run inside the container
+    chmod -R 0777 /home/user/devsecops
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special to set; leave $HOME untouched so Apptainer’s
+    # default behaviour applies.
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author devsecops-template
+    Description "Container for DevSecOps CSV-to-JSON exercise with pytest installed"
+
+%runscript
+    echo "DevSecOps exercise container."
+    echo "Run your commands inside this shell or exec directly."

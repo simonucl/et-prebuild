@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author          "Ticket Frequency Report – Container Setup"
+    Description     "Provides initial log files and pytest for automated grading."
+
+%post
+    set -e
+
+    #--------------------------------------------------
+    # Install Python and pytest (plus minimal deps)
+    #--------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    #--------------------------------------------------
+    # Create required directory structure & log files
+    #--------------------------------------------------
+    mkdir -p /home/user/tickets
+    chmod 0777 /home/user
+    chmod 0777 /home/user/tickets   # ensure write access for unprivileged user
+
+    # Log: 2023-10-01
+    cat > /home/user/tickets/2023-10-01.log << 'EOF'
+TCKT-1001, alice, NET-001
+TCKT-1002, bob, PRN-404
+TCKT-1003, carol, NET-001
+TCKT-1004, dave, SEC-900
+TCKT-1005, erin, NET-001
+TCKT-1006, frank, PRN-404
+EOF
+
+    # Log: 2023-10-02
+    cat > /home/user/tickets/2023-10-02.log << 'EOF'
+TCKT-1007, george, SEC-900
+TCKT-1008, hannah, SEC-900
+TCKT-1009, ian, NET-001
+TCKT-1010, jane, PRN-404
+TCKT-1011, kevin, NET-001
+TCKT-1012, laura, PRN-404
+TCKT-1013, mike, NET-001
+TCKT-1014, nancy, NET-001
+EOF
+
+    # Make the log files readable/writable by any user
+    chmod 0666 /home/user/tickets/2023-10-01.log
+    chmod 0666 /home/user/tickets/2023-10-02.log
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PYTHONUNBUFFERED=1
+
+%help
+This container supplies the initial state for the "Ticket Frequency Report"
+exercise:
+
+  • Two raw log files live in /home/user/tickets
+  • The directory is writable so that learners can create the required
+    issue_summary.txt file.
+  • pytest is pre-installed for the automated grading system.

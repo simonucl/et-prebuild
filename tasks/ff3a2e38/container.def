@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required software
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        jq \
+        ca-certificates
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory structure and seed data for the exercise
+    # ------------------------------------------------------------------
+    # Base path for the exercise
+    BASE_DIR="/home/user/network"
+    LOG_DIR="${BASE_DIR}/logs"
+    REPORTS_DIR="${BASE_DIR}/reports"
+
+    # Create directories
+    mkdir -p "${LOG_DIR}"
+    mkdir -p "${REPORTS_DIR}"
+
+    # Make sure the reports directory is writable by any user that will
+    # be running inside the container (the grading agent will not have
+    # root privileges).
+    chmod 0777 "${REPORTS_DIR}"
+
+    # Create the initial CSV file with exact required contents
+    cat > "${LOG_DIR}/ping_results.csv" <<'EOF'
+timestamp,host,latency_ms,packet_loss
+2023-07-01T10:00:00Z,host1.example.com,23,0
+2023-07-01T10:00:00Z,host2.example.com,,100
+2023-07-01T10:00:00Z,host3.example.com,45,0
+2023-07-01T10:00:00Z,host4.example.com,,100
+2023-07-01T10:00:00Z,host5.example.com,31,0
+EOF
+    chmod 0644 "${LOG_DIR}/ping_results.csv"
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are in the PATH for all users
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"

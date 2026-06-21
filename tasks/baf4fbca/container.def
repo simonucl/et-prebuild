@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author SomeAI
+    Description "Environment for the 'compress rotated log files' task. Provides initial log files and empty archives directory."
+
+%post
+    set -e
+
+    # Update package lists and install required software
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        xz-utils \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the evaluation suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial directory structure and files the agent expects
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/storage/logs
+    mkdir -p /home/user/archives
+
+    # Create the three rotated log files with the required contents
+    printf "Dummy log 1\n" > /home/user/storage/logs/app-2023-09-01.log
+    printf "Dummy log 2\n" > /home/user/storage/logs/app-2023-09-02.log
+    printf "Dummy log 3\n" > /home/user/storage/logs/app-2023-09-03.log
+
+    # Set permissions:
+    # - logs directory: readable by everyone, writable by owner (root)
+    # - archives directory: world-writable so the unprivileged agent can create files
+    chmod 755 /home/user/storage /home/user/storage/logs
+    chmod 777 /home/user/archives
+
+%environment
+    # Ensure Python and pip are on the PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for compress-logs exercise."
+    echo "Start an interactive shell or run your commands directly."
+    exec "$@"

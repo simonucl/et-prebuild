@@ -1,0 +1,43 @@
+FROM ubuntu:22.04
+
+# Help information:
+# This container sets up the initial environment for the "Failed SSH by IP"
+# exercise. It provides:
+#   • /home/user/logs/auth.log with predefined contents
+#   • pytest installed system-wide for the test harness
+
+ENV PYTHONIOENCODING=utf-8
+ENV LC_ALL=C.UTF-8
+
+RUN set -e && \
+    echo "Updating apt index and installing Python and pip..." && \
+    apt-get update -qq && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip && \
+    echo "Installing pytest via pip..." && \
+    pip3 install --no-cache-dir pytest && \
+    echo "Creating initial directory structure..." && \
+    mkdir -p /home/user/logs && \
+    chmod 755 /home/user && \
+    chmod 755 /home/user/logs
+
+RUN cat > /home/user/logs/auth.log <<'EOF'
+Jan 10 12:00:01 host sshd[12345]: Failed password for invalid user admin from 192.168.1.100 port 51234 ssh2
+Jan 10 12:01:05 host sshd[12346]: Failed password for root from 10.0.0.5 port 49822 ssh2
+Jan 10 12:02:30 host sshd[12347]: Accepted password for john from 192.168.1.101 port 51235 ssh2
+Jan 10 12:04:44 host sshd[12348]: Failed password for alice from 172.16.0.3 port 60122 ssh2
+Jan 10 12:05:50 host sshd[12349]: Failed password for invalid user test from 203.0.113.55 port 33918 ssh2
+Jan 10 12:06:23 host sshd[12350]: Accepted password for jane from 192.168.1.102 port 51236 ssh2
+Jan 10 12:07:10 host sshd[12351]: Failed password for invalid user admin from 192.168.1.100 port 51300 ssh2
+Jan 10 12:07:35 host sshd[12352]: Failed password for invalid user guest from 192.168.1.100 port 51310 ssh2
+Jan 10 12:08:01 host sshd[12353]: Failed password for root from 10.0.0.5 port 49823 ssh2
+Jan 10 12:09:15 host sshd[12354]: Failed password for admin from 192.168.1.100 port 51320 ssh2
+EOF
+
+RUN chmod 644 /home/user/logs/auth.log && \
+    echo "Cleaning up apt caches..." && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /home/user

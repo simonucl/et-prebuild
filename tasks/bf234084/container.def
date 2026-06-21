@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ----------------------------------------------------------------------------
+    # Basic development/runtime tools
+    # ----------------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        python3-venv \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ----------------------------------------------------------------------------
+    # Create the non-privileged account “user”
+    # ----------------------------------------------------------------------------
+    useradd -m -s /bin/bash user
+    # Ensure the home directory exists and is accessible
+    chmod 0755 /home/user
+
+    # ----------------------------------------------------------------------------
+    # Python testing framework
+    # ----------------------------------------------------------------------------
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+%environment
+    chmod 755 /home/user
+
+    # Keep the default HOME provided by Apptainer and merely extend PATH
+    export PATH=$PATH:/home/user/.local/bin
+
+%runscript
+    exec "$@"

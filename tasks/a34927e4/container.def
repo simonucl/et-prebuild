@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python tooling and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-pip jq
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the optimisation-solver task
+    # ------------------------------------------------------------------
+    # Ensure the home directory path exists inside the image
+    mkdir -p /home/user/api_test
+
+    # Create the mock API reply JSON (must end with a single newline)
+    cat > /home/user/api_test/solver_response.json <<'JSON_EOF'
+{
+  "status": "optimal",
+  "x": [1.5, 0.0, 2.5],
+  "objective_value": -7.25,
+  "solver_time_sec": 0.003
+}
+JSON_EOF
+
+    # The here-document above already includes a final newline.
+    chmod 644 /home/user/api_test/solver_response.json
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special required; keep default HOME binding behaviour.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author Integration-Dev Challenge
+    Description Container for optimisation-solver logging task – includes initial JSON payload and pytest installed.
+
+%help
+    This Apptainer image provides the starting environment for the optimisation-solver
+    logging task.  It already contains:
+      • /home/user/api_test/solver_response.json  (mock API reply)
+    Pytest is pre-installed for automated grading.

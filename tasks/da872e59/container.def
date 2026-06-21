@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #------------------------------------------------------------------
+    # Basic tooling – install pytest (plus pip if missing)
+    #------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip
+    pip3 install --no-cache-dir pytest
+
+    #------------------------------------------------------------------
+    # Create required directory tree under /home/user/
+    #------------------------------------------------------------------
+    mkdir -p /home/user/data/original
+    mkdir -p /home/user/data/archive
+    mkdir -p /home/user/data/links
+
+    #------------------------------------------------------------------
+    # Populate regular files with exact contents (including trailing NL)
+    #------------------------------------------------------------------
+    printf 'Compliance Document 1\n' > /home/user/data/original/doc1.txt
+    printf 'Compliance Document 2\n' > /home/user/data/original/doc2.txt
+    printf 'Backup 1\n'            > /home/user/data/archive/doc1_backup.txt
+    printf 'Backup 2\n'            > /home/user/data/archive/doc2_backup.txt
+
+    #------------------------------------------------------------------
+    # Create symbolic links (two valid, two intentionally broken)
+    #------------------------------------------------------------------
+    ln -sf ../original/doc1.txt      /home/user/data/links/doc1_link
+    ln -sf ../original/nonexistent.txt /home/user/data/links/doc2_link
+    ln -sf ../archive                /home/user/data/links/archive_link
+    ln -sf ../old                    /home/user/data/links/old_link
+
+    #------------------------------------------------------------------
+    # Reasonable default permissions
+    #------------------------------------------------------------------
+    chmod -R 755 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author  = Compliance-Task-Setup
+    Purpose = Initial evidence set for symbolic-link audit task
+
+%help
+    Container pre-configured with the starting evidence set for the
+    symbolic-link compliance audit exercise.

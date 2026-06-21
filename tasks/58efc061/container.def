@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install required software
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        rsync
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # 2. Prepare initial directory structure & files
+    # ------------------------------------------------------------------
+    # Ensure the base home directory exists
+    mkdir -p /home/user
+
+    # docs_local hierarchy
+    mkdir -p /home/user/docs_local/images
+    mkdir -p /home/user/docs_local/intro
+
+    # index.md (14 bytes: "Hello, world.\n")
+    printf 'Hello, world.\n' > /home/user/docs_local/index.md
+
+    # .gitignore (first line "*.tmp")
+    printf '*.tmp\n' > /home/user/docs_local/.gitignore
+
+    # Symbolic link: README.md -> index.md
+    ln -s index.md /home/user/docs_local/README.md
+
+    # Placeholder binary file (0-byte)
+    touch /home/user/docs_local/images/diagram.png
+
+    # intro/overview.md (18 bytes: "Project overview.\n")
+    printf 'Project overview.\n' > /home/user/docs_local/intro/overview.md
+
+    # remote_server base directory (empty for now)
+    mkdir -p /home/user/remote_server
+
+    # ------------------------------------------------------------------
+    # 3. Permissions
+    # ------------------------------------------------------------------
+    # Make everything under /home/user writable by the non-root runtime user
+    chmod -R a+rwx /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%runscript
+    exec "$@"

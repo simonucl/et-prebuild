@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package list and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip
+
+    # Install pytest for the test-runner
+    pip3 install --no-cache-dir pytest
+
+    ########## Prepare project skeleton ##########
+    # Base project directory
+    install -d -m 0777 /home/user/webapp          # world-writable so the student can create /logs
+
+    # Sub-directories
+    install -d -m 0755 /home/user/webapp/assets/js
+    install -d -m 0755 /home/user/webapp/src/utils
+
+    # JavaScript source files
+    cat <<'EOF' > /home/user/webapp/assets/js/script1.js
+console.log('Script One');
+EOF
+
+    cat <<'EOF' > /home/user/webapp/assets/js/script2.js
+console.log('Script Two');
+EOF
+
+    cat <<'EOF' > /home/user/webapp/src/app.js
+console.log('Main App');
+EOF
+
+    cat <<'EOF' > /home/user/webapp/src/utils/helper.js
+export function greet() { return 'Hello'; }
+EOF
+
+    # README
+    cat <<'EOF' > /home/user/webapp/README.md
+# Sample project
+EOF
+
+    # Ensure correct permissions (readable by everybody)
+    chmod -R a+rX /home/user/webapp
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to override; keep default environment
+
+%labels
+    Author task-preparer
+    Description "Container for the JavaScript checksum pipeline task – includes prepared project and pytest"
+
+%help
+    This container provides the initial filesystem state required for the
+    checksum-manifest task.  Students will create a manifest of all *.js files
+    under /home/user/webapp.  Pytest is pre-installed for automated grading.

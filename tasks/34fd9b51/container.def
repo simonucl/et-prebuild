@@ -1,0 +1,70 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author      ExampleAuthor
+    Description "Container with sentiment140 mini-dataset and pytest pre-installed."
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. System preparation
+    # ------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tzdata \
+        gnupg \
+        tar
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    # Clean up APT cache to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # 2. Create the required directory structure and dataset files
+    # ------------------------------------------------------------------
+    # Ensure home hierarchy exists
+    mkdir -p /home/user/datasets/sentiment140
+
+    # Files: train_part1.txt
+    cat > /home/user/datasets/sentiment140/train_part1.txt <<'EOF'
+I love this movie	positive
+It was great!	positive
+EOF
+
+    # Files: train_part2.txt
+    cat > /home/user/datasets/sentiment140/train_part2.txt <<'EOF'
+I hate this movie	negative
+It was terrible!	negative
+EOF
+
+    # Files: train_part3.txt
+    cat > /home/user/datasets/sentiment140/train_part3.txt <<'EOF'
+It was okay	neutral
+Not bad, not good	neutral
+EOF
+
+    # ------------------------------------------------------------------
+    # 3. Set permissions
+    # ------------------------------------------------------------------
+    # Directory: writable by any user running inside the container
+    chmod 0777 /home/user/datasets /home/user/datasets/sentiment140
+
+    # Dataset files: -rw-r--r--
+    chmod 0644 /home/user/datasets/sentiment140/train_part*.txt
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are in PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    # Default action: launch an interactive shell
+    exec /bin/bash "$@"

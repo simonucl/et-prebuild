@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author      SingularityGPT
+    Description Container prepared for the “fixed time-zone and locale” exercise. \
+                Provides Python, pytest, and a default /home/user with a basic .bashrc.
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Base utilities and Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        locales \
+        tzdata
+
+    # Install pytest (required by the autograder)
+    pip3 install --no-cache-dir pytest
+
+    # Generate the en_US.UTF-8 locale so that it is available if the user enables it
+    locale-gen en_US.UTF-8
+
+    # ------------------------------------------------------------------
+    # Prepare non-privileged working environment: /home/user
+    # ------------------------------------------------------------------
+    user_home="/home/user"
+
+    # Create the user and its home directory if they don't yet exist
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -d "$user_home" -s /bin/bash user
+    else
+        mkdir -p "$user_home"
+    fi
+
+    # Ensure a default .bashrc is present but **not yet** containing the
+    # required export lines (the student will append those).
+    if [ -f /etc/skel/.bashrc ]; then
+        cp /etc/skel/.bashrc "$user_home/.bashrc"
+    else
+        touch "$user_home/.bashrc"
+    fi
+
+    # Ownership and basic permissions
+    chown -R user:user "$user_home"
+    chmod 755 "$user_home"
+
+%environment
+    chmod 755 /home/user
+
+    # Standard environment; do not override $HOME so that Apptainer binds host $HOME.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    # Default entry point: open an interactive shell
+    exec /bin/bash "$@"

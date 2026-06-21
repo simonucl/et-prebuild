@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author  AI-Generated
+    Purpose  Starting image for pentest workspace exercise
+
+%post
+    set -e
+
+    # Refresh package index and install essentials
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        bash
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare normal user account expected by the exercise (/home/user)
+    # ------------------------------------------------------------------
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -d /home/user -s /bin/bash user
+    fi
+
+    # Ensure the home directory is present and has sensible permissions
+    chmod 0755 /home/user
+
+    # Provide an (empty) .bashrc so students can append to it
+    touch /home/user/.bashrc
+    chown user:user /home/user/.bashrc
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal PATH – do NOT alter HOME
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%runscript
+    # Default entrypoint: just execute whatever the caller asked for
+    exec "$@"

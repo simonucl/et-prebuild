@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install Python and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Create initial filesystem state for the backup exercise
+    # ------------------------------------------------------------------
+    # Project directories
+    mkdir -p /home/user/data/projectA
+    mkdir -p /home/user/data/projectB
+    mkdir -p /home/user/data/projectC
+
+    # Parent backup directory (date-stamped sub-dir must NOT exist yet)
+    mkdir -p /home/user/backups
+
+    # Log files (to be archived later)
+    printf "server-log-A-1\nserver-log-A-2\n" > /home/user/data/projectA/server.log
+    printf "error-A-1\n"                             > /home/user/data/projectA/error.log
+    printf "access-B-entry\n"                       > /home/user/data/projectB/access.log
+    printf "debug-B-trace\n"                        > /home/user/data/projectB/debug.log
+    printf "app-C-start\n"                          > /home/user/data/projectC/app.log
+
+    # Additional, non-log files that must remain untouched
+    printf "README A\n"   > /home/user/data/projectA/readme.txt
+    printf "setting: B\n" > /home/user/data/projectB/config.yml
+    printf "Notes C\n"    > /home/user/data/projectC/notes.md
+
+    # ------------------------------------------------------------------
+    # Ensure all users can read/write these paths (the agent runs unprivileged)
+    # ------------------------------------------------------------------
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author backup-task-container
+    Description Initial state for the backup & symlink exercise with pytest installed.
+
+%environment
+    # Preserve whatever HOME Apptainer provides; just ensure UTF-8 locale
+    export LANG=C.UTF-8

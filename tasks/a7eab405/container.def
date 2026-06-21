@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update APT index and install Python + pip
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        locales \
+        ca-certificates \
+        tar \
+        coreutils && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the task-validation harness
+    pip3 install --no-cache-dir pytest
+
+    # Set up a UTF-8 locale to avoid potential encoding issues
+    locale-gen en_US.UTF-8
+    update-locale LANG=en_US.UTF-8
+
+    # --------------------------------------------------------------------- #
+    # Prepare the initial experiment directory and raw artifact files       #
+    # --------------------------------------------------------------------- #
+    mkdir -p /home/user/experiments/run_2024_03_18
+
+    # accuracy.txt
+    printf 'accuracy:0.9125\n' > /home/user/experiments/run_2024_03_18/accuracy.txt
+
+    # loss.txt
+    printf 'loss:0.0873\n' > /home/user/experiments/run_2024_03_18/loss.txt
+
+    # params.json (pretty-printed)
+    cat > /home/user/experiments/run_2024_03_18/params.json <<'EOF'
+{
+  "learning_rate": 0.001,
+  "batch_size": 32,
+  "epochs": 10
+}
+EOF
+
+    # model.bin — a ~1 KiB binary snapshot
+    dd if=/dev/urandom of=/home/user/experiments/run_2024_03_18/model.bin bs=1024 count=1 status=none
+
+    # Ensure sensible permissions (agent will not have root)
+    chmod 755 /home/user /home/user/experiments /home/user/experiments/run_2024_03_18
+    chmod 644 /home/user/experiments/run_2024_03_18/*
+
+%environment
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    echo "Apptainer container for the MLOps artifact hand-off task."
+    exec "$@"

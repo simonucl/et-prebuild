@@ -1,0 +1,29 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author TaskBuilder
+    Description Base container for credential-rotation exercise with pytest pre-installed.
+
+%post
+    set -e
+
+    # Install Python and pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the expected home directory exists (but NOT the task targets)
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+%environment
+    # Basic PATH and locale settings
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

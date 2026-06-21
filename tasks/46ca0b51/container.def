@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling required by the autograder
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-dev
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the test-suite
+    # ------------------------------------------------------------------
+
+    # Ensure the home directory exists
+    mkdir -p /home/user
+
+    # Create the configs directory and make sure it is writable by any user
+    mkdir -p /home/user/configs
+    chmod 0777 /home/user/configs
+
+    # Create the original dummy_service.conf file with exact contents
+    cat > /home/user/configs/dummy_service.conf <<'EOF'
+#-----------------------------------
+# Dummy Service configuration file
+# Maintainer: DevOps Team
+MAX_CLIENTS=50
+#-----------------------------------
+EOF
+    chmod 0644 /home/user/configs/dummy_service.conf
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special needed; inherit caller's $HOME
+
+%labels
+    Author Dummy Builder
+    Description Container with initial state for dummy_service configuration task

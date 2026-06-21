@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python + pip
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the forthcoming test-suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the required directory tree and seed data files
+    # ------------------------------------------------------------------
+    # Create user home directory if it does not yet exist
+    mkdir -p /home/user
+
+    # Workflow structure
+    mkdir -p /home/user/workflow/incoming
+    mkdir -p /home/user/workflow/archive   # must start out empty
+
+    # Seed the incoming *.dat files
+    printf "JAN DATA\n" > /home/user/workflow/incoming/january.dat
+    printf "FEB DATA\n" > /home/user/workflow/incoming/february.dat
+    printf "MAR DATA\n" > /home/user/workflow/incoming/march.dat
+
+    # Seed the readme.txt file
+    printf "Put data files here.\n" > /home/user/workflow/incoming/readme.txt
+
+    # Ensure everything is writeable by the (non-root) runtime user
+    chmod -R a+rwx /home/user/workflow
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python user-installed binaries are found, and keep HOME untouched
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    # Default entrypoint: start an interactive shell
+    exec /bin/bash "$@"

@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package index and install required tools
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        sqlite3 \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create the workspace for the student
+    mkdir -p /home/user
+    chmod 0777 /home/user   # Ensure it is writable for whichever UID runs the container
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Standard PATH is already fine, but make sure /usr/local/bin (where pip installs)
+    # is present.
+    export PATH="/usr/local/bin:/usr/bin:/bin"
+
+%runscript
+    echo "Container for SQLite build-registry exercise."
+    echo "You can now run your commands."

@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required software: Python, pip, pytest, and GNU make
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        make \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory layout and seed files for the exercise
+    # ------------------------------------------------------------------
+    BASE="/home/user/support_tickets"
+    mkdir -p "${BASE}/data" "${BASE}/scripts"
+
+    # tickets.csv with exact required content (final newline included)
+    cat > "${BASE}/data/tickets.csv" <<'EOF'
+id,client,issue
+101,Acme Corp,Printer not responding
+102,Globex Inc,VPN disconnecting
+103,Initech,Email bounce back
+EOF
+
+    # Stub resolver script
+    cat > "${BASE}/scripts/resolve_ticket.sh" <<'EOF'
+#!/usr/bin/env bash
+# simple stub used by tests
+echo "Ticket $1 resolved"
+EOF
+    chmod 0755 "${BASE}/scripts/resolve_ticket.sh"
+
+    # Ensure subsequent, non-root users can add/edit files inside support_tickets
+    chmod -R a+rwX "${BASE}"
+
+    # Clean up apt caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Let user-installed Python utilities (if any) on $HOME/.local/bin be found first
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%runscript
+    # Default runscript: just execute whatever the user provides
+    exec "$@"

@@ -1,0 +1,27 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package index and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        openssh-client \
+        ca-certificates
+
+    # Install pytest for the forthcoming test-suites
+    pip3 install --no-cache-dir pytest
+
+    # Create the non-privileged user that the tasks refer to
+    useradd -m -s /bin/bash user
+    chmod 755 /home/user
+
+    # Clean up apt caches to keep the image small
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

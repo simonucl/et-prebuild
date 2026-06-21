@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python and pip
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state required by the exercise
+    # ------------------------------------------------------------------
+    # Create diagnostics directory structure
+    mkdir -p /home/user/diagnostics
+
+    # Create the log file with exactly the bytes "abc" and no trailing newline
+    printf 'abc' > /home/user/diagnostics/collect-logs.log
+
+    # Set appropriate permissions (directories readable/executable, file readable)
+    chmod 755 /home/user
+    chmod 755 /home/user/diagnostics
+    chmod 644 /home/user/diagnostics/collect-logs.log
+
+%environment
+    # Ensure Python points to python3
+    export PYTHONIOENCODING=UTF-8
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    exec "$@"
+
+%labels
+    Author example@example.com
+    Description "Container for checksum creation exercise – includes pytest and pre-seeded log file."

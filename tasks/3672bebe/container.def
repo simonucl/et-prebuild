@@ -1,0 +1,81 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Basic tools and Python
+    apt-get update && \
+        apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            ca-certificates \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial translations workspace expected by the tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/translations
+
+    # English
+    cat > /home/user/translations/en.po << 'EOF'
+msgid "Hello"
+msgstr "Hello"
+
+msgid "Goodbye"
+msgstr "Goodbye"
+
+msgid "Yes"
+msgstr "Yes"
+
+msgid "No"
+msgstr "No"
+
+msgid "Cancel"
+msgstr "Cancel"
+EOF
+
+    # Spanish
+    cat > /home/user/translations/es.po << 'EOF'
+msgid "Hello"
+msgstr "Hola"
+
+msgid "Goodbye"
+msgstr "Adiós"
+
+msgid "Yes"
+msgstr "Sí"
+
+msgid "No"
+msgstr "No"
+
+msgid "Cancel"
+msgstr ""
+EOF
+
+    # French
+    cat > /home/user/translations/fr.po << 'EOF'
+msgid "Hello"
+msgstr "Bonjour"
+
+msgid "Goodbye"
+msgstr ""
+
+msgid "Yes"
+msgstr ""
+
+msgid "No"
+msgstr ""
+
+msgid "Cancel"
+msgstr "Annuler"
+EOF
+
+    # Ensure read-write permissions for the non-root runtime user
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author Translation-Exercise-Setup

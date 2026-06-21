@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # ------------------------------------------------------------------
+    # Create the initial flat-file “database” expected by the assignment
+    # ------------------------------------------------------------------
+    mkdir -p /home/user
+    chmod 0777 /home/user          # Allow the unprivileged agent to write here
+
+    cat >/home/user/user_db.csv <<'EOF'
+username,uid,gid,status,fullname,home
+john,1001,100,active,John Doe,/home/john
+mary,1002,100,inactive,Mary Smith,/home/mary
+alice,1003,100,active,Alice Jones,/home/alice
+bob,1004,100,active,Bob Brown,/home/bob
+eve,1005,100,inactive,Eve Adams,/home/eve
+EOF
+    chmod 0644 /home/user/user_db.csv  # Read-only for everyone; should remain unchanged
+
+    # ------------------------------------------------------------------
+    # Install Python tooling needed for the test harness
+    # ------------------------------------------------------------------
+    apt-get update -qq
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure pip-installed binaries are reachable
+    export PATH="/usr/local/bin:$PATH"
+
+%labels
+    Author          Site-Prep-Bot
+    Description     Initial container for the “flat-file user database” task

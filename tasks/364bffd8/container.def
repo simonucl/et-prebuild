@@ -1,0 +1,28 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Upgrade pip and install pytest (needed for the grader)
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # Prepare a consistent, writable cache location for pip expected by the tests
+    mkdir -p /home/user/.cache/pip
+    chmod -R 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Force pip to use the directory created above so the tests can find it
+    export PIP_CACHE_DIR=/home/user/.cache/pip
+
+%runscript
+    exec "$@"

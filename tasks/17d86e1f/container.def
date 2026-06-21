@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author AgentPreparation
+    Description "Container for FinOps JSON compression task – sets up initial filesystem state and installs pytest."
+
+%post
+    set -e
+
+    # Basic tools and Python
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip ca-certificates coreutils findutils gzip \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory structure and JSON fixtures
+    # ------------------------------------------------------------------
+    # Ensure /home and /home/user exist
+    mkdir -p /home/user
+
+    # Directories required by the exercise (0700 perms)
+    mkdir -p /home/user/cloud_costs/raw_usage
+    chmod 700 /home/user/cloud_costs
+    chmod 700 /home/user/cloud_costs/raw_usage
+
+    # Oversized JSON files
+    truncate -s 2097152  /home/user/cloud_costs/raw_usage/2023-11-01-usage.json    # 2  MiB
+    truncate -s 3145728  /home/user/cloud_costs/raw_usage/2024-01-01-usage.json    # 3  MiB
+    truncate -s 1245184  /home/user/cloud_costs/raw_usage/2024-01-15-usage.json    # ~1.188 MiB
+
+    # Small JSON file (below threshold)
+    truncate -s 512000   /home/user/cloud_costs/raw_usage/2023-12-01-usage.json    # 512 000 bytes
+
+    # Ensure no compression report exists yet
+    rm -f /home/user/cloud_costs/compression_report.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Use Python 3 as default
+    export PYTHONIOENCODING="utf-8"
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    echo "This container is prepared for the FinOps JSON compression task."
+    echo "Run your commands inside the container as needed."

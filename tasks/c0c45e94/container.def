@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tools and Python environment
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create a regular, non-root user with UID/GID 1000
+    groupadd -g 1000 user || true
+    useradd  -m -u 1000 -g 1000 user || true
+
+    # Build the required initial filesystem layout
+    mkdir -p /home/user/microservices
+    chown 1000:1000 /home/user/microservices
+    chmod 0755 /home/user/microservices
+
+    # Populate the CSV inventory with exact, line-perfect content
+    cat > /home/user/microservices/services.csv <<'EOF'
+service_name,image,port
+auth-service,ghcr.io/org/auth:1.0,8080
+payment-service,ghcr.io/org/pay:1.0,9090
+frontend,ghcr.io/org/front:2.1,80
+EOF
+    chown 1000:1000 /home/user/microservices/services.csv
+    chmod 0644 /home/user/microservices/services.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure user-level Python packages (if any) are found first
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%runscript
+    exec "$@"

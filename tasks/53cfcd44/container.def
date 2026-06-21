@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install required software
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        curl \
+        ca-certificates
+
+    # Install pytest for the forthcoming automated tests
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the credential-rotation task
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/credential_rotation
+
+    # new_token.txt  – exactly one newline at the end
+    printf 'SECURE-TOKEN-998877\n' > /home/user/credential_rotation/new_token.txt
+
+    # fake_endpoint.json – valid JSON followed by exactly one newline
+    cat <<'EOF' > /home/user/credential_rotation/fake_endpoint.json
+{
+  "result": "success"
+}
+EOF
+
+    # Ensure world-readable permissions (no need for write access by learners)
+    chmod 755 /home/user
+    chmod 755 /home/user/credential_rotation
+    chmod 644 /home/user/credential_rotation/new_token.txt
+    chmod 644 /home/user/credential_rotation/fake_endpoint.json
+
+%labels
+    Author  credential-rotation-setup
+    Description "Environment for API credential rotation exercise"
+
+%help
+This container provides the initial state for the “credential rotation” exercise.
+
+Inside the container you will find:
+  /home/user/credential_rotation/
+      ├── new_token.txt        (contains the new bearer token)
+      └── fake_endpoint.json   (mock API response)
+
+Your task, as described in the assignment, is to read the token,
+perform a single curl request against the local JSON file using the
+Authorization header, and write the required two-line log file
+rotation_check.log in the same directory.
+
+pytest is pre-installed so the automated grader can verify your work.

@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Create docs directory and seed required files
+    DOCS_DIR="/home/user/docs"
+    mkdir -p "${DOCS_DIR}"
+
+    # outlines.csv (exact content)
+    cat > "${DOCS_DIR}/outlines.csv" <<'EOF'
+Section,Filename,Status
+Introduction,intro.md,published
+Installation,install.md,draft
+Usage,usage.md,draft
+API,api.md,published
+FAQ,faq.md,draft
+EOF
+
+    # topics.json (exact content)
+    cat > "${DOCS_DIR}/topics.json" <<'EOF'
+[
+  { "filename": "intro.md",  "title": "Project Introduction" },
+  { "filename": "install.md", "title": "Installing the Project" },
+  { "filename": "usage.md",  "title": "How to Use" },
+  { "filename": "api.md",    "title": "API Reference" },
+  { "filename": "faq.md",    "title": "Frequently Asked Questions" }
+]
+EOF
+
+    # Ensure correct permissions (readable by non-root users)
+    chmod 755 "${DOCS_DIR}"
+    chmod 644 "${DOCS_DIR}/outlines.csv" "${DOCS_DIR}/topics.json"
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure pip-installed executables are on PATH
+    export PATH="/usr/local/bin:$PATH"
+
+%labels
+    Author TaskSetup
+    Description "Container pre-populated with documentation data for status-report task; pytest installed."

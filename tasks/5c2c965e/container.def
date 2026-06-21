@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package list and install Python + pip
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the validation suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial directory structure and log file required
+    # by the automated tests.  Do NOT create the summary file; the
+    # learner must generate it.
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/projects/myapp/logs
+
+    cat <<'EOF' >/home/user/projects/myapp/logs/app.log
+2024-05-30 12:00:01,001 INFO  Starting application
+2024-05-30 12:00:02,002 ERROR Failed to connect to database
+2024-05-30 12:00:03,003 WARN  Cache miss for key user_123
+2024-05-30 12:00:04,004 ERROR Null pointer exception in module XYZ
+2024-05-30 12:00:05,005 INFO  Processing request id=987
+2024-05-30 12:00:06,006 ERROR Timeout while contacting external API
+2024-05-30 12:00:07,007 DEBUG Retrying connection
+2024-05-30 12:00:08,008 ERROR Invalid credentials for user 'admin'
+2024-05-30 12:00:09,009 INFO  Shutdown sequence initiated
+2024-05-30 12:00:10,010 ERROR Unhandled exception in main loop
+EOF
+
+    # Ensure proper permissions
+    chmod 755 /home/user
+    chmod -R 755 /home/user/projects
+    chmod 644 /home/user/projects/myapp/logs/app.log
+
+%labels
+    Author "Apptainer Task Generator"
+    Description "Container for log-processing one-liner exercise"
+
+%environment
+    # Ensure Python user base binaries (like pytest) are on PATH
+    export PATH="$PATH:/usr/local/bin"
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

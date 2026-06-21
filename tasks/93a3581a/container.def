@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # ------------------------------------------------------------------
+    # Basic tooling
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/pipeline_configs/app1
+    mkdir -p /home/user/pipeline_configs/app2
+
+    # *.tmp files that the agent must rename
+    cat > /home/user/pipeline_configs/app1/staging.conf.tmp <<'EOF'
+# temporary staging configuration
+EOF
+
+    cat > /home/user/pipeline_configs/app1/prod.conf.tmp <<'EOF'
+# temporary production configuration
+EOF
+
+    cat > /home/user/pipeline_configs/app2/dev.conf.tmp <<'EOF'
+# temporary development configuration
+EOF
+
+    # File that must remain untouched
+    cat > /home/user/pipeline_configs/app1/settings.conf <<'EOF'
+# permanent config – do not touch
+EOF
+
+    # ------------------------------------------------------------------
+    # Permissions
+    # ------------------------------------------------------------------
+    # Give non-root users write access so they can perform the renaming
+    chmod 777 /home/user
+    find /home/user/pipeline_configs -type d -exec chmod 777 {} +
+    find /home/user/pipeline_configs -type f -exec chmod 666 {} +
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are discoverable inside the container
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container ready.  Run your commands to complete the renaming task."

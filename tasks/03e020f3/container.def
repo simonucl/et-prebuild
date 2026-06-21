@@ -1,0 +1,36 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update apt metadata and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        curl
+
+    # Install pytest for the exercise test-suite
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected home directory for the learner.
+    # Do NOT create the exercise directories/files themselves.
+    mkdir -p /home/user
+    chmod 755 /home/user || true
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure Python and local user installs (if any) are on PATH
+    export PATH=$PATH:/usr/local/bin
+
+%labels
+    Author devsecops-starter
+    Description "Base image for policy-as-code starter exercise. Contains Python, pytest, and an empty /home/user directory."
+
+%runscript
+    echo "Container ready. Open a shell and follow the exercise instructions."

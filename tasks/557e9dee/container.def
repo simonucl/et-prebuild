@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python & pip
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test runner
+    pip3 install --no-cache-dir pytest
+
+    # Create the required directory hierarchy
+    mkdir -p /home/user/projects/cloud_migration/configs
+
+    # Populate the legacy INI file with the exact expected contents
+    cat > /home/user/projects/cloud_migration/configs/legacy_service.ini << 'EOF'
+[database]
+host = legacy-db.internal
+port = 5432
+user = legacy_user
+password = secret
+
+[api]
+endpoint = https://legacy-api.internal/v1
+timeout = 30
+EOF
+
+    # Ensure the non-root agent can write into the project tree
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PYTHONUNBUFFERED=1

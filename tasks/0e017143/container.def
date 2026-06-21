@@ -1,0 +1,67 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Basic packages and Python tooling
+    # ------------------------------------------------------------------
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        locales \
+        ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Create non-root user “user” with home /home/user
+    # ------------------------------------------------------------------
+    useradd -m -s /bin/bash user
+
+    # ------------------------------------------------------------------
+    # 3. Prepare the initial data directory and legacy-encoded files
+    # ------------------------------------------------------------------
+    install -d -o user -g user /home/user/data
+
+    python3 - << 'PY'
+import pathlib
+
+files = [
+    (
+        "/home/user/data/latin1_report.txt",
+        "latin-1",
+        "Café, crème brûlée, coöperate\nÅngström unit\n",
+    ),
+    (
+        "/home/user/data/shiftjis_notes.txt",
+        "shift_jis",
+        "こんにちは\nバックアップ\n",
+    ),
+    (
+        "/home/user/data/windows1252_legacy.txt",
+        "windows-1252",
+        "“Smart quotes” and € symbol\nOld file\n",
+    ),
+]
+
+for path, enc, text in files:
+    pathlib.Path(path).write_bytes(text.encode(enc))
+PY
+
+    # Ensure “user” owns everything under /home/user
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal PATH tweak so pip-installed scripts are found
+    export PATH="$PATH:/home/user/.local/bin"
+
+%labels
+    Author="OpenAI Assistant"
+    Description="Environment for mixed-encoding to UTF-8 conversion task. Includes legacy-encoded source files and pytest."

@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install required system utilities
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        iproute2 \
+        iputils-ping
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected home directory for the exercise
+    mkdir -p /home/user
+    chmod 0777 /home/user   # ensure writable by the unprivileged runtime user
+
+    # Optional convenience: provide `python` symlink to python3
+    ln -sf /usr/bin/python3 /usr/local/bin/python
+
+    # Clean up apt cache to keep image size small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard paths are available
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

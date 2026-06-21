@@ -1,0 +1,27 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package list and install required software
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3 && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the exercise test-suite
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the base working directory exists for the student
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+%environment
+    # Basic locale settings
+    export LANG=C
+    export LC_ALL=C
+
+%labels
+    Author QA_Assistant
+    Description "Environment for SQLite migration exercise (pytest included)"

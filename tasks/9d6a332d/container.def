@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Ensure apt works without prompts
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package index and install python3-pip
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the test suite
+    # ------------------------------------------------------------------
+    OBS_ROOT="/home/user/observability"
+    ARCHIVE_PATH="${OBS_ROOT}/dashboards/archive/2023"
+
+    # Create directory hierarchy
+    mkdir -p "${ARCHIVE_PATH}"
+
+    # Create placeholder dashboard file
+    touch "${ARCHIVE_PATH}/performance_dashboard.json"
+
+    # Make sure everything under /home/user is writable by the non-root user
+    chmod -R a+rwx /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep environment minimal; do not override $HOME
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author  ExampleTaskBuilder
+    Purpose "Observability symlink exercise – baseline image with pytest installed"
+
+%help
+    This container provides the baseline filesystem layout for the
+    Grafana dashboard symlink exercise and includes pytest for grading.

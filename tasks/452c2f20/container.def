@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create project directory structure
+    mkdir -p /home/user/project-l18n/translations
+
+    # Populate the .env file (exact three lines, plus single trailing newline)
+    cat > /home/user/project-l18n/.env <<'EOF'
+API_URL=https://api.example.com
+FEATURE_X=true
+MAX_RETRIES=5
+EOF
+
+    # Populate English JSON catalogue (single-line with trailing newline)
+    printf '{"hello":"Hello","bye":"Good-bye"}\n' \
+        > /home/user/project-l18n/translations/messages.en.json
+
+    # Populate Spanish JSON catalogue (single-line with trailing newline)
+    printf '{"hello":"Hola","bye":"Adiós"}\n' \
+        > /home/user/project-l18n/translations/messages.es.json
+
+    # Ensure non-root users can read/write within /home/user
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default HOME; just ensure Python is on PATH
+    export PATH="$PATH:/usr/local/bin"
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Environment for localisation engineering exercise with pytest pre-installed."

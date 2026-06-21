@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic utilities and Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        openssh-client \
+        ca-certificates
+
+    # Install pytest for the automated grader
+    pip3 install --no-cache-dir pytest
+
+    # Create the placeholder home directory expected by the tests.
+    # Give it liberal permissions so whichever unprivileged UID runs
+    # inside the container can write to it later.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up APT caches to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author "Apptainer build script for dedicated-SSH-identity exercise"
+
+%runscript
+    exec "$@"

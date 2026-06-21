@@ -1,0 +1,70 @@
+BootStrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt indexes and installing Python 3 + pip..."
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating application log tree..."
+    mkdir -p /home/user/app/logs/old
+
+    # auth.log
+    cat >/home/user/app/logs/auth.log <<'EOF'
+[2024-05-01 10:00:00] INFO User login succeeded
+[2024-05-01 10:01:00] ERROR Invalid password for user 'bob'
+[2024-05-01 10:02:00] ERROR User 'alice' account locked
+[2024-05-01 10:03:00] INFO Session ended
+[2024-05-01 10:04:00] INFO User logout
+EOF
+
+    # db.log
+    cat >/home/user/app/logs/db.log <<'EOF'
+[2024-05-01 12:00:00] INFO Connection pool initialised
+[2024-05-01 12:01:00] INFO Query executed successfully
+[2024-05-01 12:02:00] INFO Connection closed
+EOF
+
+    # payment.log
+    cat >/home/user/app/logs/payment.log <<'EOF'
+[2024-05-02 08:00:00] ERROR Payment gateway timeout
+[2024-05-02 08:00:01] ERROR Retry attempt failed
+[2024-05-02 08:00:02] INFO Payment fallback success
+[2024-05-02 08:00:03] INFO Receipt sent
+[2024-05-02 08:00:04] ERROR Payment record missing
+[2024-05-02 08:00:05] INFO Audit complete
+EOF
+
+    # old/archive.log
+    cat >/home/user/app/logs/old/archive.log <<'EOF'
+[2024-04-25 00:00:00] INFO Archival started
+[2024-04-25 00:00:01] INFO Reading tables
+[2024-04-25 00:00:02] ERROR Disk full during archival
+[2024-04-25 00:00:03] INFO Archival aborted
+EOF
+
+    echo "Setting permissions to ensure non-root user can work in /home/user..."
+    # Make /home/user writable so the runtime (non-root) user can create /home/user/analysis
+    chmod 0777 /home/user
+    chmod -R a+r /home/user/app
+    find /home/user/app -type d -exec chmod a+rx {} \;
+
+%labels
+    chmod 755 /home/user
+
+    Author devops-task-preparer
+    Description "Container for ERROR log collection exercise"
+
+%help
+This container image provides the initial filesystem state for the
+“collect ERROR logs” exercise.  It contains the application logs under
+/home/user/app/logs and has pytest installed for the autograder.

@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install Python 3, pip and pytest (needed by the grading harness)
+    # ------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    # Create /home/user with open write permissions so the unprivileged
+    # learner process can add /home/user/analysis later on.
+    mkdir -p /home/user/data
+    chmod 0777 /home/user          # Learner must be able to write here
+    chmod 0755 /home/user/data     # Read-only for others is fine
+
+    # Create the usage log with exact required content and permissions 644
+    cat >/home/user/data/usage.log <<'EOF'
+serverA 2023-07-01 24
+serverB 2023-07-01 67
+serverC 2023-07-01 53
+serverA 2023-07-02 21
+serverB 2023-07-02 79
+serverC 2023-07-02 48
+serverA 2023-07-03 35
+serverB 2023-07-03 73
+serverC 2023-07-03 64
+EOF
+    chmod 0644 /home/user/data/usage.log
+
+%environment
+    chmod 755 /home/user
+
+    # Put Python on PATH explicitly (usually already, but be safe)
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    # Default entrypoint does nothing; container is only a workspace
+    exec /bin/bash "$@"
+
+%labels
+    Author="Capacity-planner exercise container"
+    Description="Provides initial state and pytest for CPU peak task."
+
+%help
+    This Apptainer image sets up the initial state for the “peak CPU by
+    server” exercise.  The learner will be given an unprivileged shell
+    in which /home/user/data/usage.log already exists, while
+    /home/user/analysis has not yet been created.  pytest is installed
+    so the automated grader can verify both the initial and final state.

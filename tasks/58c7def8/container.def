@@ -1,0 +1,36 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author release-task-setup
+
+%post
+    set -e
+
+    # Install Python and pytest for the verification suite
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state required by the task description
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/releases/v1.2.2
+    mkdir -p /home/user/releases/v1.2.3
+
+    # Dummy application artifacts
+    echo 'placeholder jar for v1.2.2' > /home/user/releases/v1.2.2/app.jar
+    echo 'placeholder jar for v1.2.3' > /home/user/releases/v1.2.3/app.jar
+
+    # Pre-existing symbolic link: current -> v1.2.2
+    ln -sf /home/user/releases/v1.2.2 /home/user/releases/current
+
+    # Ensure that the (non-root) runtime user can modify the releases dir
+    chmod -R a+rwX /home/user/releases
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

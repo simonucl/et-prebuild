@@ -1,0 +1,85 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt and installing required packages..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tar \
+        gzip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir --progress-bar off pytest
+
+    echo "Creating initial directory tree and files for the exercise..."
+    # Base user home
+    mkdir -p /home/user
+    chmod 0777 /home/user          # allow the unprivileged runtime user to create new items
+
+    # Micro-service source trees
+    for svc in microserviceA microserviceB microserviceC; do
+        mkdir -p "/home/user/projects/microservices/${svc}"
+    done
+
+    # microserviceA files
+    cat > /home/user/projects/microservices/microserviceA/app.py <<'EOF'
+print('A')
+EOF
+
+    cat > /home/user/projects/microservices/microserviceA/requirements.txt <<'EOF'
+flask==2.0.0
+EOF
+
+    # microserviceB files
+    cat > /home/user/projects/microservices/microserviceB/server.js <<'EOF'
+console.log('B');
+EOF
+
+    cat > /home/user/projects/microservices/microserviceB/package.json <<'EOF'
+{ "name": "B" }
+EOF
+
+    # microserviceC files
+    cat > /home/user/projects/microservices/microserviceC/main.go <<'EOF'
+package main
+func main(){}
+EOF
+
+    cat > /home/user/projects/microservices/microserviceC/go.mod <<'EOF'
+module C
+EOF
+
+    # Pre-built asset bundle
+    echo "Creating assets tarball..."
+    mkdir -p /home/user/resources
+    mkdir -p /tmp/assets_dir/images /tmp/assets_dir/css
+
+    printf "PNGDATA\n"        > /tmp/assets_dir/images/logo.png
+    printf "body{margin:0}\n" > /tmp/assets_dir/css/style.css
+
+    tar -C /tmp/assets_dir -czf /home/user/resources/assets.tar.gz \
+        ./images/logo.png \
+        ./css/style.css
+
+    rm -rf /tmp/assets_dir
+
+    # Ensure tree readability
+    chmod -R a+rX /home/user/projects /home/user/resources
+
+%labels
+    chmod 755 /home/user
+
+    Author="Automated build for backup/asset exercise"
+    Description="Container image that provides the initial file system state required for the micro-services backup task."
+
+%help
+    This Apptainer container sets up the initial environment for the
+    micro-services backup and asset extraction exercise. Pytest is installed
+    for automated grading.

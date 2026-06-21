@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    #!/bin/bash
+    set -e
+
+    # Install Python tooling required for the test harness
+    apt-get update
+    apt-get install -y python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem required by the “Grafana dashboard backup” task
+    # ------------------------------------------------------------------
+    USER_HOME=/home/user
+
+    # 1. Create directory tree for the dashboards
+    mkdir -p "${USER_HOME}/projects/obs-dashboards/dashboards"
+
+    # 2. Populate the two JSON dashboard definition files
+    cat > "${USER_HOME}/projects/obs-dashboards/dashboards/cpu.json" <<'EOF'
+{"dashboard":"cpu","version":1}
+EOF
+
+    cat > "${USER_HOME}/projects/obs-dashboards/dashboards/memory.json" <<'EOF'
+{"dashboard":"memory","version":1}
+EOF
+
+    # 3. Create auxiliary directories where the student will write output
+    mkdir -p "${USER_HOME}/backup_logs"
+    mkdir -p "${USER_HOME}/backups"
+
+    # 4. Ensure the future-write locations are writable by the unprivileged
+    #    user that will run inside the container.
+    chmod 0777 "${USER_HOME}/backup_logs"  # must allow creation of backup.log
+    chmod 0777 "${USER_HOME}/backups"      # must allow creation of the tar file
+
+    # 5. Read-only areas only need world-read/execute
+    chmod -R a+rX "${USER_HOME}/projects"
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

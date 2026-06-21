@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ## Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ## Create required directory structure
+    mkdir -p /home/user/data/raw
+    mkdir -p /home/user/scripts
+    mkdir -p /home/user/logs
+
+    ## Make the locations where the agent must write world-writable
+    chmod 777 /home/user/scripts
+    chmod 777 /home/user/logs
+
+    ## Populate the raw CSV fragments
+    cat > /home/user/data/raw/raw_part1.csv << 'EOF'
+id,text,label
+1,"hello world",greeting
+2,"how are you",question
+3,"goodbye",farewell
+EOF
+
+    cat > /home/user/data/raw/raw_part2.csv << 'EOF'
+id,text,label
+4,"yes",affirmation
+5,"no",negation
+EOF
+
+    ## Ensure correct permissions for raw data (read-only is fine)
+    chmod 644 /home/user/data/raw/raw_part*.csv
+    chmod 755 /home/user/data/raw
+
+%environment
+    # Keep default $HOME; no changes needed
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for the dataset-preparation task. Run \`apptainer shell\` to start an interactive session."

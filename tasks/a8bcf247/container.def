@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install Python tooling required by the autograder
+    # ------------------------------------------------------------------
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial exercise filesystem layout under /home/user
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/artifacts/repoA/releases
+    mkdir -p /home/user/artifacts/repoB/snapshots
+
+    # Files that must be kept
+    echo 'binary jar placeholder' > /home/user/artifacts/repoA/releases/libfoo-1.0.jar
+    echo 'binary jar placeholder' > /home/user/artifacts/repoB/snapshots/libbar-2.3.jar
+    echo '# Project artifacts'        > /home/user/artifacts/readme.md
+
+    # Placeholder *.tmp files the student must delete
+    touch /home/user/artifacts/repoA/releases/unused.tmp
+    touch /home/user/artifacts/repoA/releases/staging.tmp
+    touch /home/user/artifacts/repoB/snapshots/cache.tmp
+
+    # ------------------------------------------------------------------
+    # Ensure the student (non-root at runtime) can modify /home/user
+    # ------------------------------------------------------------------
+    chmod -R a+rwX /home/user
+
+%help
+    chmod 755 /home/user
+
+This container provides the starting point for the “purge *.tmp placeholders”
+exercise.  Three *.tmp files live somewhere under /home/user/artifacts and must
+be removed by the learner using the prescribed find/xargs one-liner.  Pytest is
+installed so the autograder can verify both the initial and final states.

@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest (plus pip).
+    apt-get update -qq
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial application directory structure and seed data
+    # ------------------------------------------------------------------
+    APP_ROOT="/home/user/app"
+    LOG_DIR="${APP_ROOT}/logs"
+
+    mkdir -p "${LOG_DIR}"
+
+    # Create VERSION file with trailing newline
+    printf '2.5.6\n' > "${APP_ROOT}/VERSION"
+
+    # Seed logs/app.log with the required lines (each ends with \n)
+    cat > "${LOG_DIR}/app.log" <<'LOGEOF'
+[2024-05-15 10:12:34] INFO: Service started
+[2024-05-15 10:12:35] ERROR: Unable to connect to database
+[2024-05-15 10:12:36] WARN: Retrying connection
+[2024-05-15 10:12:37] ERROR: Connection timed out
+[2024-05-15 10:12:40] INFO: Shutdown complete
+LOGEOF
+
+    # Ensure files/directories are writable by the runtime (unprivileged) user.
+    chmod -R a+rwX "${APP_ROOT}"
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default PATH, only ensure /usr/local/bin precedes (pip installs here)
+    export PATH="/usr/local/bin:/usr/bin:/bin"

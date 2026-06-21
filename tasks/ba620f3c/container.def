@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory tree expected by the grading harness
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/compliance/configs
+    mkdir -p /home/user/compliance/reference
+
+    # ------------------------------------------------------------------
+    # 1. Un-hardened sample SSH configuration
+    # ------------------------------------------------------------------
+    cat > /home/user/compliance/configs/sshd_config <<'EOF'
+# Example SSHD Configuration
+Port 22
+PermitRootLogin yes
+PasswordAuthentication yes
+ChallengeResponseAuthentication yes
+EOF
+
+    # ------------------------------------------------------------------
+    # 2. Reference audit-log samples
+    # ------------------------------------------------------------------
+    cat > /home/user/compliance/reference/ports_sample.log <<'EOF'
+tcp        0      0 0.0.0.0:22            0.0.0.0:*               LISTEN
+tcp        0      0 127.0.0.1:631         0.0.0.0:*               LISTEN
+udp        0      0 0.0.0.0:68            0.0.0.0:*              
+EOF
+
+    cat > /home/user/compliance/reference/services_sample.log <<'EOF'
+sshd
+cupsd
+dhclient
+systemd
+EOF
+
+    # ------------------------------------------------------------------
+    # Make sure everything is world-readable so the unprivileged
+    # agent can access the files.
+    # ------------------------------------------------------------------
+    chmod -R a+rX /home/user/compliance
+
+%environment
+    chmod 755 /home/user
+
+    # Keep a sensible PATH; do not override $HOME
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author junior-compliance-setup
+    Description "Initial container for the Junior Compliance Analyst task"
+
+%help
+This Apptainer image sets up the pristine filesystem state required for the
+"Junior Compliance Analyst" exercise.  It installs Python 3, pytest, and
+provides the initial configuration and reference data under
+/home/user/compliance/ for students to work with.

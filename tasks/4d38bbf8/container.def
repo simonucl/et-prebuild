@@ -1,0 +1,72 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ---------------------------------------------------------------------
+    # Base utilities and Python tooling
+    # ---------------------------------------------------------------------
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tar \
+        gzip \
+        coreutils
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Create initial filesystem expected by the grader
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/important_data/config
+    mkdir -p /home/user/important_data/projectA
+    mkdir -p /home/user/important_data/projectB/figures
+
+    # --- /home/user/important_data/config/settings.conf -------------------
+    cat > /home/user/important_data/config/settings.conf <<'EOF'
+---
+# Application settings
+mode = production
+timeout = 30
+---
+EOF
+
+    # --- /home/user/important_data/projectA/data.csv ----------------------
+    cat > /home/user/important_data/projectA/data.csv <<'EOF'
+id,value
+1,42
+2,97
+EOF
+
+    # --- /home/user/important_data/projectA/report.txt --------------------
+    echo "Project A quarterly report — draft" > /home/user/important_data/projectA/report.txt
+
+    # --- Binary placeholder files (non-empty) -----------------------------
+    dd if=/dev/urandom of=/home/user/important_data/projectB/presentation.pptx bs=1 count=16 status=none
+    dd if=/dev/urandom of=/home/user/important_data/projectB/figures/diagram.png bs=1 count=16 status=none
+
+    # ---------------------------------------------------------------------
+    # Permissions: ensure the runtime (non-root) user can read the tree and
+    # later create /home/user/backups by themselves.
+    # ---------------------------------------------------------------------
+    chmod -R a+rX /home/user
+    chmod u+w /home/user
+
+    # IMPORTANT: Do NOT create /home/user/backups here; it must be absent.
+
+%environment
+    chmod 755 /home/user
+
+    # No overrides of HOME; retain default behaviour.
+    export LC_ALL=C
+    export LANG=C
+
+%labels
+    Author "container-prep-script"
+    Description "Deterministic backup exercise – initial state with pytest installed."
+
+%help
+This container image sets up the initial filesystem for the deterministic
+backup exercise and provides pytest for the accompanying test suite.

@@ -1,0 +1,79 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+Author microstack-task-preparer
+Description "Container providing initial state for micro-services YAML summarization task"
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tzdata \
+        git \
+        curl
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial filesystem expected by the grader
+    # ------------------------------------------------------------------
+    BASE=/home/user/microstack
+    mkdir -p "${BASE}/api" "${BASE}/auth" "${BASE}/worker"
+
+    # api/service.yml
+    cat > "${BASE}/api/service.yml" <<'EOF'
+service: api
+image: registry.company.com/api-service:2.1.0
+ports:
+  - "8081:80"
+environment:
+  - "AUTH_ENDPOINT=http://auth:80"
+  - "CACHE_HOST=redis.internal"
+  - "CACHE_PORT=6379"
+EOF
+
+    # auth/service.yml
+    cat > "${BASE}/auth/service.yml" <<'EOF'
+service: auth
+image: registry.company.com/auth-service:1.4.2
+ports:
+  - "8080:80"
+environment:
+  - "DB_HOST=db.internal"
+  - "DB_PORT=5432"
+  - "JWT_SECRET=supersecret"
+EOF
+
+    # worker/service.yml
+    cat > "${BASE}/worker/service.yml" <<'EOF'
+service: worker
+image: registry.company.com/worker-service:0.9.3
+ports:
+  - "8082:80"
+environment:
+  - "QUEUE_HOST=rabbit.internal"
+  - "QUEUE_PORT=5672"
+EOF
+
+    # Ensure correct permissions (readable by all users)
+    chmod -R a+rX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to override; keep default HOME binding
+
+%runscript
+    echo "Container for microstack task. Run your commands inside an interactive shell."
+    exec /bin/bash -l
+
+%help
+This container supplies the initial directory structure and YAML definition
+files required for the “microstack” summarization exercise.  pytest is
+pre-installed so that the automated grader can verify the initial state.

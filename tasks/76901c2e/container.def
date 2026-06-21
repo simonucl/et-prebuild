@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic tooling
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Create an unprivileged user entry that matches the typical host UID/GID
+    # (UID 1000/GID 1000).  This guarantees ownership of the files created
+    # below for most CI environments.
+    # ------------------------------------------------------------------
+    if ! getent group 1000 >/dev/null; then
+        groupadd -g 1000 usergroup
+    fi
+    if ! getent passwd 1000 >/dev/null; then
+        useradd -m -u 1000 -g 1000 -s /bin/bash user
+    fi
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory structure and files for the task
+    # ------------------------------------------------------------------
+    install -d -m 0755 /home/user/corp/policies
+    install -d -m 0755 /home/user/corp/projects
+    install -d -m 0755 /home/user/corp/finance
+
+    # 1) /home/user/corp/policies/company_policy.txt — mode 600
+    touch /home/user/corp/policies/company_policy.txt
+    chmod 600 /home/user/corp/policies/company_policy.txt
+
+    # 2) /home/user/corp/projects/bob_project — directory, mode 755
+    install -d -m 0755 /home/user/corp/projects/bob_project
+
+    # 3) /home/user/corp/finance/payroll.xls — mode 775
+    touch /home/user/corp/finance/payroll.xls
+    chmod 775 /home/user/corp/finance/payroll.xls
+
+    # Give ownership of everything under /home/user to UID/GID 1000
+    chown -R 1000:1000 /home/user || true
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip user installs (if any) land in a writable area
+    export PYTHONUSERBASE=/home/user/.local
+
+%runscript
+    echo "Container for permission-handling task.  Run your commands inside an interactive shell or execute your script directly."

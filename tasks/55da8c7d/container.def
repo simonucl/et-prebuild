@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%help
+Container for the localization-engineering task.
+Pre-populates the required project files and installs Python + pytest.
+
+%labels
+Author localization-setup
+
+%post
+    set -e
+
+    #--------------------------------------------------
+    # Base packages and pytest
+    #--------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    #--------------------------------------------------
+    # Create initial project structure under /home/user
+    #--------------------------------------------------
+    mkdir -p /home/user/project/locales
+    chmod -R 777 /home/user   # allow write access for the non-root runtime user
+
+    # en.yaml (exact two-line content + trailing LF)
+    cat > /home/user/project/locales/en.yaml <<'EOF'
+greeting: "Hello"
+farewell: "Goodbye"
+EOF
+
+    # es.yaml (exact two-line content + trailing LF)
+    cat > /home/user/project/locales/es.yaml <<'EOF'
+greeting: "Hola"
+farewell: "Adiós"
+EOF
+
+    # settings.toml (exact three-line content + trailing LF)
+    cat > /home/user/project/settings.toml <<'EOF'
+[build]
+version = "1.0.0"
+lang_support = ["en", "es"]
+EOF
+
+    # Ensure files are writable by any user inside the container
+    find /home/user -type f -exec chmod 666 {} \;
+    find /home/user -type d -exec chmod 777 {} \;
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8

@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+Author Data-Management-Task
+Description Base image for life-science data-management assignment.\
+Pre-populates required CSV datasets and installs pytest.
+
+%post
+    set -eux
+
+    # 1. Create a non-privileged user `user` with home directory /home/user
+    #    (if it already exists in the base image this will be a no-op).
+    if ! id -u user > /dev/null 2>&1; then
+        useradd -m -s /bin/bash user
+    fi
+
+    # 2. Create datasets directory and the two CSV files with exact content
+    DATASET_DIR=/home/user/datasets
+    mkdir -p "${DATASET_DIR}"
+
+    cat > "${DATASET_DIR}/experimentsA.csv" << 'EOF'
+sample_id,condition,value
+S1,control,0.50
+S2,treatment,1.20
+S3,treatment,1.10
+S4,control,0.45
+S5,treatment,1.30
+EOF
+
+    cat > "${DATASET_DIR}/experimentsB.csv" << 'EOF'
+sample_id,condition,value
+B1,control,0.55
+B2,control,0.60
+B3,treatment,1.25
+B4,treatment,1.15
+B5,control,0.58
+EOF
+
+    # Ensure correct ownership and permissions
+    chown -R user:user /home/user
+    chmod 755 /home/user
+    chmod 755 "${DATASET_DIR}"
+
+    # 3. Install Python 3, pip, and pytest (needed for the grading harness)
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        sqlite3
+    pip3 install --no-cache-dir pytest
+
+    # Clean apt cache to shrink image
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Default to UTF-8 locale to avoid encoding surprises
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PYTHONIOENCODING=utf-8
+
+%runscript
+    echo "This container provides the baseline environment for the data-management assignment."
+    echo "Open a shell inside the container and follow the instructions given in the exercise."

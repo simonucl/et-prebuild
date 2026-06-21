@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python 3, pip, and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Seed the filesystem with the required directories and raw data file
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/api_test/data
+
+    # Create the benchmark file with exact contents and a single trailing newline
+    cat > /home/user/api_test/data/response_samples.txt <<'EOF'
+request_id,time_ms
+1,120
+2,110
+3,130
+4,115
+5,140
+6,125
+EOF
+
+    # Ensure non-root runtime users have full access to the working area
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure "python" invokes Python 3 if needed
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+    export PYTHONDONTWRITEBYTECODE=1
+
+%labels
+    Author          "Apptainer Task Preparer"
+    Description     "Container for API performance summary exercise with pytest pre-installed."

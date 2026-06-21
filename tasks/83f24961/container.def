@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing Python tooling..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tzdata \
+        && rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest for the assessment framework..."
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating initial directory structure and draft files..."
+    mkdir -p /home/user/project_docs
+
+    cat >/home/user/project_docs/intro.txt <<'EOF'
+Welcome to the intro.
+EOF
+
+    cat >/home/user/project_docs/usage.txt <<'EOF'
+Usage instructions go here.
+EOF
+
+    cat >/home/user/project_docs/changelog.txt <<'EOF'
+Changelog:
+* Initial draft completed.
+EOF
+
+    # Ensure the learner can freely work in /home/user
+    chmod -R a+rwx /home/user
+
+    echo "Container setup for compressed-backup exercise completed."
+
+%environment
+    chmod 755 /home/user
+
+    # Do not modify HOME; let Apptainer handle host bindings naturally.
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%runscript
+    echo "This container is prepared for the compressed-backup exercise."
+    echo "Launch an interactive shell to begin:  apptainer exec <image> /bin/bash"

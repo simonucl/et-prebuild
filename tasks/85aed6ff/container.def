@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the required directory structure and initial files
+    FIREWALL_DIR="/home/user/firewall"
+    mkdir -p "${FIREWALL_DIR}"
+    chmod 755 "${FIREWALL_DIR}"
+
+    # Create active_rules.sh with the exact three-line header and a trailing newline
+    cat > "${FIREWALL_DIR}/active_rules.sh" <<'EOF'
+#!/bin/bash
+# ACTIVE FIREWALL RULESET
+# Managed by config-team
+EOF
+    chmod 644 "${FIREWALL_DIR}/active_rules.sh"
+
+    # Create an empty change_log.txt file
+    : > "${FIREWALL_DIR}/change_log.txt"
+    chmod 644 "${FIREWALL_DIR}/change_log.txt"
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is on PATH (should already be, but make explicit)
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

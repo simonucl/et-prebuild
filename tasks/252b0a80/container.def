@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+set -e
+
+# Install Python, pip and pytest
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    python3 \
+    python3-pip \
+    --no-install-recommends
+pip3 install --no-cache-dir pytest
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------------------------
+# Prepare the expected initial filesystem state for the assignment
+# ------------------------------------------------------------------
+
+# Ensure /home/user exists and is writable by any unprivileged user
+mkdir -p /home/user
+chmod 0777 /home/user     # world-writable so the non-root agent can create files
+
+# Create /home/user/data directory with the required permissions (0755)
+mkdir -p /home/user/data
+chmod 0755 /home/user/data
+
+# Populate the demo CSV with exactly the required ten lines
+cat > /home/user/data/sales.csv << 'EOF'
+order_id,region,amount
+1,North,1200
+2,South,850
+3,East,990
+4,West,640
+5,North,1330
+6,South,720
+7,East,560
+8,West,410
+9,North,1500
+EOF
+chmod 0644 /home/user/data/sales.csv
+
+# Make sure no pre-existing process log is present
+rm -f /home/user/process_log.txt
+
+%labels
+    chmod 755 /home/user
+
+Author   example
+Version  v1.0
+Description  "Base image for Unix process-management assignment."
+
+%environment
+# Keep environment minimal; do NOT override HOME
+export LC_ALL=C.UTF-8
+export PYTHONIOENCODING=utf-8

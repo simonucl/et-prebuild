@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # Create initial project structure
+    mkdir -p /home/user/project/i18n
+
+    # Generate the initial en.yaml
+    cat > /home/user/project/i18n/en.yaml <<'EOF'
+# English (United States) translations
+welcome: "Welcome"
+login: "Log in"
+profile: "Profile"
+settings: "Settings"
+help: "Help"
+EOF
+
+    # Generate the initial config.toml
+    cat > /home/user/project/config.toml <<'EOF'
+# Project build configuration
+[translations]
+supported = 5           # number of keys in the en.yaml catalogue
+
+[meta]
+last_updated = "2023-09-01"
+EOF
+
+    # Set required permissions
+    chmod 0644 /home/user/project/i18n/en.yaml
+    chmod 0644 /home/user/project/config.toml
+    chmod 0755 /home/user/project/i18n
+    chmod 0755 /home/user/project
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author="ChatGPT - Apptainer prep"
+    Description="Container with initial state for localization update task"

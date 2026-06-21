@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    apt-get install -y python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Create the initial directory tree and configuration files
+    # -----------------------------------------------------------------
+    mkdir -p /home/user/device_configs/site_a
+    mkdir -p /home/user/device_configs/site_b
+
+    # site_a/gateway.cfg
+    cat >/home/user/device_configs/site_a/gateway.cfg <<'EOF'
+gateway_id=GW-001
+ip_address=192.168.1.1
+port=1883
+EOF
+
+    # site_a/sensor1.cfg
+    cat >/home/user/device_configs/site_a/sensor1.cfg <<'EOF'
+sensor_id=S-100
+frequency=30
+unit=celsius
+EOF
+
+    # site_b/sensor2.cfg
+    cat >/home/user/device_configs/site_b/sensor2.cfg <<'EOF'
+sensor_id=S-200
+frequency=15
+unit=humidity
+EOF
+
+    # Ensure all users can read/write the workspace
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Maintainer edge-computing-task-preparer

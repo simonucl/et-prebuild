@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python + pip
+    apt-get update -y
+    apt-get install -y python3 python3-pip
+
+    # Install pytest for test execution
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the automated checker
+    # ------------------------------------------------------------------
+    # Create directory structure
+    mkdir -p /home/user/test_configs
+
+    # Create the required configuration files with exact contents
+    cat > /home/user/test_configs/config1.ini <<'EOF'
+[database]
+host=localhost
+port=5432
+EOF
+
+    cat > /home/user/test_configs/config2.ini <<'EOF'
+[web]
+host=0.0.0.0
+port=8080
+EOF
+
+    # Ensure permissive permissions so the non-root agent user can write
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep a sane PATH; do not override HOME
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author example
+    Description "Container for backup-archive task with pytest pre-installed"
+
+%help
+    This Apptainer image provides the initial state for the backup-archive
+    exercise.  The directory /home/user/test_configs/ contains two INI files
+    that the learner must archive.  Pytest is installed so the automated
+    grading harness can run its tests.

@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT index and install required packages
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        jq \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the exercise test-harness
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial filesystem state for the IoT connection report task
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/edge_devices/reports
+
+    cat > /home/user/edge_devices/devices.json <<'EOF'
+[
+  {"id":"sensor-1","ip":"10.0.0.11","status":"online"},
+  {"id":"sensor-2","ip":"10.0.0.12","status":"offline"},
+  {"id":"gateway-1","ip":"10.0.0.1","status":"online"},
+  {"id":"camera-1","ip":"10.0.0.20","status":"offline"},
+  {"id":"sensor-3","ip":"10.0.0.13","status":"online"}
+]
+EOF
+
+    # Ensure the reports directory is writable by the unprivileged user
+    chmod 0777 /home/user/edge_devices/reports
+
+%labels
+    chmod 755 /home/user
+
+    Author IoT-Edge Exercise Generator
+    Description Container for the “IoT connection report” task. Includes pytest and provides the required initial filesystem state.
+
+%help
+This container sets up the starting environment for the “IoT connection report” exercise.
+
+ directory layout:
+   /home/user/edge_devices/
+       ├─ devices.json     (initial inventory)
+       └─ reports/         (empty, writable; student writes report here)
+
+The container also has pytest pre-installed for automated grading.

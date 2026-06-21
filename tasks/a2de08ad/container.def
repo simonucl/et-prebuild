@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author example@example.com
+    Description "Container for the certificate-migration task: provides initial filesystem state and tooling."
+
+%post
+    set -e
+
+    # Make sure the package lists are up-to-date and required tools are present
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        openssl \
+        ca-certificates
+
+    # Install pytest for the grader/agent
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial directory tree and placeholder files exactly as
+    # specified in the task description.
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/microservices/gateway
+    mkdir -p /home/user/microservices/certs
+
+    # Create gateway/config.yaml with the precise, four-line content
+    cat > /home/user/microservices/gateway/config.yaml <<'EOF'
+ssl:
+  cert: ../certs/old_cert.pem
+  key : ../certs/old_key.pem
+mode: production
+EOF
+
+    # Placeholder certificate and key
+    echo 'dummy' > /home/user/microservices/certs/old_cert.pem
+    echo 'dummy' > /home/user/microservices/certs/old_key.pem
+
+    # Do NOT create /home/user/migration_logs/ – the student will create it.
+
+    # Ensure every non-root user can modify the microservices tree
+    chmod -R a+rwX /home/user
+
+%runscript
+    chmod 755 /home/user
+
+    echo "This container is prepared for the certificate-migration task."
+    echo "Invoke your preferred shell to begin."
+    exec /bin/bash "$@"
+
+%help
+    This image contains the starting environment for the certificate-migration
+    exercise.  All necessary tools (openssl, pytest, etc.) are installed and the
+    filesystem layout matches the task description.

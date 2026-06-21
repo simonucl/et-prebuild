@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%help
+Base environment for the “artifact-manager” assignment.
+Provides:
+  • Python 3 + Pytest
+  • CLI tools: nc, timeout, bash
+  • Non-root user account:  user  (home: /home/user)
+
+%post
+    set -eux
+
+    # Ensure the package index is up to date
+    apt-get update
+
+    # Install required utilities and Python tooling
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        netcat-openbsd \
+        bash \
+        coreutils \
+        python3 \
+        python3-pip
+
+    # Create a dedicated non-root user with home directory /home/user
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -s /bin/bash -u 1000 user
+    fi
+
+    # Install pytest globally (system-wide)
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure that binaries installed via pip are found first
+    export PATH=/usr/local/bin:$PATH
+
+%runscript
+    # Default action when the container is run without arguments
+    exec /bin/bash "$@"
+
+%labels
+    Author artifact-manager container setup
+    Assignment "Repository Connectivity Diagnostics"

@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Seed data for the “hostname look-ups” exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/qa_env
+
+    cat > /home/user/qa_env/test_hosts <<'EOF'
+10.10.0.5    api.dev.local api
+10.10.0.6    db.dev.local db
+10.10.0.7    cache.dev.local cache
+
+# An extra test entry that should be ignored by the agent
+# 10.10.0.8    logging.dev.local log
+EOF
+
+    chmod 755 /home/user/qa_env
+    chmod 644 /home/user/qa_env/test_hosts
+
+    # Clean up APT caches to keep the image lean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    export LC_ALL=C.UTF-8
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author      "Apptainer build script"
+    Description "Initial container for the hostname look-ups QA exercise"

@@ -1,0 +1,76 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+Author ChatGPT
+Description "Base image for certificate-maintenance task; supplies initial /home/user/certs dataset and pytest"
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create base directory structure and seed certificate data
+    # ------------------------------------------------------------------
+    USER_HOME="/home/user"
+    CERTS_DIR="${USER_HOME}/certs"
+
+    # Create user home and certs directory with correct modes
+    mkdir -p "${CERTS_DIR}"
+    chmod 755 "${USER_HOME}"
+    chmod 755 "${CERTS_DIR}"
+
+    # Alpha certificate file
+    cat > "${CERTS_DIR}/alpha.pem" <<'EOF'
+-----BEGIN CERTIFICATE-----
+Dummy certificate placeholder only for testing utilities.
+Serial Number: 01
+Not After : 2030-12-31 23:59:59 GMT
+Subject CN=alpha.example.io
+-----END CERTIFICATE-----
+EOF
+
+    # Beta certificate file
+    cat > "${CERTS_DIR}/beta.pem" <<'EOF'
+-----BEGIN CERTIFICATE-----
+Dummy certificate placeholder only for testing utilities.
+Serial Number: 02
+Not After : 2025-06-15 12:00:00 GMT
+Subject CN=beta.example.io
+-----END CERTIFICATE-----
+EOF
+
+    # Set required file permissions
+    chmod 644 "${CERTS_DIR}/alpha.pem" "${CERTS_DIR}/beta.pem"
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python points to python3
+    export PYTHONIOENCODING=UTF-8
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+    alias python=python3
+
+%runscript
+    echo "Container for the certificate-maintenance task."
+    echo "This image only provides the initial dataset in /home/user/certs."
+    echo "No action taken. To execute tests, run 'pytest' inside the container."
+
+%help
+This Apptainer image prepares the starting environment for the
+“certificate-maintenance utility” programming task.
+
+Included:
+  • /home/user/certs with alpha.pem and beta.pem (exact required contents)
+  • pytest pre-installed for automated grading
+
+The student’s solution script and additional artefacts are NOT present:
+they must be generated during task execution.

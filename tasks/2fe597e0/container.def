@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Ensure apt is non-interactive
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Refresh package index and install required Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-venv \
+        python3-pip
+
+    # Install pytest for the verification test-suite
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # Create the canonical writable home directory expected by the tests
+    mkdir -p /home/user
+    # Make it writable for any user ID that might run inside the container
+    chmod 0777 /home/user
+
+    # Clean up apt caches to keep the image small
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure that locally installed Python tools are on PATH
+    export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin"

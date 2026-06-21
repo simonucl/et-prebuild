@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the subsequent automated checks
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Set up the exercise scaffold under /home/user
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/projects/alpha-tool
+
+    # 1. VERSION ----------------------------------------------------------
+    cat > /home/user/projects/alpha-tool/VERSION <<'EOF'
+1.2.3
+EOF
+
+    # 2. CHANGELOG.md -----------------------------------------------------
+    cat > /home/user/projects/alpha-tool/CHANGELOG.md <<'EOF'
+# Changelog
+
+## [1.2.0] - 2023-07-07
+- Initial public release
+EOF
+
+    # 3. TODO.md ----------------------------------------------------------
+    cat > /home/user/projects/alpha-tool/TODO.md <<'EOF'
+- Add support for YAML export
+- Refactor config parser
+- Improve CLI help text
+EOF
+
+    # Permissions: allow the (unprivileged) runtime user to modify files
+    chmod -R 777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PYTHONIOENCODING=utf-8

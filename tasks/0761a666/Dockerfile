@@ -1,0 +1,47 @@
+FROM ubuntu:22.04
+
+# Labels
+LABEL Author="disk_demo_task"
+LABEL Description="Initial state for the disk usage audit task"
+LABEL Version="1.0"
+
+# ------------------------------------------------------------------
+# Base tools and Python testing framework
+# ------------------------------------------------------------------
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        passwd \
+        coreutils && \
+    pip3 install --no-cache-dir pytest
+
+# ------------------------------------------------------------------
+# Create dedicated non-root user "user" with home directory /home/user
+# ------------------------------------------------------------------
+RUN useradd -m -d /home/user -s /bin/bash user
+
+# ------------------------------------------------------------------
+# Prepare the required directory tree and files
+# ------------------------------------------------------------------
+RUN mkdir -p /home/user/projects/disk_demo/subdir
+
+# Exact-size regular files
+# 1024 bytes
+RUN dd if=/dev/zero of=/home/user/projects/disk_demo/file1.txt bs=1024 count=1 status=none
+# 2048 bytes
+RUN dd if=/dev/zero of=/home/user/projects/disk_demo/file2.log bs=1024 count=2 status=none
+# 3072 bytes
+RUN dd if=/dev/zero of=/home/user/projects/disk_demo/subdir/data.bin bs=1024 count=3 status=none
+
+# ------------------------------------------------------------------
+# Ownership and permissions
+# ------------------------------------------------------------------
+RUN chown -R user:user /home/user && \
+    chmod 755 /home/user && \
+    chmod 755 /home/user/projects && \
+    chmod 755 /home/user/projects/disk_demo && \
+    chmod 755 /home/user/projects/disk_demo/subdir && \
+    chmod 644 /home/user/projects/disk_demo/file1.txt && \
+    chmod 644 /home/user/projects/disk_demo/file2.log && \
+    chmod 644 /home/user/projects/disk_demo/subdir/data.bin

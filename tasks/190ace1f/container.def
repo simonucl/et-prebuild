@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python, pip and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        python3-setuptools
+
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the assignment
+    # -----------------------------------------------------------------
+
+    # 1. Create the metrics directory and the two required log files
+    mkdir -p /home/user/metrics
+
+    cat > /home/user/metrics/cpu.log <<'EOF'
+2024-06-01T00:00 15
+2024-06-01T01:00 17
+2024-06-01T02:00 20
+EOF
+
+    cat > /home/user/metrics/memory.log <<'EOF'
+2024-06-01T00:00 45
+2024-06-01T01:00 50
+2024-06-01T02:00 55
+EOF
+
+    # 2. Ensure appropriate permissions:
+    #    - The learner must be able to create /home/user/reports
+    #    - The metric files must be readable
+    chmod -R a+r /home/user/metrics
+    chmod 0777 /home/user   # allow non-root user to create new items here
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are on the PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%help
+    This container provides the starting environment for the
+    "capacity-planning report" exercise.
+
+    Pre-created items:
+      • /home/user/metrics/cpu.log
+      • /home/user/metrics/memory.log
+
+    The /home/user directory is writable so that learners can
+    create /home/user/reports/usage_summary.csv as instructed.

@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author    release-manager-setup
+    Version   1.0
+
+%post
+    set -e
+
+    # Install Python and pytest for the testing framework
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare legacy deployment script environment expected by the tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/old_code
+
+    cat >/home/user/old_code/release.sh <<'EOF'
+#!/bin/sh
+# Legacy release script
+if [ "$1" = "--version" ]; then
+    echo "old_code release v0.9.8"
+    exit 0
+fi
+
+echo "Usage: $0 --version"
+exit 1
+EOF
+
+    chmod 755 /home/user/old_code/release.sh
+
+%environment
+    # Basic locale / path hygiene
+    export LC_ALL=C.UTF-8
+    export PATH=/home/user/old_code:$PATH

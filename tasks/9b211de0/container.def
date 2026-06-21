@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip coreutils
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Prepare initial data set expected by the automated tests
+    # -----------------------------------------------------------------
+    mkdir -p /home/user/source_data/scripts
+
+    # Create placeholder files with the exact byte sizes required
+    truncate -s 92  /home/user/source_data/customer_list.csv
+    truncate -s 92  /home/user/source_data/inventory.json
+    truncate -s 120 /home/user/source_data/readme.txt
+    truncate -s 48  /home/user/source_data/scripts/cleanup.sh
+
+    # Make the shell script executable (not strictly required by tests,
+    # but sensible for realism)
+    chmod 755 /home/user/source_data/scripts/cleanup.sh
+
+    # Ensure world-readable access so the non-root user inside the
+    # execution environment can read everything
+    chmod -R a+rX /home/user/source_data
+
+%runscript
+    exec /bin/bash
+
+%labels
+    Author backup-task-preparation
+    Description "Container with initial dataset and pytest installed for checksum verification task."
+
+%help
+    This container sets up the initial filesystem state for the “backup
+    integrity” exercise. It installs pytest and prepares the directory
+    /home/user/source_data with the exact files and byte-sizes expected
+    by the automated grader.

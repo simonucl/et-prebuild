@@ -1,0 +1,31 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python & pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Prepare initial filesystem state for the exercise
+    mkdir -p /home/user/diagnostics
+
+    # Create the application log with exact content "abc" (no trailing newline)
+    printf 'abc' > /home/user/diagnostics/app.log
+    chmod 0644 /home/user/diagnostics/app.log
+
+    # The student must write to this directory, so make it writable
+    chmod 0777 /home/user/diagnostics
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export PYTHONIOENCODING=UTF-8

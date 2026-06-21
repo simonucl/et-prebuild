@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        tar \
+        gzip \
+        coreutils && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial state required by the task
+    # ------------------------------------------------------------------
+    # Create the user home and hardening directory
+    mkdir -p /home/user/hardening
+
+    # Ensure readable/executable permissions for any UID that will run
+    chmod 755 /home/user
+    chmod 755 /home/user/hardening
+
+    # Create the configuration files with EXACT contents (including trailing LF)
+    printf 'PasswordAuthentication no\nPermitRootLogin no\n' \
+        > /home/user/hardening/sshd_config
+
+    printf 'net.ipv4.ip_forward = 0\nkernel.randomize_va_space = 2\n' \
+        > /home/user/hardening/sysctl.conf
+
+    # Set sensible permissions
+    chmod 644 /home/user/hardening/sshd_config /home/user/hardening/sysctl.conf
+
+%environment
+    # No special environment needed; inherit from host
+
+%runscript
+    exec /bin/bash "$@"

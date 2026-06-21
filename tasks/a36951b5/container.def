@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # -------------------------------------------------------------------------
+    # Base tools
+    # -------------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # -------------------------------------------------------------------------
+    # Create regular user “user” (UID 1000) with a home directory
+    # -------------------------------------------------------------------------
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 -U -s /bin/bash user
+    fi
+
+    # -------------------------------------------------------------------------
+    # Prepare initial filesystem state for the assignment
+    # -------------------------------------------------------------------------
+    # Directories
+    mkdir -p /home/user/db_dumps
+    mkdir -p /home/user/backups
+
+    # SQL dump files with deterministic contents & sizes
+    printf 'CREATE TABLE customers(id INT, name TEXT);\n'  > /home/user/db_dumps/customers.sql
+    printf 'CREATE TABLE orders(id INT,  total NUMERIC);\n' > /home/user/db_dumps/orders.sql
+    printf 'CREATE TABLE products(id INT, price NUMERIC);\n' > /home/user/db_dumps/products.sql
+
+    # Ensure ownership & permissions
+    chown -R user:user /home/user
+    chmod 755 /home/user
+    chmod 755 /home/user/db_dumps
+    chmod 755 /home/user/backups
+
+%environment
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%labels
+    Author "backup-task-preparer"
+    Description "Ubuntu 22.04 container with initial state for the database backup assignment."

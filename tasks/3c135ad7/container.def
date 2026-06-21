@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # ---- Packages ------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        git \
+        python3 \
+        python3-pip \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    pip install --no-cache-dir pytest
+
+    # ---- Initial directory structure -----------------------------------------
+    mkdir -p /home/user/infra-config/config
+
+    # ---- Initialise Git repository -------------------------------------------
+    cd /home/user/infra-config
+    git init --initial-branch=main .
+
+    # Configure repository-local identity so future commits succeed
+    git config user.name  "Initial Committer"
+    git config user.email "committer@example.com"
+
+    # Safe directory setting so any UID can work in the repo
+    git config --system --add safe.directory /home/user/infra-config
+
+    # ---- Create initial tracked file -----------------------------------------
+    cat > config/serviceA.yml <<'EOF'
+service_name: serviceA
+replicas: 3
+image: serviceA:1.2.0
+EOF
+
+    git add config/serviceA.yml
+    git commit -m "Initial commit for serviceA configuration"
+
+    # ---- Permissions ---------------------------------------------------------
+    # Make sure the exercise performer (unknown UID) can read & write
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default PATH but state explicitly for clarity
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%runscript
+    # Default runscript – simply execute the given command
+    exec "$@"

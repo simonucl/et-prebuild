@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Configure apt and install required packages
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        procps \
+        tar \
+        gzip \
+        coreutils
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test-harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory layout and sample files for the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/sample_data
+
+    # Create the two required text files with exact content
+    printf 'alpha\n' > /home/user/sample_data/file_alpha.txt
+    printf 'beta\n'  > /home/user/sample_data/file_beta.txt
+
+    # Set safe permissions so that any unprivileged user can read/write
+    chmod 755 /home /home/user /home/user/sample_data
+    chmod 644 /home/user/sample_data/file_alpha.txt /home/user/sample_data/file_beta.txt
+
+%runscript
+    chmod 755 /home/user
+
+    echo "This container is intended for automated testing. Execute your shell commands inside an interactive shell:"
+    echo "    apptainer shell <container>"
+    echo "Then follow the instructions provided in the task description."
+
+%labels
+    Author      backup-operator-example
+    Description Container image pre-populated with sample data for backup/restore task
+
+%help
+    This Apptainer image contains:
+      • /home/user/sample_data/file_alpha.txt  (content: 'alpha\\n')
+      • /home/user/sample_data/file_beta.txt   (content: 'beta\\n')
+    plus all standard Linux tools needed for the assignment, and pytest
+    for the automated grading suite.

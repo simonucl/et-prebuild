@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #------------------------------------------------------------------
+    # Base OS packages and Python tooling
+    #------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        iputils-ping
+    pip3 install --no-cache-dir pytest
+
+    #------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    #------------------------------------------------------------------
+    # Ensure the home hierarchy exists
+    mkdir -p /home/user
+
+    # 1. Pre-existing device configuration files
+    mkdir -p /home/user/device_configs
+
+    cat > /home/user/device_configs/router1.cfg <<'EOF'
+hostname Router1
+interface eth0
+ ip address 10.0.0.1/24
+!
+EOF
+
+    cat > /home/user/device_configs/router2.cfg <<'EOF'
+hostname Router2
+interface eth0
+ ip address 10.0.1.1/24
+!
+EOF
+
+    # 2. Top-level backup directory (empty at start)
+    mkdir -p /home/user/net_backups
+
+    #------------------------------------------------------------------
+    # Permissions: make sure the non-root runtime user can work
+    #------------------------------------------------------------------
+    chmod 755 /home/user
+    chmod -R 755 /home/user/device_configs
+    chmod -R 777 /home/user/net_backups
+
+%environment
+    export PYTHONIOENCODING=utf-8
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%labels
+    Author network-engineer-task
+    Description "Initial state container for the quick network backup exercise"

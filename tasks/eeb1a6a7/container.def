@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author  MLOps-Exercise-Builder
+    Description  Base image that provides the initial filesystem state and tooling for the “experiment registration” task.
+
+%post
+    set -e
+
+    # --- System packages ----------------------------------------------------
+    apt-get update -y
+    apt-get install -y python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # --- Python tooling ------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # --- Directory hierarchy -------------------------------------------------
+    mkdir -p /home/user/mlops/configs
+    mkdir -p /home/user/mlops/registry
+    mkdir -p /home/user/mlops/logs    # log file must NOT exist yet, only the dir
+
+    # --- Initial YAML file ---------------------------------------------------
+    cat > /home/user/mlops/configs/experiments.yaml <<'EOF'
+experiments:
+  - id: 1
+    name: baseline_cnn
+    dataset: mnist
+    accuracy: 0.975
+    artifact_uri: s3://ml-bucket/experiments/1
+  - id: 2
+    name: mobilenet_v2
+    dataset: cifar10
+    accuracy: 0.855
+    artifact_uri: s3://ml-bucket/experiments/2
+EOF
+
+    # --- Initial TOML file ---------------------------------------------------
+    cat > /home/user/mlops/registry/artifacts.toml <<'EOF'
+# MLOps experiment artifact registry
+[baseline_cnn]
+uri = "s3://ml-bucket/experiments/1"
+
+[mobilenet_v2]
+uri = "s3://ml-bucket/experiments/2"
+EOF
+
+    # --- Permissions ---------------------------------------------------------
+    # Grant read/write so the unprivileged runtime user can modify these files.
+    chmod -R a+rw /home/user/mlops
+
+%environment
+    chmod 755 /home/user
+
+    # Default environment is sufficient; nothing to override.
+    :
+
+%runscript
+    # Start an interactive shell by default.
+    exec /bin/bash "$@"

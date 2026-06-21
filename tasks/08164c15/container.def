@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        curl
+
+    # Install pytest for the automated grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare legacy monitoring tools expected by the student and tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/legacy_tools
+
+    # hosts.lst – exact, ordered list of hosts
+    cat > /home/user/legacy_tools/hosts.lst <<'EOF'
+127.0.0.1
+localhost
+blackhole.local
+EOF
+    chmod 0644 /home/user/legacy_tools/hosts.lst
+
+    # run_checks.sh – vintage reachability probe (read-only production code)
+    cat > /home/user/legacy_tools/run_checks.sh <<'EOF'
+#!/usr/bin/env bash
+#
+# Vintage reachability probe used by ops long ago.
+# Usage: ./run_checks.sh <host>
+# It prints exactly one line and returns a meaningful exit code.
+HOST="$1"
+
+case "$HOST" in
+  "127.0.0.1")
+        echo "STATUS:UP LATENCY_MS:1"
+        exit 0
+        ;;
+  "localhost")
+        echo "STATUS:UP LATENCY_MS:2"
+        exit 0
+        ;;
+  *)
+        echo "STATUS:DOWN"
+        exit 2
+        ;;
+esac
+EOF
+    chmod 0755 /home/user/legacy_tools/run_checks.sh
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is available via the python3 command
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Container Build Automation"
+    Description="Environment for the legacy monitoring consolidation task with pytest pre-installed."

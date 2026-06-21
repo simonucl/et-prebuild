@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------------------
+    # Set up the initial directory tree that the assignment expects
+    # ------------------------------------------------------------------------------
+
+    # Ensure /home/user exists and is writable by whoever runs the container
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Create the sample project directory and files
+    mkdir -p /home/user/project
+
+    echo "Sample file 1" > /home/user/project/file1.txt
+    echo "Top secret"   > /home/user/project/secret.txt
+
+    # Set the exact permission bits required by the tests
+    chmod 0644 /home/user/project/file1.txt
+    chmod 0600 /home/user/project/secret.txt
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python and pip are on PATH (they are by default, but keep it explicit)
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    echo "Container for the permissions auditing exercise."
+    echo "Invoke your preferred shell or command to begin."

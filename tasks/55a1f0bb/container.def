@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update OS and install Python + pytest
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare filesystem required for the “status-summary” exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/api_test/logs
+    mkdir -p /home/user/api_test/analysis
+
+    # Create the integration log with the exact expected content
+    cat > /home/user/api_test/logs/integration.log <<'EOF'
+2024-04-10T12:00:00Z  GET    /v1/users         200
+2024-04-10T12:00:01Z  POST   /v1/users         201
+2024-04-10T12:00:02Z  GET    /v1/users/123     200
+2024-04-10T12:00:03Z  DELETE /v1/users/123     204
+2024-04-10T12:00:04Z  GET    /v1/unknown       404
+2024-04-10T12:00:05Z  PUT    /v1/users/123     500
+2024-04-10T12:00:06Z  PATCH  /v1/users/123     200
+2024-04-10T12:00:07Z  GET    /v1/profile       401
+EOF
+
+    # Permissions: log is read-only; analysis dir is world-writable
+    chmod 0644 /home/user/api_test/logs/integration.log
+    chmod 0777 /home/user/api_test/analysis
+
+    # Ensure parent directories are accessible by any user
+    chmod 0755 /home/user
+    chmod 0755 /home/user/api_test
+    chmod 0755 /home/user/api_test/logs
+
+%environment
+    chmod 755 /home/user
+
+    # Keep environment minimal; Python should already be on PATH
+    export PYTHONUNBUFFERED=1

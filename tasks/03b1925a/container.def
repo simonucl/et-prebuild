@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest for the grader
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem expected by the assignment tests
+    # ------------------------------------------------------------------
+    USER_HOME="/home/user"
+    INVOICE_DIR="${USER_HOME}/cloud_invoices"
+
+    # Create required directories
+    mkdir -p "${INVOICE_DIR}"
+
+    # Create the two CSV files with **exact** contents (no trailing newlines)
+    printf 'abc'   > "${INVOICE_DIR}/AWS_2023-07.csv"
+    printf 'hello' > "${INVOICE_DIR}/GCP_2023-07.csv"
+
+    # Ensure appropriate permissions so an unprivileged agent can read them
+    chmod 755 "${USER_HOME}"
+    chmod 755 "${INVOICE_DIR}"
+    chmod 644 "${INVOICE_DIR}/AWS_2023-07.csv" \
+              "${INVOICE_DIR}/GCP_2023-07.csv"
+
+%environment
+    chmod 755 /home/user
+
+    # Use Python 3 as default if needed
+    export PYTHONIOENCODING=UTF-8
+
+%labels
+    Author FinOps-Setup-Script
+    Description "Environment for FinOps checksum verification assignment"
+    Version "1.0"
+
+%runscript
+    echo "This container is prepared for the FinOps analyst assignment."
+    echo "Invoke your solution script or open a shell to begin."
+    exec "$@"

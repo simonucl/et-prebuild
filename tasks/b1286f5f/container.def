@@ -1,0 +1,72 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package lists and install Python and pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        build-essential
+
+    # Install pytest for the future grading phase
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the dedicated non-root user ‘user’ with home /home/user
+    # ------------------------------------------------------------------
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g user -s /bin/bash user
+
+    # ------------------------------------------------------------------
+    # Prepare the directory hierarchy and files required by the tests
+    # ------------------------------------------------------------------
+    # World-writable objects
+    mkdir -p /home/user/projects/test_project
+    mkdir -p /home/user/www
+
+    echo "Public world-writable file" > /home/user/public.txt
+    : > /home/user/projects/test_project/tmp_data.log   # zero-length file
+
+    # Non-world-writable objects
+    echo "Personal notes" > /home/user/notes.txt
+    echo 'print("Hello World")' > /home/user/projects/test_project/main.py
+    mkdir -p /home/user/projects/private_secret
+
+    # ------------------------------------------------------------------
+    # Set the required permission bits
+    # ------------------------------------------------------------------
+    chmod 0666 /home/user/public.txt
+    chmod 0666 /home/user/projects/test_project/tmp_data.log
+    chmod 0777 /home/user/www
+
+    chmod 0644 /home/user/notes.txt
+    chmod 0644 /home/user/projects/test_project/main.py
+    chmod 0700 /home/user/projects/private_secret
+
+    # Make sure everything under /home/user is owned by the ‘user’ account
+    chown -R user:user /home/user
+
+    # The audit directory MUST NOT exist before the agent runs, so we do
+    # not create /home/user/audit here.
+
+    # Clean up apt caches to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python3 is the default ‘python’ command for convenience
+    export PATH=/home/user/.local/bin:$PATH
+    alias python=python3
+
+%labels
+    Author spec.generated
+    Description "Container for quick permissions audit task. Contains baseline filesystem for the grading tests."
+
+%runscript
+    echo "Container built for the world-writable audit task."

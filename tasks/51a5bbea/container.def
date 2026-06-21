@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author  Checkpoint
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Basic tooling and Python
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        locales \
+        tzdata
+    rm -rf /var/lib/apt/lists/*
+
+    # Generate UTF-8 locale
+    locale-gen en_US.UTF-8
+
+    # Latest pip and pytest
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Seed the expected backup directory and placeholder SQL dump files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data/backups
+
+    touch /home/user/data/backups/backup-20240115T231500Z.sql
+    touch /home/user/data/backups/backup-20240116T231500Z.sql
+    touch /home/user/data/backups/backup-20240117T231500Z.sql
+
+    # Make sure they are zero-byte (truncate if needed)
+    : > /home/user/data/backups/backup-20240115T231500Z.sql
+    : > /home/user/data/backups/backup-20240116T231500Z.sql
+    : > /home/user/data/backups/backup-20240117T231500Z.sql
+
+    # ------------------------------------------------------------------
+    # Permissions so the non-root agent can work under /home/user
+    # ------------------------------------------------------------------
+    # Allow writes inside /home/user and the verification subdir
+    chmod 1777 /home/user
+    mkdir -p /home/user/backup_verification
+    chmod 777 /home/user/backup_verification
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8

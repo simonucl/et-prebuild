@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ########## Base tooling ##########
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        locales \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Ensure UTF-8 locale (helpful for pytest and general tooling)
+    locale-gen en_US.UTF-8
+    update-locale LANG=en_US.UTF-8
+
+    ########## Python testing framework ##########
+    pip3 install --no-cache-dir pytest
+
+    ########## Exercise starting state ##########
+    # Create working directory for the student
+    mkdir -p /home/user/policies
+    chmod 0777 /home/user          # Student must be able to create /home/user/audit later
+
+    # policy-001.yaml
+cat >/home/user/policies/policy-001.yaml <<'EOF'
+id: policy-001
+name: ensure-ssh-protocol-2
+enabled: true
+EOF
+
+    # policy-002.yaml
+cat >/home/user/policies/policy-002.yaml <<'EOF'
+id: policy-002
+name: disallow-root-login
+enabled: false
+EOF
+
+    # policy-003.yaml (no "enabled" key intentionally)
+cat >/home/user/policies/policy-003.yaml <<'EOF'
+id: policy-003
+name: enforce-password-complexity
+# NOTE: intentionally missing "enabled" key
+EOF
+
+    # Ensure the policy files are readable
+    chmod 0644 /home/user/policies/policy-*.yaml
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=en_US.UTF-8
+    export LANG=en_US.UTF-8
+
+%runscript
+    echo "Container for DevSecOps policy-as-code exercise."
+    echo "Enter the container and follow the instructions to generate the audit log."

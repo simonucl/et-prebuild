@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Ensure non-interactive apt operations
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package index and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the grader test-suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the filesystem initial state expected by the tests
+    # ------------------------------------------------------------------
+
+    # Create the home directory for the exercise and make it writeable
+    mkdir -p /home/user
+    chmod 0777 /home/user        # allow the unprivileged runtime user to write
+
+    # Pre-populate the internal container registry
+    REGISTRY=/home/user/container_repo
+    mkdir -p "${REGISTRY}"
+
+    touch "${REGISTRY}/backend_2.4.sif"
+    touch "${REGISTRY}/frontend_1.8.sif"
+    touch "${REGISTRY}/nginx_1.21.sif"
+    touch "${REGISTRY}/worker_2.4.sif"
+
+    chmod 0644 "${REGISTRY}"/*.sif
+
+    # Do NOT create /home/user/deployment_logs or the inventory file here;
+    # those are for the student/agent to generate.
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure python and pip are easily accessible
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

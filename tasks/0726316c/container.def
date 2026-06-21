@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ---------------------------------------------------------------------
+    # 1. Install Python and pytest
+    # ---------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ---------------------------------------------------------------------
+    # 2. Create directory hierarchy with correct permissions
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/repos/solvers
+    chmod 755 /home/user
+    chmod 755 /home/user/repos
+    chmod 755 /home/user/repos/solvers
+
+    # ---------------------------------------------------------------------
+    # 3. Create the artefact files with exact byte sizes (sparse files)
+    # ---------------------------------------------------------------------
+    cd /home/user/repos/solvers
+
+    truncate -s 1536000   glpk-5.0-linux-x86_64.tar.gz
+    truncate -s 1658880   glpk-5.1-linux-x86_64.tar.gz
+    truncate -s 307200000 cplex-12.10-linux-x86_64.bin
+    truncate -s 319979520 cplex-22.1-linux-x86_64.bin
+    truncate -s 286720000 gurobi-9.1.1-linux-x86_64.tar.gz
+    truncate -s 325058560 gurobi-10.0.0-linux-x86_64.tar.gz
+
+    chmod 644 /home/user/repos/solvers/*
+
+%environment
+    export LC_ALL=C.UTF-8
+
+%labels
+    Author="auto-generated"
+    Description="Environment for solver curation task with pytest pre-installed"
+
+%help
+    This container provides the initial state for the solver curation task.
+    The repository with solver artefacts is located at /home/user/repos/solvers.

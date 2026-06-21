@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author example_builder
+    Description "Environment for FPS summary task – provides raw data file and pytest"
+
+%post
+    set -e
+
+    # Basic utilities and Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------
+    # Prepare filesystem layout expected by the assignment
+    # --------------------------------------------------------------------
+    # Create the directory tree
+    mkdir -p /home/user/perf/raw
+
+    # Populate the raw FPS sample file with ground-truth data
+    cat >/home/user/perf/raw/fps_samples.log <<'EOF'
+59
+60
+61
+57
+62
+60
+58
+EOF
+
+    # Permissions:
+    #  - Allow non-root users to create /home/user/perf/report later on.
+    #  - Keep raw data readable but not world-writable.
+    chmod 777 /home/user/perf          # agent needs write access here
+    chmod 755 /home/user/perf/raw
+    chmod 644 /home/user/perf/raw/fps_samples.log
+
+    # Ensure /home/user exists and is accessible
+    chmod 755 /home
+    if ! getent passwd user >/dev/null 2>&1; then
+        useradd -m -d /home/user -s /bin/bash user
+    fi
+
+    # Clean up APT caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    echo "Container for FPS summary task.  See the assignment instructions for what to do next."
+
+%test
+    echo "Basic smoke test: Python and pytest should be available."
+    python3 - <<'PY'
+import sys, pytest, json, subprocess, pathlib
+print("Python version:", sys.version)
+print("pytest version:", pytest.__version__)
+PY

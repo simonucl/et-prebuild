@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update apt index and install Python and pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the automated grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the filesystem layout expected by the assignment tests.
+    # ------------------------------------------------------------------
+    # Create the /home/user directory (it must exist, be a directory,
+    # and be write-able by any non-privileged runtime user).
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Do NOT create /home/user/support_diag or any of the files that
+    # the student is supposed to generate.  The tests explicitly check
+    # that they are absent at startup.
+
+    # Clean up apt caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # The HOME variable is intentionally left untouched so that Apptainer
+    # can inherit the host user’s HOME.  We only make sure that /home/user
+    # exists (done in %post).
+    export PATH="/usr/local/bin:/usr/bin:/bin"
+
+%runscript
+    echo "Container for the 'support_diag' assignment."
+    echo "Activate an interactive shell to begin."

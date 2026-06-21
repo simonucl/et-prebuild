@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python and pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the automated tests
+    # ------------------------------------------------------------------
+
+    # Create the required directory structure
+    mkdir -p /home/user/build-logs
+
+    # Create the reference log file with exact, newline-terminated content
+    cat > /home/user/build-logs/release_2023-05-18.log <<'EOF'
+[2023-05-18 14:22:01] [INFO]  [compile] Compilation successful
+[2023-05-18 14:22:05] [WARN]  [test]    Unit test took longer than expected
+[2023-05-18 14:22:10] [ERROR] [compile] Missing semicolon in source/foo.c
+[2023-05-18 14:22:15] [INFO]  [package] Packaging artifacts
+[2023-05-18 14:22:20] [ERROR] [deploy]  Cannot connect to production server
+[2023-05-18 14:22:25] [INFO]  [deploy]  Connection re-established
+[2023-05-18 14:22:30] [ERROR] [deploy]  Deployment aborted due to previous errors
+[2023-05-18 14:22:35] [INFO]  [cleanup] Temporary files removed
+[2023-05-18 14:22:40] [WARN]  [deploy]  Retrying deployment
+[2023-05-18 14:22:45] [ERROR] [deploy]  Retry failed, manual intervention required
+EOF
+
+    # Ensure appropriate permissions so the unprivileged agent can read/write
+    chmod 755 /home/user /home/user/build-logs
+    chmod 644 /home/user/build-logs/release_2023-05-18.log
+
+%environment
+    # Ensure Python is available on PATH
+    export PATH="/usr/bin:$PATH"
+
+%labels
+    Author="Automated build for task: filter deploy errors"
+    Description="Provides the initial state and pytest for the log-filtering task."

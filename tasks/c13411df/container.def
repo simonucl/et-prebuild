@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #############################
+    # Basic system dependencies #
+    #############################
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    pip3 install --no-cache-dir pytest
+
+    #############################
+    # Create initial filesystem #
+    #############################
+    # Home directory for the exercise
+    mkdir -p /home/user
+
+    # Storage hierarchy
+    mkdir -p /home/user/storage/logs
+    chmod 755 /home/user/storage/logs      # logs directory permissions 0755
+    chmod 755 /home/user/storage           # make sure storage dir itself is accessible
+
+    #############################
+    # Prepare volumes.csv file  #
+    #############################
+    cat <<'EOF' > /home/user/storage/volumes.csv
+hostname,mount_point,disk_total_gb,disk_used_gb
+alpha,/data,500,325
+alpha,/backup,1000,100
+bravo,/data,750,629
+bravo,/logs,250,77
+charlie,/var,600,420
+EOF
+    chmod 644 /home/user/storage/volumes.csv   # file permissions 0644
+
+%environment
+    # Ensure python and pip are on PATH for whoever runs inside the container
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author storage-setup
+    Description "Environment for storage usage summary exercise with pytest pre-installed."
+
+%help
+    This Apptainer image provides the initial state required for the
+    “storage usage summary” task:
+      • /home/user/storage/volumes.csv with predefined content
+      • /home/user/storage/logs directory (0755)
+      • pytest is available for test execution

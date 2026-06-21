@@ -1,0 +1,22 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python along with pip
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grading tests
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the expected home directory exists
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Clean up APT cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*

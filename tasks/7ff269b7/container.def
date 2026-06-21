@@ -1,0 +1,32 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Ensure required packages are present
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        iputils-ping \
+        traceroute \
+        ca-certificates
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected user home directory with proper permissions
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Leave /home/user/archive_logs absent so the student can create it
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Make sure user-installed Python tools (if any) are found first
+    export PATH="/home/user/.local/bin:${PATH}"
+    export PYTHONUNBUFFERED=1

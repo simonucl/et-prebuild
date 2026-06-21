@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author benchmark-setup
+
+%post
+    set -eux
+
+    # Update package index and install required system packages.
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        time \
+        ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness.
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the workflow-timing exercise.
+    # ------------------------------------------------------------------
+
+    # Create user home and scripts directory.
+    mkdir -p /home/user/scripts
+
+    # Provide the existing workflow script.
+    cat >/home/user/scripts/workflow.sh <<'EOF'
+#!/usr/bin/env bash
+# Simulated workflow
+sleep 0.05
+echo "Workflow step completed"
+EOF
+
+    # Ensure correct permissions:
+    chmod 755 /home/user/scripts
+    chmod 755 /home/user/scripts/workflow.sh
+
+    # Allow the (non-root) execution user to create new directories under
+    # /home/user later on.
+    chmod 777 /home/user
+
+%environment
+    # Keep a predictable PATH that includes standard locations.
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    # By default, just execute whatever command is supplied.
+    exec "$@"

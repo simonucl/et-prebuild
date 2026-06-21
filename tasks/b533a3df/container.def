@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip
+
+    # Install pytest (needed by the autograder)
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the exercise
+    # ------------------------------------------------------------------
+
+    # Dataset directory
+    mkdir -p /home/user/ml_data/raw
+
+    # images_train.csv
+    cat > /home/user/ml_data/raw/images_train.csv <<'EOF'
+id,label
+1,cat
+2,dog
+EOF
+
+    # images_val.csv
+    cat > /home/user/ml_data/raw/images_val.csv <<'EOF'
+id,label
+3,cat
+4,dog
+EOF
+
+    # labels.json
+    cat > /home/user/ml_data/raw/labels.json <<'EOF'
+{"cat": 0, "dog": 1}
+EOF
+
+    # Make sure everything is readable by the unprivileged runtime user
+    chmod -R a+rX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special needed; keep the default HOME bind
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%help
+    Container for the "dataset freeze & checksum" exercise.
+    The initial raw dataset is located in /home/user/ml_data/raw.
+    Pytest is installed so the grading harness can verify the initial state.

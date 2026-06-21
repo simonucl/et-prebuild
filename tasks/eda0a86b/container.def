@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Ensure /home/user exists and is writable
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Create the backup directory hierarchy
+    BACKUP_DIR="/home/user/backups/2023-05-10"
+    mkdir -p "${BACKUP_DIR}"
+    chmod -R 0777 /home/user/backups
+
+    # Create the preset manifest file with exactly six newline-terminated lines
+    cat > "${BACKUP_DIR}/backup_manifest_20230510.txt" <<'EOF'
+# Backup Manifest generated 2023-05-10
+/etc/passwd:2048
+/etc/group:1024
+/var/log/syslog:512000
+/home/user/data.txt:4096
+/usr/local/bin/script.sh:8192
+EOF
+    chmod 0666 "${BACKUP_DIR}/backup_manifest_20230510.txt"
+
+    # Install Python and pytest for the grader
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Do not override HOME; rely on Apptainer's default bind.
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author backup-admin-scenario
+    Description "Environment for backup manifest conversion task with pytest pre-installed."
+
+%help
+    This container supplies the initial state for the “backup manifest → CSV”
+    exercise. It provides:
+      • /home/user/backups/2023-05-10/backup_manifest_20230510.txt
+      • pytest for automated grading

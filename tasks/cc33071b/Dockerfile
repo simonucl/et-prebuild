@@ -1,0 +1,49 @@
+FROM ubuntu:22.04
+
+# Install Python and pytest
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir pytest
+
+# Create an unprivileged user with home directory /home/user
+RUN if ! getent group 1000 >/dev/null; then \
+        groupadd -g 1000 user; \
+    fi && \
+    if ! id -u 1000 >/dev/null 2>&1; then \
+        useradd -m -u 1000 -g 1000 user; \
+    fi
+
+# Prepare the legacy cloud configuration
+RUN install -d -m 0755 /home/user/cloud
+
+RUN cat > /home/user/cloud/services.ini <<'EOF'
+[development]
+db=dev-db.internal
+cache=dev-cache.internal
+api=dev-api.internal
+
+[staging]
+db=stage-db.internal
+cache=stage-cache.internal
+api=stage-api.internal
+
+[production]
+db=prod-db.internal
+cache=prod-cache.internal
+api=prod-api.internal
+search=prod-search.internal
+worker=prod-worker.internal
+EOF
+
+# Set correct permissions
+RUN chmod 0644 /home/user/cloud/services.ini && \
+    chown -R 1000:1000 /home/user || true
+
+RUN chmod 755 /home/user
+
+ENV LC_ALL=C.UTF-8

@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # System packages
+    # ------------------------------------------------------------------
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # ------------------------------------------------------------------
+    # Python testing utilities
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial repository state
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/user-accounts
+
+    # VERSION file
+    cat > /home/user/user-accounts/VERSION <<'EOF'
+1.5.2
+EOF
+
+    # CHANGELOG.md
+    cat > /home/user/user-accounts/CHANGELOG.md <<'EOF'
+## [1.5.2] - 2023-09-28
+- Improve password hashing
+
+## [1.5.1] - 2023-09-20
+- Add MFA enrolment command
+
+## [1.5.0] - 2023-09-15
+- Initial public release
+EOF
+
+    # Ensure non-root users can modify the project tree during testing
+    chmod -R 777 /home/user/user-accounts
+
+    # Clean up APT caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=UTF-8

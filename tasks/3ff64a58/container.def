@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ############################################################
+    # 1. Install Python tooling (pytest must be available)     #
+    ############################################################
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ############################################################
+    # 2. Create initial filesystem layout for the exercise     #
+    ############################################################
+    # Home area
+    mkdir -p /home/user
+
+    # Permanent, read-only dump storage
+    ARCHIVES=/home/user/db_archives
+    mkdir -p "${ARCHIVES}"
+
+    # Four placeholder dump files (empty, correct names)
+    touch "${ARCHIVES}"/prod_20230918.sql.gz
+    touch "${ARCHIVES}"/prod_20230919.sql.gz
+    touch "${ARCHIVES}"/stg_20230918.sql.gz
+    touch "${ARCHIVES}"/stg_20230919.sql.gz
+
+    # Short-term working area
+    BACKUPS=/home/user/db_backups
+    mkdir -p "${BACKUPS}"
+
+    # Two *obsolete* symbolic links that still reference the 20230918 dumps
+    ln -s "${ARCHIVES}/prod_20230918.sql.gz"  "${BACKUPS}/latest_prod"
+    ln -s "${ARCHIVES}/stg_20230918.sql.gz"   "${BACKUPS}/latest_staging"
+
+    ############################################################
+    # 3. Set sane permissions so the unprivileged agent can    #
+    #    perform the task (read archives, write backups)       #
+    ############################################################
+    chmod 755  /home/user
+    chmod 755  "${ARCHIVES}" "${BACKUPS}"
+    chmod 644  "${ARCHIVES}"/*.sql.gz
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author="Container prepared for PostgreSQL symlink tidy-up task"
+    Description="Provides initial state and pytest for automated assessment."
+
+%help
+    This container sets up the starting filesystem conditions for the
+    “tidy-up PostgreSQL dump area” exercise and includes pytest for the
+    accompanying test suites.

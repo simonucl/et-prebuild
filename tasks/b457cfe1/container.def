@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python tooling
+    apt-get update -y
+    apt-get install -y python3 python3-pip
+
+    # Install pytest for the forthcoming tests
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state required by the exercise
+    # ------------------------------------------------------------------
+    # 1. Create the /home/user hierarchy
+    mkdir -p /home/user/docs
+
+    # 2. Ensure the writer (the non-root user who will run inside the
+    #    container) can create new items inside /home/user/docs.
+    chmod 777 /home/user/docs
+
+    # 3. Create the empty placeholder PDF
+    touch /home/user/docs/manual_v1.2.pdf
+    chmod 666 /home/user/docs/manual_v1.2.pdf
+
+    # Make absolutely sure the file is empty
+    : > /home/user/docs/manual_v1.2.pdf
+
+%environment
+    chmod 755 /home/user
+
+    # Keep Python output unbuffered for nicer UX during automated runs
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author "GPT-created Apptainer definition for checksum task"

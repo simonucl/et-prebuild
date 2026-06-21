@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install Python tooling and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # 2. Prepare initial filesystem state expected by the tests
+    # ------------------------------------------------------------------
+    # Create /home/user and make it writable for the (non-root) runtime user
+    mkdir -p /home/user
+    chmod 0777 /home/user               # allow the agent (non-root) to write
+
+    # Create logs directory with required permissions
+    mkdir -p /home/user/logs
+    chmod 0755 /home/user/logs
+
+    # Create the two required log files with non-empty content
+    echo "Sample uptime log for 2023-09-14" > /home/user/logs/uptime_2023-09-14_13-45-00.log
+    echo "Sample uptime log for 2023-09-15" > /home/user/logs/uptime_2023-09-15_13-45-00.log
+
+    # Ensure artifacts that the agent must create do NOT exist
+    rm -f /home/user/uptime_latest.log /home/user/uptime_link_check.txt || true
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special needed; keep default environment

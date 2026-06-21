@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #### System packages ####
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        curl \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #### Create application user and home ####
+    # A dedicated non-root user named "user" is created so that UID/GID 1000
+    # inside the image matches the common first unprivileged UID on many hosts.
+    useradd -m -u 1000 -s /bin/bash user
+
+    #### Prepare mock-service directory structure ####
+    mkdir -p /home/user/mock_services
+
+    # auth.json (33 bytes, newline terminated)
+    printf '{"status":"ok","service":"auth"}\n' \
+        > /home/user/mock_services/auth.json
+
+    # user.json (33 bytes, newline terminated)
+    printf '{"status":"ok","service":"user"}\n' \
+        > /home/user/mock_services/user.json
+
+    # payment.json (36 bytes, newline terminated)
+    printf '{"status":"ok","service":"payment"}\n' \
+        > /home/user/mock_services/payment.json
+
+    #### Permissions ####
+    chmod 0755 /home/user/mock_services
+    chmod 0644 /home/user/mock_services/*.json
+
+    # Let any container runtime UID create api_test.log under /home/user
+    chmod 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    #!/bin/bash
+    exec "$@"
+
+%test
+    # Placeholder section required by some build systems; intentionally left empty.
+    true

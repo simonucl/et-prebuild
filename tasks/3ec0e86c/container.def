@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest for the grading test-suite
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the required initial filesystem state
+    # ------------------------------------------------------------------
+
+    # 1. Home directory hierarchy
+    mkdir -p /home/user
+    chmod 0755 /home/user
+
+    # 2. Golden configuration repository
+    CONFIG_REPO="/home/user/config_repository"
+    mkdir -p "${CONFIG_REPO}"
+    chmod 0755 "${CONFIG_REPO}"
+
+    # Helper function to create files with the right mode and content
+    create_conf () {
+        local path="$1"; shift
+        printf "%s\n" "$@" > "${path}"
+    chmod 755 /home/user
+
+        chmod 0644 "${path}"
+    }
+
+    # Create the three configuration files
+    create_conf "${CONFIG_REPO}/app_alpha.conf" \
+        "version=1.0" \
+        "name=alpha"
+
+    create_conf "${CONFIG_REPO}/app_alpha_v2.conf" \
+        "version=2.0" \
+        "name=alpha"
+
+    create_conf "${CONFIG_REPO}/app_beta.conf" \
+        "version=1.0" \
+        "name=beta"
+
+    # Ownership (root inside container); matches current UID when container is executed as root
+    chown -R 0:0 /home/user
+
+%environment
+    # Ensure /home/user is the working directory for convenience
+    export HOME=/home/user
+    export PATH=$PATH:/home/user/.local/bin
+
+%runscript
+    exec "${@}"

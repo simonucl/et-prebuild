@@ -1,0 +1,68 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python 3, pip and pytest
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory structure and log files expected by tests
+    # ------------------------------------------------------------------
+    # Ensure /home/user exists (Apptainer may not create it automatically)
+    mkdir -p /home/user
+
+    # Distributed logs directory
+    LOG_DIR=/home/user/distributed-logs
+    mkdir -p "${LOG_DIR}"
+
+    # 1. frontend.log
+    cat > "${LOG_DIR}/frontend.log" <<'EOF'
+[2023-07-01 10:00:00] Service frontend: HealthCheck: OK
+[2023-07-01 10:05:00] Service frontend: HealthCheck: OK
+[2023-07-01 10:10:00] Service frontend: HealthCheck: FAILED
+[2023-07-01 10:15:00] Service frontend: HealthCheck: OK
+EOF
+
+    # 2. backend.log
+    cat > "${LOG_DIR}/backend.log" <<'EOF'
+[2023-07-01 10:00:00] Service backend: HealthCheck: OK
+[2023-07-01 10:05:00] Service backend: HealthCheck: FAILED
+[2023-07-01 10:10:00] Service backend: HealthCheck: FAILED
+EOF
+
+    # 3. auth.log
+    cat > "${LOG_DIR}/auth.log" <<'EOF'
+[2023-07-01 10:00:00] Service auth: HealthCheck: OK
+[2023-07-01 10:05:00] Service auth: HealthCheck: OK
+EOF
+
+    # 4. payments.log
+    cat > "${LOG_DIR}/payments.log" <<'EOF'
+[2023-07-01 10:00:00] Service payments: HealthCheck: FAILED
+[2023-07-01 10:05:00] Service payments: HealthCheck: OK
+EOF
+
+    # 5. cache.log
+    cat > "${LOG_DIR}/cache.log" <<'EOF'
+[2023-07-01 10:00:00] Service cache: HealthCheck: OK
+[2023-07-01 10:05:00] Service cache: HealthCheck: OK
+EOF
+
+    # Ensure permissions allow non-root users to read/write where needed
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python user base binary path is on PATH (in case tests use it)
+    export PATH="$HOME/.local/bin:$PATH"
+
+%runscript
+    echo "This container is prepared for the distributed logs task."
+    echo "Run your solution script or tests as needed."

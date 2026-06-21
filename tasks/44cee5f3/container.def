@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial project structure and configuration files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/projects/app/config
+
+    # default.yaml (initial state: ONLY the development environment)
+    cat > /home/user/projects/app/config/default.yaml <<'EOF'
+app:
+  name: SampleApp
+  environments:
+    development:
+      host: localhost
+      debug: true
+      version: 1.4
+EOF
+    # Ensure a single trailing newline
+    echo >> /home/user/projects/app/config/default.yaml
+
+    # settings.toml (initial state: ONLY the development table)
+    cat > /home/user/projects/app/config/settings.toml <<'EOF'
+[app]
+name = "SampleApp"
+
+[app.environments.development]
+host = "localhost"
+debug = true
+version = "1.4"
+EOF
+    echo >> /home/user/projects/app/config/settings.toml
+
+    # Make sure regular (non-root) users can modify everything under /home/user
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author          "Built by AI"
+    Description     "Apptainer image for config update task – provides initial files and pytest."

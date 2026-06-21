@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # -------------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # -------------------------------------------------------------------------
+    # Create the dedicated non-root account expected by the tasks/tests
+    useradd -m -s /bin/bash user
+
+    # Inventory directory and starting CSV file
+    install -d -m 755 /home/user/inventory
+
+    cat > /home/user/inventory/ssh_audit.csv <<'EOF'
+serverName,port,permitRootLogin,protocol,extra
+alpha,22,yes,2,ok
+beta,2222,no,2,deprecated
+gamma,22,prohibit-password,2,ok
+delta,22,no,2,ok
+epsilon,2200,yes,2,legacy
+EOF
+
+    chmod 644 /home/user/inventory/ssh_audit.csv
+
+    # Ensure ownership so that the non-root user can read the starting files
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Basic PATH – do not override $HOME
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author "Container prepared for Unix column-manipulation task"
+    Description "Provides starting state and pytest installation for automated grading."
+
+%help
+    This Apptainer image bootstraps the environment for the “Unix column-manipulation”
+    exercise.  It pre-installs pytest (used by the autograder) and places the required
+    starting CSV data in /home/user/inventory.

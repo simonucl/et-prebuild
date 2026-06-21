@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # -----------------------------------------------------------------
+    # Basic tooling and Python test framework
+    # -----------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        iputils-ping \
+        inetutils-traceroute \
+        net-tools
+
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Seed data for the exercise
+    # -----------------------------------------------------------------
+    # Create the directory tree that must already exist when the learner
+    # starts.  Do NOT create any of the artefacts the learner is supposed
+    # to produce.
+    mkdir -p /home/user/site/config
+
+    # Initial CSV: header + two user records (alice, bob) — NO charlie yet.
+    cat > /home/user/site/config/users.csv <<'EOF'
+username,email,role
+alice,alice@example.com,editor
+bob,bob@example.com,viewer
+EOF
+
+    # -----------------------------------------------------------------
+    # Permissions
+    # -----------------------------------------------------------------
+    # The learner will not have root inside the container, so make sure
+    # everything under /home/user is writable by any UID.
+    chmod -R a+rwx /home/user
+    chmod a+rw /home/user/site/config/users.csv
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author  "Container build script"
+    Purpose "Sets up initial state for the CSV + diagnostics exercise"

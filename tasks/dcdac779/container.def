@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author SingularityTaskBuilder
+    Description "Environment for the Active Users shell-command task with pytest."
+
+%post
+    set -e
+
+    # Update and install Python plus build utilities
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    python3 -m pip install --no-cache-dir --upgrade pip setuptools
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial directory structure and seed data file expected
+    # by the automated tests (but NOT the output file to be produced by
+    # the student/agent).
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data/users_db
+
+    cat >/home/user/data/users_db/passwd.txt <<'EOF'
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+alice:x:1000:1000:Alice Admin:/home/alice:/bin/bash
+bob:x:1001:1001:Bob Builder:/home/bob:/bin/zsh
+charlie:x:1002:1002:Charlie Chaplin:/home/charlie:/bin/bash
+dave:x:1003:1003:Dave Developer:/home/dave:/usr/sbin/nologin
+erin:x:1004:1004:Erin Example:/home/erin:/bin/bash
+EOF
+
+    # Ensure /home/user is writable by the unprivileged runtime user
+    chmod 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Use python3 as default python
+    export PYTHONUNBUFFERED=1
+    export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin"
+
+%runscript
+    echo "Container for the Active Users task.  Execute your commands after 'apptainer shell'."

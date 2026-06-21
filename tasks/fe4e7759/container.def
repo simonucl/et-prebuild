@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic packages + pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Create required directories and seed input data
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/device_data
+    mkdir -p /home/user/output
+
+    # Seed devices.csv with the exact contents expected by the tests
+    cat > /home/user/device_data/devices.csv <<'EOF'
+id,location,temp_c,battery_v
+dev-001,roof-nw,68.3,3.7
+dev-002,roof-se,72.4,3.8
+dev-003,lab-south,75.0,3.6
+dev-004,lab-north,70.0,3.9
+dev-005,warehouse,71.2,3.8
+EOF
+
+    # ------------------------------------------------------------------
+    # Permissions: make sure the non-root user that runs the container
+    #              can read/write in /home/user and sub-directories.
+    # ------------------------------------------------------------------
+    chmod -R 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python executables are on PATH (they already should be, but keep it explicit)
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author task-prep-script
+    Description "Environment for CSV-to-JSON data wrangling task with pytest pre-installed."

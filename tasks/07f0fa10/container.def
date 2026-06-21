@@ -1,0 +1,67 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python, pip, jq (handy for the agent) and any
+    # other common utilities.
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip jq \
+        ca-certificates
+
+    # Install pytest for the grading harness.
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state required for the ping summary
+    # exercise.
+    # ------------------------------------------------------------------
+
+    # Ensure /home/user exists.
+    mkdir -p /home/user
+
+    # Create the directory that will hold network-test artefacts.
+    mkdir -p /home/user/net_tests
+
+    # Populate ping_results.csv with the exact, prescribed contents.
+    cat > /home/user/net_tests/ping_results.csv <<'EOF'
+host,status,latency_ms
+8.8.8.8,success,23
+1.1.1.1,success,19
+192.0.2.1,failed,
+example.com,success,45
+EOF
+
+    # Set permissions:
+    #   - net_tests directory: world-writable so the unprivileged agent can
+    #     create/append files.  0777 passes the test (they only require 0755).
+    #   - CSV file: read-only for others, writable by owner (0644).
+    chmod 0777 /home/user/net_tests
+    chmod 0644 /home/user/net_tests/ping_results.csv
+
+    # Make the usual first non-root UID (1000) owner so that the agent—likely
+    # running as UID 1000—has write access without relying on the 0777 bit.
+    chown -R 1000:1000 /home/user || true
+
+    # Clean up APT caches to keep image small.
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special required; keep default environment.
+
+%labels
+    Author ping-summary-task
+    Description "Base image for ping summary exercise with pytest and initial CSV pre-populated."
+
+%help
+    This Apptainer image provides the starting state for the “ping summary”
+    programming task.  It contains:
+      • /home/user/net_tests/ping_results.csv  (input data)
+      • pytest installed for automated grading
+    The directory /home/user/net_tests is writable by an unprivileged user so
+    the agent can create ping_summary.json and action.log.

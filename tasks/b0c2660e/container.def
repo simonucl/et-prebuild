@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip ca-certificates
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the IoT-logs exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/iot_logs
+
+    # device01.log
+    cat > /home/user/iot_logs/device01.log <<'EOF'
+[2023-07-20 12:00:00] INFO  Sensor reading: 23.4
+[2023-07-20 12:01:00] ERROR SENSOR_TIMEOUT E105 Connection lost
+[2023-07-20 12:02:00] WARN  Retry attempt
+[2023-07-20 12:03:00] ERROR LOW_BATTERY E201 Battery level 5%
+    chmod 755 /home/user
+
+[2023-07-20 12:04:00] INFO  Sensor reading: 24.1
+EOF
+
+    # device02.log
+    cat > /home/user/iot_logs/device02.log <<'EOF'
+[2023-07-20 12:10:00] INFO  Boot
+[2023-07-20 12:11:00] ERROR SENSOR_TIMEOUT E105 Connection lost
+[2023-07-20 12:12:00] ERROR OVERHEAT E301 Temperature 85C
+[2023-07-20 12:13:00] ERROR SENSOR_TIMEOUT E105 Connection lost
+[2023-07-20 12:14:00] INFO  Sensor reading: 22
+EOF
+
+    # device03.log
+    cat > /home/user/iot_logs/device03.log <<'EOF'
+[2023-07-20 12:20:00] ERROR LOW_BATTERY E201 Battery level 4%
+[2023-07-20 12:21:00] ERROR OVERHEAT E301 Temperature 87C
+[2023-07-20 12:22:00] WARN  Retry
+[2023-07-20 12:23:00] ERROR LOW_BATTERY E201 Battery level 3%
+EOF
+
+    # Ensure correct permissions (0644) for all log files
+    chmod 0644 /home/user/iot_logs/*.log
+
+    # Optionally set ownership to the conventional non-root UID/GID 1000:1000.
+    # This is not strictly required for the tests, but aligns with the spec.
+    chown -R 1000:1000 /home/user || true
+
+%environment
+    # Make sure python and pip are easily accessible
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for the IoT-logs exercise."
+    echo "Run your commands inside the container as needed."

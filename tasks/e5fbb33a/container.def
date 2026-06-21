@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Maintainer rotation-task-setup
+    Description "Initial state for credential-rotation exercise"
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install Python tooling and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory structure and files
+    # ------------------------------------------------------------------
+    # Create the pipeline directories
+    mkdir -p /home/user/data_pipeline/config
+
+    # Make sure they are writable by any unprivileged user that will run
+    # inside the container.
+    chmod -R a+rwx /home
+    chmod -R a+rwx /home/user
+
+    # Create the initial credentials.env file with the exact
+    # three-line content required by the task specification.
+    cat > /home/user/data_pipeline/config/credentials.env <<'EOF'
+DB_USER=analytics_user
+DB_PASSWORD=oldPass123
+API_KEY=oldApiKey456
+EOF
+
+    # Ensure the file is readable (and modifiable) by non-root users.
+    chmod 644 /home/user/data_pipeline/config/credentials.env
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8

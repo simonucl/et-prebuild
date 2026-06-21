@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author Diagnostic-Bundle-Task
+    Description "Environment with reference log data for the diagnostic bundle exercise"
+
+%post
+    set -e
+
+    #------------------------------------------------------------------
+    # 1. Base OS packages
+    #------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip \
+        tar gzip coreutils \
+        ca-certificates
+
+    #------------------------------------------------------------------
+    # 2. Python tooling for the test-runner
+    #------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    #------------------------------------------------------------------
+    # 3. Prepare reference data under /home/user/support_data/
+    #------------------------------------------------------------------
+    mkdir -p /home/user/support_data/app1/logs
+    mkdir -p /home/user/support_data/app2/logs
+
+    # --- app1 logs ---------------------------------------------------
+    cat >/home/user/support_data/app1/logs/application.log <<'EOF'
+2023-12-25 10:15:00 INFO Application started
+2023-12-25 10:15:05 ERROR Failed to connect to database
+EOF
+
+    cat >/home/user/support_data/app1/logs/error.log <<'EOF'
+[2023-12-25 10:15:05] ERROR Database connection failure
+EOF
+
+    # --- app2 logs ---------------------------------------------------
+    cat >/home/user/support_data/app2/logs/server.log <<'EOF'
+2023-12-25 11:00:00 INFO Server initialized
+EOF
+
+    cat >/home/user/support_data/app2/logs/access.log <<'EOF'
+127.0.0.1 - - [25/Dec/2023:11:00:01 +0000] "GET /health HTTP/1.1" 200 2
+EOF
+
+    #------------------------------------------------------------------
+    # 4. Permissions
+    #   • Directories under support_data: 0755 (read-only for others)
+    #   • Log files: 0644
+    #   • /home/user itself must be writable for the unprivileged agent
+    #------------------------------------------------------------------
+    find /home/user/support_data -type d -exec chmod 0755 {} +
+    find /home/user/support_data -type f -exec chmod 0644 {} +
+    chmod 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure UTF-8 I/O inside the container
+    export PYTHONIOENCODING=UTF-8

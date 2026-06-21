@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python with pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the evaluation framework
+    pip3 install --no-cache-dir pytest
+
+    # ----------------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the tests
+    # ----------------------------------------------------------------------------
+    # Create /home/user and required sub-directory
+    mkdir -p /home/user/admin
+
+    # Set directory permissions to 0755
+    chmod 0755 /home/user/admin
+
+    # Create the initial user_accounts.txt file with *exactly* 4 bytes:  "test"
+    printf 'test' > /home/user/admin/user_accounts.txt
+
+    # Set file permissions to 0644
+    chmod 0644 /home/user/admin/user_accounts.txt
+
+    # (Optional) give ownership to UID 1000 so the non-root runtime user
+    # can read the files without restriction.  If UID 1000 does not exist in
+    # this build context, it will still be recorded numerically.
+    chown -R 1000:1000 /home/user || true
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special to export; keep default HOME binding behaviour
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

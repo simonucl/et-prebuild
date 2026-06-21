@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic utilities and Python tooling
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        lsof \
+        curl \
+        ca-certificates
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # Create the dedicated user with a predictable UID/GID (1000)
+    useradd -m -u 1000 -s /bin/bash user
+
+    # ---------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the automated tests
+    # ---------------------------------------------------------------------
+
+    # 1. /home/user/backups with two sample backup files
+    mkdir -p /home/user/backups
+    touch /home/user/backups/full_2024_03_25.sql
+    touch /home/user/backups/incremental_2024_03_26.sql.gz
+
+    # 2. /home/user/backup_server (empty directory)
+    mkdir -p /home/user/backup_server
+
+    # Ownership and permissions (exactly 0755 for directories)
+    chown -R 1000:1000 /home/user
+    chmod 0755 /home/user/backups
+    chmod 0755 /home/user/backup_server
+
+    # Regular file permissions
+    chmod 0644 /home/user/backups/full_2024_03_25.sql
+    chmod 0644 /home/user/backups/incremental_2024_03_26.sql.gz
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+# No runscript is defined; the student/agent will execute commands interactively.

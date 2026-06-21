@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-venv \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel
+
+    # Install pytest for the assessment framework
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the expected home directory exists and is accessible
+    mkdir -p /home/user
+    chmod 0755 /home/user
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure “python3” and “pip3” are easily accessible
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author  "Container build script for perf_venv task"
+
+%help
+    This Apptainer image provides a minimal Ubuntu 22.04 environment with:
+      • Python 3 and the “venv” module
+      • pip and setuptools/wheel
+      • pytest (required by the automated grader)
+
+    The container purposefully does NOT create /home/user/perf_venv/
+    so that the student can perform the required steps during assessment.

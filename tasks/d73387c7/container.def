@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install Python tooling needed for the tests
+    # ------------------------------------------------------------------
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Create the initial workspace expected by the assignment
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/workspace
+
+    cat >/home/user/workspace/intro.md <<'EOF'
+# Introduction
+Placeholder content for intro.md
+EOF
+
+    cat >/home/user/workspace/api.md <<'EOF'
+# API
+Placeholder content for api.md
+EOF
+
+    cat >/home/user/workspace/style.md <<'EOF'
+# Style Guide
+Placeholder content for style.md
+EOF
+
+    cat >/home/user/workspace/guide.txt <<'EOF'
+Guide content placeholder for guide.txt
+EOF
+
+    # ------------------------------------------------------------------
+    # 3. Make sure the unprivileged runtime user can freely modify
+    #    everything inside /home/user and below.
+    # ------------------------------------------------------------------
+    chmod -R 777 /home/user
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=UTF-8
+
+%labels
+    Author="Apptainer Task Preparer"
+    Description="Environment for directory-reorganisation task; includes pytest and required starter files."

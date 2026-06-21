@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author      ChatGPT
+    Description Environment for the disk-write dd benchmark task
+
+%post
+    set -e
+
+    # Update package lists and install required tools
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        coreutils  # guarantees `dd` is present
+
+    # Install pytest for the assessment framework
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected home directory; leave benchmark dir absent
+    mkdir -p /home/user
+    chmod 0777 /home/user   # ensure the learner (non-root) can write here
+
+    # Clean up apt cache to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    chmod 755 /home/user
+
+    # Default runscript: just execute given command inside the container
+    exec "$@"
+
+%help
+    This Apptainer image provides a minimal Ubuntu 22.04 environment with
+    Python, pytest, and coreutils (for `dd`) pre-installed.
+    The directory /home/user is writable so that learners can complete the
+    disk-write benchmark exercise.

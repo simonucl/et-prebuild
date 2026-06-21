@@ -1,0 +1,67 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic tools + pytest
+    # ------------------------------------------------------------------
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create directory hierarchy expected by the tests
+    # ------------------------------------------------------------------
+    # Base home for the “user”
+    mkdir -p /home/user
+
+    # 1. documents/ with two empty quarterly CSV files
+    mkdir -p /home/user/documents
+    touch /home/user/documents/finance_Q1_2024.csv
+    touch /home/user/documents/finance_Q2_2024.csv
+    chmod 0644 /home/user/documents/finance_Q1_2024.csv
+    chmod 0644 /home/user/documents/finance_Q2_2024.csv
+
+    # 2. reference/ with authoritative SHA-256 sums
+    mkdir -p /home/user/reference
+    cat > /home/user/reference/hashes.sha256 <<'EOF'
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  finance_Q1_2024.csv
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  finance_Q2_2024.csv
+EOF
+    chmod 0644 /home/user/reference/hashes.sha256
+
+    # 3. audit/ directory (log file will be created later by the agent)
+    mkdir -p /home/user/audit
+    chmod 0755 /home/user/audit
+
+    # ------------------------------------------------------------------
+    # Permissions: make sure the calling (host) user can create files
+    #              inside /home/user/audit while keeping mode 0755.
+    #              UID 1000 is the conventional first non-root user.
+    # ------------------------------------------------------------------
+    chown -R 1000:1000 /home/user/audit
+
+    # Give the rest of /home/user sensible default permissions
+    chmod 0755 /home/user
+    chmod 0755 /home/user/documents
+    chmod 0755 /home/user/reference
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python executables are in the PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author checksum-audit-task
+    Description Base image prepared for the checksum audit trail exercise.
+%help
+    This container supplies the initial file system state required for the
+    “checksum audit trail” task and includes pytest for automated testing.

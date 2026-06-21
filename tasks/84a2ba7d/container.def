@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling for the tests
+    apt-get update -y
+    apt-get install -y python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the compliance audit exercise
+    # ------------------------------------------------------------------
+    # Create required directory hierarchy
+    mkdir -p /home/user/systems
+    mkdir -p /home/user/compliance
+
+    # Populate the pre-existing patch status file
+    cat > /home/user/systems/patch_status.txt <<'EOF'
+serverA,current
+serverB,outdated
+serverC,current
+serverD,outdated
+serverE,current
+EOF
+
+    # Permissions: readable for all; writable where needed for the agent
+    chmod 755 /home/user
+    chmod 755 /home/user/systems
+    chmod 777 /home/user/compliance      # Agent must write here
+    chmod 644 /home/user/systems/patch_status.txt
+
+%environment
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%labels
+    Author  "Container build for server patch compliance task"
+    Version "1.0"

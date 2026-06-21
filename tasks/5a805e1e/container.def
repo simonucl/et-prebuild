@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    #!/bin/bash
+    set -e
+
+    ##------------------------------------------------------------------
+    ## Install Python tooling needed for the test harness
+    ##------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    ##------------------------------------------------------------------
+    ## Prepare initial filesystem state expected by the credential-rotation task
+    ##------------------------------------------------------------------
+    # Create the project directory structure
+    mkdir -p /home/user/projects/secure-app
+
+    # Populate the original .env file with the legacy credentials
+    cat > /home/user/projects/secure-app/.env <<'EOF'
+OLD_API_KEY=oldkey123
+OLD_SECRET=oldsecret321
+EOF
+
+    # Make sure the entire /home/user tree is writable by the unprivileged
+    # account that will run inside the container
+    chmod -R 0777 /home/user
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author="security-eng"
+    Description="Apptainer image providing the initial state for the credentials-rotation task."

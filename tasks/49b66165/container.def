@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic utilities and Python tooling
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        time \
+        ca-certificates \
+        tzdata
+
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial directory structure and dataset files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/datasets/performance
+
+    cat > /home/user/datasets/performance/sales_q1.csv <<'EOF'
+OrderID,Units,Revenue
+1001,5,250
+1002,3,150
+1003,2,100
+EOF
+
+    cat > /home/user/datasets/performance/sales_q2.csv <<'EOF'
+OrderID,Units,Revenue
+2001,4,200
+2002,6,300
+2003,1,50
+EOF
+
+    cat > /home/user/datasets/performance/sales_q3.csv <<'EOF'
+OrderID,Units,Revenue
+3001,7,350
+3002,2,100
+3003,3,150
+EOF
+
+    # Permissions: readable by all; allow the unprivileged runtime user to
+    # create /home/user/analysis_results later on.
+    chmod 644 /home/user/datasets/performance/*.csv
+    chmod 777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep PATH sane
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Container image for the performance benchmark task – provides dataset and Python/pytest."

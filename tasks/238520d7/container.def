@@ -1,0 +1,95 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        jq \
+        python3 \
+        python3-pip \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Python testing framework
+    pip3 install --no-cache-dir pytest
+
+    # Prepare workspace and configuration snapshots
+    mkdir -p /home/user/configs
+
+    # Make sure the non-root user that Apptainer runs as can write there
+    chmod 777 /home/user
+    chmod 777 /home/user/configs
+
+    # previous_config.json
+    cat > /home/user/configs/previous_config.json <<'EOF'
+{
+  "service": {
+    "name": "demo",
+    "enabled": true,
+    "port": 8080
+  },
+  "logging": {
+    "level": "info",
+    "file": "/var/log/demo.log"
+  },
+  "version": "1.0.0"
+}
+EOF
+
+    # new_config.json
+    cat > /home/user/configs/new_config.json <<'EOF'
+{
+  "service": {
+    "name": "demo",
+    "enabled": false,
+    "port": 9090
+  },
+  "logging": {
+    "level": "debug",
+    "file": "/var/log/demo-debug.log"
+  },
+  "version": "1.1.0"
+}
+EOF
+
+    # schema.json
+    cat > /home/user/configs/schema.json <<'EOF'
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["service", "logging", "version"],
+  "properties": {
+    "service": {
+      "type": "object",
+      "required": ["name", "enabled", "port"],
+      "properties": {
+        "name":    { "type": "string"  },
+        "enabled": { "type": "boolean" },
+        "port":    { "type": "integer", "minimum": 1, "maximum": 65535 }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "required": ["level", "file"],
+      "properties": {
+        "level": { "type": "string", "enum": ["debug", "info", "warn", "error"] },
+        "file":  { "type": "string" }
+      }
+    },
+    "version": { "type": "string" }
+  }
+}
+EOF
+
+    # Reasonable default permissions for the JSON files
+    chmod 644 /home/user/configs/*.json
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure pip-installed CLI tools such as pytest are in PATH
+    export PATH=/usr/local/bin:$PATH

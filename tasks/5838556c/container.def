@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author  AgentPrep
+    Description "Pre-populated environment with legacy word-count script and sample data"
+
+%post
+    set -e
+
+    # Update package lists and install required tools
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        gawk \
+        ca-certificates
+
+    # Install pytest for the runtime checker
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Set up legacy tools directory and its contents
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/legacy_tools
+
+    # word_count.sh – simple POSIX shell word counter
+    cat > /home/user/legacy_tools/word_count.sh << 'EOS'
+#!/bin/sh
+# Simple POSIX shell script – counts words in a file passed as $1
+wc -w "$1" | awk '{print $1}'
+EOS
+    chmod +x /home/user/legacy_tools/word_count.sh
+
+    # sample.txt – contains exactly six whitespace-separated words
+    cat > /home/user/legacy_tools/sample.txt << 'EOS'
+Hello world from legacy code base.
+EOS
+
+    # Ensure sensible permissions so the non-privileged user can read them
+    chmod 755 /home/user/legacy_tools
+    chmod 644 /home/user/legacy_tools/sample.txt
+
+%environment
+    # Keep HOME unmodified to allow default Apptainer home handling
+    export LC_ALL=C
+    export PATH="/usr/local/bin:/usr/bin:/bin"
+
+%runscript
+    echo "Container for legacy word-count task. Nothing to run by default."

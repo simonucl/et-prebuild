@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ---------------------------------------------------------------------
+    # Install Python, pip and pytest
+    # ---------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ---------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ---------------------------------------------------------------------
+    # Create the directory structure
+    mkdir -p /home/user/it_assets
+
+    # Set required permissions
+    chmod 755 /home
+    chmod 755 /home/user
+    chmod 755 /home/user/it_assets
+
+    # Create the deployment binary with exact contents: b'abc' (no newline)
+    printf 'abc' > /home/user/it_assets/installer_v3.2.bin
+    chmod 644 /home/user/it_assets/installer_v3.2.bin
+
+%environment
+    # Ensure user-installed Python tools are on PATH
+    export PATH="/usr/local/bin:$PATH"
+
+%labels
+    Author "Auto-generated definition file for checksum verification task"

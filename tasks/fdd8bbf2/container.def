@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ############################
+    # Install Python & pytest  #
+    ############################
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    ############################
+    # Create initial directory #
+    ############################
+    mkdir -p /home/user/disk_reports
+
+    ############################
+    # Create input CSV files   #
+    ############################
+
+    # server_a.csv
+cat > /home/user/disk_reports/server_a.csv << 'EOF'
+mount_point,total_gb,used_gb
+/,50,30
+/home,200,150
+/var,100,90
+EOF
+
+    # server_b.csv
+cat > /home/user/disk_reports/server_b.csv << 'EOF'
+mount_point,total_gb,used_gb
+/,60,20
+/home,250,240
+/opt,80,30
+EOF
+
+    # server_c.csv
+cat > /home/user/disk_reports/server_c.csv << 'EOF'
+mount_point,total_gb,used_gb
+/,40,35
+/data,500,450
+/backup,300,100
+EOF
+
+    ############################
+    # Permissions              #
+    ############################
+    chmod 755 /home/user
+    chmod 755 /home/user/disk_reports
+    chmod 644 /home/user/disk_reports/server_*.csv
+
+%labels
+    Author disk-report-initializer
+
+%help
+    This container image sets up the initial filesystem state for the
+    “Disk Reports” exercise.  It installs pytest for automated grading and
+    creates the three source CSV files required by the assignment.

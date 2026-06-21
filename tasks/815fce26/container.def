@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing required packages..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating initial directory structure and input file..."
+    # Ensure /home and /home/user exist with safe permissions
+    mkdir -p /home/user/env_setup
+    chmod 755 /home /home/user /home/user/env_setup
+
+    # Create targets.txt with the exact required contents
+    cat > /home/user/env_setup/targets.txt <<'EOF'
+dev
+qa
+staging
+qa
+dev
+prod
+qa
+EOF
+
+    # Set file permissions to be readable by any unprivileged user
+    chmod 644 /home/user/env_setup/targets.txt
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    chmod 755 /home/user
+
+    echo "Container for QA environment frequency task. Use bash to explore."
+    exec /bin/bash "$@"

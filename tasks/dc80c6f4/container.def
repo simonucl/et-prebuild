@@ -1,0 +1,71 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install needed tools
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        coreutils \
+        findutils \
+        gzip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    ############################################################
+    # Create the initial directory layout and fixture files
+    ############################################################
+    # Base paths
+    DATASETS="/home/user/datasets"
+    RAW="$DATASETS/raw"
+    OLD="$RAW/old"
+    ARCHIVE="$RAW/archive"
+
+    # Make directory tree
+    mkdir -p "$OLD" "$ARCHIVE"
+
+    # -----------------------------------------------------------------
+    # Create the four *_backup.csv files with EXACT byte sizes
+    #   sales_backup.csv              : 3072 bytes ( 3 KB)
+    #   sales_jan_backup.csv          : 2048 bytes ( 2 KB)
+    #   customers_backup.csv          : 1024 bytes ( 1 KB)
+    #   2021_sales_backup.csv         : 4096 bytes ( 4 KB)
+    # -----------------------------------------------------------------
+    head -c 3072 /dev/zero  > "$RAW/sales_backup.csv"
+    head -c 2048 /dev/zero  > "$OLD/sales_jan_backup.csv"
+    head -c 1024 /dev/zero  > "$OLD/customers_backup.csv"
+    head -c 4096 /dev/zero  > "$ARCHIVE/2021_sales_backup.csv"
+
+    # -----------------------------------------------------------------
+    # Non-backup CSVs and ancillary file (content size not important)
+    # -----------------------------------------------------------------
+    echo "Month,Sales"                    > "$RAW/sales_jan.csv"
+    echo "Month,Sales"                    > "$RAW/sales_feb.csv"
+    echo "CustomerID,Name"               > "$RAW/customers.csv"
+    echo "This directory contains raw CSV datasets." > "$RAW/readme.txt"
+
+    # -----------------------------------------------------------------
+    # Relax permissions so the non-root runtime user can read/write.
+    # Default umask will still make new files 0644 / dirs 0755.
+    # -----------------------------------------------------------------
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author backup-task-setup
+    Description "Environment prepared for the backup-isolation exercise"
+
+%help
+This container image sets up the initial filesystem state for
+the “backup-isolation” task.  It places the required CSV files
+under /home/user/datasets/raw/, installs pytest for grading,
+and ensures permissions allow modification by the unprivileged
+runtime user.
+
+%environment
+    # Nothing to override here; keep default environment.

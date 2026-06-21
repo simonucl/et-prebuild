@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT metadata and install Python + Pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the “error-report” exercise
+    # ------------------------------------------------------------------
+    # Create required directories with appropriate permissions
+    mkdir -p /home/user/logs
+    chmod 755 /home/user
+    chmod 755 /home/user/logs
+
+    # Create the deployment log with exact contents and permissions 0644
+    cat > /home/user/logs/release-2023-07-01.log << 'EOF'
+2023-07-01 10:15:02 [INFO] Starting deployment
+2023-07-01 10:15:05 [WARN] Slow response from artifact repository
+2023-07-01 10:15:10 [ERROR] Failed to fetch artifact build-1234
+2023-07-01 10:15:12 [INFO] Retrying...
+2023-07-01 10:15:18 [ERROR] Failed to fetch artifact build-1234
+2023-07-01 10:15:30 [INFO] Deployment aborted
+2023-07-01 10:15:31 [ERROR] Rollback failed: missing snapshot
+2023-07-01 10:15:35 [INFO] Manual intervention required
+EOF
+    chmod 644 /home/user/logs/release-2023-07-01.log
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+
+%labels
+    Author="Apptainer setup for error-report exercise"
+    Description="Container pre-provisioned with log files and pytest for automated grading."
+
+%runscript
+    echo "Container for the error-report task (no default action)."

@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package list and installing Python + pip..."
+    apt-get update -y
+    apt-get install -y python3 python3-pip
+
+    echo "Installing pytest..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating initial filesystem layout for the exercise..."
+    # Base directory structure
+    mkdir -p /home/user/services/app-service
+
+    # config.yml with maintenance set to true
+    cat <<'EOF' > /home/user/services/app-service/config.yml
+# Application service configuration
+maintenance: true
+version: 1.4.2
+EOF
+
+    # restart helper script
+    cat <<'EOF' > /home/user/services/app-service/restart.sh
+#!/bin/bash
+# Simulated restart helper
+echo "app-service restarted" > /home/user/services/app-service/restart.log
+EOF
+
+    # Permissions
+    chmod 0755 /home/user/services/app-service/restart.sh   # executable
+    chmod 0666 /home/user/services/app-service/config.yml   # editable by normal user
+    chmod -R 0777 /home/user                               # ensure write access for non-root users
+
+    echo "Initial state prepared."
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for Ticket #425 exercise."
+    echo "Invoke an interactive shell:  apptainer exec <container> /bin/bash"
+    exec "$@"
+
+%help
+    This container provides the initial environment for resolving Ticket #425.
+    A YAML configuration file and helper script are located under:
+      /home/user/services/app-service/
+    Pytest is pre-installed so the automated grader can verify the initial state.

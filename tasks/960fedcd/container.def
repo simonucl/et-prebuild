@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package lists and installing Python tooling..."
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-venv \
+        ca-certificates
+
+    echo "Installing pytest for the grading suite..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Setting up initial project structure..."
+    mkdir -p /home/user/app
+
+    # Create the legacy requirements.txt with the older package versions
+    cat >/home/user/app/requirements.txt <<'EOF'
+flask==2.2.0
+requests==2.28.0
+EOF
+
+    # Ensure regular (non-root) users can work inside /home/user
+    chmod -R 0777 /home/user
+
+    echo "Initial container setup complete."
+
+%environment
+    chmod 755 /home/user
+
+    # Keep locale simple and predictable
+    export LC_ALL=C
+    export LANG=C
+
+%labels
+    Author ChatGPT
+    Description "Base image for deployment-venv upgrade task; includes pytest and initial project layout."

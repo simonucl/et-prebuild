@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing Python tooling..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest (for the grading harness)..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating initial directory structure and runtime log..."
+    # Create the directory tree
+    mkdir -p /home/user/app/logs
+
+    # Populate the runtime.log with the required three lines
+    cat > /home/user/app/logs/runtime.log <<'EOF'
+System initialized successfully
+Connection pool ready
+Listening on port 8080
+EOF
+
+    # Set the correct permissions (0644) on the log file
+    chmod 0644 /home/user/app/logs/runtime.log
+
+    # Ensure directory permissions allow traversal (0755 is fine)
+    chmod 0755 /home/user /home/user/app /home/user/app/logs || true
+
+%labels
+    chmod 755 /home/user
+
+    Author="Apptainer Task Builder"
+    Description="Container for diagnostic capture exercise – includes pre-existing runtime.log and pytest for automated grading."

@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author observability-task-setup
+    Description "Container prepared with initial filesystem state for observability disk-usage task"
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install Python and pytest (plus coreutils for dd, stat, etc.)
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        coreutils
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create required directory structure and test files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/observability/logs
+    mkdir -p /home/user/observability/metrics
+
+    # Create files with the exact byte sizes requested
+    # 1. logs/api.log      -> 1024 bytes
+    # 2. logs/web.log      -> 2048 bytes
+    # 3. metrics.json      -> 3072 bytes
+    dd if=/dev/zero of=/home/user/observability/logs/api.log           bs=1024 count=1 status=none
+    dd if=/dev/zero of=/home/user/observability/logs/web.log           bs=2048 count=1 status=none
+    dd if=/dev/zero of=/home/user/observability/metrics/metrics.json   bs=1024 count=3 status=none
+
+    # ------------------------------------------------------------------
+    # Set permissions
+    # Directories need to be writable by the unprivileged runtime user so
+    # the agent can create disk_usage_report.csv
+    # ------------------------------------------------------------------
+    chmod 777 /home/user/observability
+    chmod 755 /home/user/observability/logs
+    chmod 755 /home/user/observability/metrics
+
+    # Files should be world-readable
+    chmod 644 /home/user/observability/logs/api.log
+    chmod 644 /home/user/observability/logs/web.log
+    chmod 644 /home/user/observability/metrics/metrics.json
+
+%environment
+    # No special environment variables needed
+    export LC_ALL=C.UTF-8
+    export PYTHONUNBUFFERED=1

@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial workspace required by the Grafana checksum exercise
+    # ------------------------------------------------------------------
+    # Directory structure
+    mkdir -p /home/user/dashboards
+    mkdir -p /home/user/verifications
+
+    # Empty dashboard JSON file (size 0 bytes)
+    : > /home/user/dashboards/node_exporter.json
+
+    # SHA-256 checksum file with the expected content
+    echo "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  node_exporter.json" \
+        > /home/user/dashboards/node_exporter.sha256
+
+    # Permissions: make sure the runtime (non-root) user can write to /home/user/verifications
+    chmod -R a+rX /home/user
+    chmod -R a+rw  /home/user/verifications
+
+    # Clean up
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default environment; no overrides needed.
+
+%labels
+    Author  "Apptainer Build Script for Grafana Checksum Task"

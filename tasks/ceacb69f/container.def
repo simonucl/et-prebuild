@@ -1,0 +1,63 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ##------------------------------------------------------------------
+    ## 1. Install Python and pytest (needed by the automated grader)
+    ##------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    ##------------------------------------------------------------------
+    ## 2. Create the required directory hierarchy and log files
+    ##------------------------------------------------------------------
+    mkdir -p /home/user/docs/logs
+
+    # --- /home/user/docs/logs/app1.log ---
+    cat > /home/user/docs/logs/app1.log <<'EOF'
+INFO Starting application
+WARNING Disk space almost full
+ERROR Failed to open configuration
+INFO Retrying startup
+ERROR Aborted
+EOF
+
+    # --- /home/user/docs/logs/app2.log ---
+    cat > /home/user/docs/logs/app2.log <<'EOF'
+INFO Initialising
+INFO Running main loop
+INFO Shutdown complete
+EOF
+
+    # --- /home/user/docs/logs/app3.log ---
+    cat > /home/user/docs/logs/app3.log <<'EOF'
+ERROR Crash detected
+WARNING Possible memory leak
+ERROR Stack trace follows
+WARNING Memory leak suspected
+INFO Attempting restart
+INFO Restart successful
+EOF
+
+    ##------------------------------------------------------------------
+    ## 3. Ensure all users can read the logs and write future artefacts
+    ##------------------------------------------------------------------
+    chmod -R a+rX /home/user
+    chmod a+w /home/user /home/user/docs /home/user/docs/logs
+
+%labels
+    chmod 755 /home/user
+
+    Author Singularity Task Setup
+    Description Environment for release-notes statistics exercise
+
+%help
+    This container provides the initial workspace for the release-notes
+    statistics task.  Three example *.log files are placed under:
+        /home/user/docs/logs/
+    Students must analyse these logs and create the specified CSV summary.

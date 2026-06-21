@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ############################################################
+    # 1) Install Python tooling required by the exercise grader #
+    ############################################################
+    apt-get update -qq
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ###########################################################
+    # 2) Prepare the initial filesystem state for the learner #
+    ###########################################################
+    # Create the directory hierarchy
+    mkdir -p /home/user/vuln_scans
+    chmod 0777 /home/user/vuln_scans   # world-writable so the unprivileged learner can write results
+
+    # Create the canonical scan file with exact expected content
+    cat > /home/user/vuln_scans/initial_scan.txt <<'EOF'
+Host: 10.0.0.5 (target-machine)  Status: Up
+PORT     STATE SERVICE
+21/tcp   open  ftp
+22/tcp   open  ssh
+80/tcp   open  http
+111/tcp  closed rpcbind
+5432/tcp open  postgresql
+EOF
+
+    # Make the file writable by the learner while keeping exact content
+    chmod 0666 /home/user/vuln_scans/initial_scan.txt
+
+%labels
+    chmod 755 /home/user
+
+    Author Pen-Test Training Environment
+    Description  Initializes /home/user/vuln_scans/initial_scan.txt and installs pytest.
+
+%environment
+    # No HOME override – let Apptainer bind the host's $HOME.
+    export LC_ALL=C

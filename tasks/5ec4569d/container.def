@@ -1,0 +1,114 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest (via pip).
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare baseline exercise files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/manifests
+    chmod 755 /home/user /home/user/manifests
+
+    cat >/home/user/manifests/deployment-frontend.yaml <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.19
+EOF
+
+    cat >/home/user/manifests/deployment-backend.yaml <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: python
+          image: python:3.9
+EOF
+
+    cat >/home/user/manifests/service-frontend.yaml <<'EOF'
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: default
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+EOF
+
+    cat >/home/user/manifests/service-backend.yaml <<'EOF'
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: default
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+EOF
+
+    cat >/home/user/manifests/configmap-app.yaml <<'EOF'
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: default
+data:
+  LOG_LEVEL: "info"
+EOF
+
+    # Ensure correct permissions
+    chmod 644 /home/user/manifests/*.yaml
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PYTHONIOENCODING=utf-8
+
+%labels
+    Author "ChatGPT"
+    Description "Container for Kubernetes manifest inventory task. Provides baseline YAML files and pytest for verification."
+
+%help
+    This container supplies the initial environment for the deployment
+    inventory exercise. It contains:
+      • /home/user/manifests/ with five YAML manifest files
+      • pytest pre-installed for automated grading

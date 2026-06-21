@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python and pytest
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/db_configs
+    chmod 777 /home/user/db_configs   # allow the unprivileged agent to write
+
+    # db_settings.yaml (initial content)
+    cat > /home/user/db_configs/db_settings.yaml <<'YAML_EOF'
+database:
+  host: localhost
+  port: 5432
+  pool:
+    size: 10
+    timeout: 300
+
+queries:
+  optimizer:
+    enable: false
+    cost_threshold: 100
+YAML_EOF
+
+    # replication.toml (initial content)
+    cat > /home/user/db_configs/replication.toml <<'TOML_EOF'
+[replication]
+enabled = false
+max_replicas = 2
+
+[maintenance]
+vacuum = "daily"
+TOML_EOF
+
+    # Make sure the files are writable by the learner (non-root)
+    chmod 666 /home/user/db_configs/db_settings.yaml /home/user/db_configs/replication.toml
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%labels
+    Author="On-Call DB Admin Task Setup"
+    Description="Container with initial configuration files and pytest installed for the learner."

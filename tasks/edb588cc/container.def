@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ---------------------------------------------------------------------
+    # Install required packages
+    # ---------------------------------------------------------------------
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        jq \
+        ca-certificates && \
+    pip3 install --no-cache-dir --upgrade pip && \
+    pip3 install --no-cache-dir pytest && \
+    rm -rf /var/lib/apt/lists/*
+
+    # ---------------------------------------------------------------------
+    # Set up filesystem for the exercise
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/data
+
+    # transactions.json
+    cat > /home/user/data/transactions.json <<'EOF'
+[
+  { "id": "TX1001", "amount": 150.00, "currency": "USD", "status": "approved" },
+  { "id": "TX1002", "amount": 200.50, "currency": "EUR" },
+  { "id": "TX1003", "amount": 99.99, "currency": "USD", "status": "declined" }
+]
+EOF
+
+    # transaction_schema.json
+    cat > /home/user/data/transaction_schema.json <<'EOF'
+{
+  "type": "object",
+  "required": ["id", "amount", "currency", "status"]
+}
+EOF
+
+    # ---------------------------------------------------------------------
+    # Permissions
+    # ---------------------------------------------------------------------
+    # Allow non-root users to create /home/user/audit and write files
+    chmod 0777 /home/user
+
+    # Ensure data files are readable and writable by any user
+    chmod -R a+rw /home/user/data
+
+    # DO NOT create /home/user/audit or audit.log – they must be generated
+    # by the learner during the exercise.
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author audit-task-container
+
+%runscript
+    echo "Apptainer container for the audit trail task."
+    echo "Start your work in /home/user."
+    exec "/bin/bash" "$@"

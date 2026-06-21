@@ -1,0 +1,90 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Ensure basic tools are present
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        bash \
+        coreutils
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory tree and populate the release artefacts
+    # ------------------------------------------------------------------
+    RELEASES_BASE="/home/user/releases"
+    mkdir -p "${RELEASES_BASE}"
+
+    # v2.0.0 -----------------------------------------------------------
+    mkdir -p "${RELEASES_BASE}/v2.0.0"
+    cat > "${RELEASES_BASE}/v2.0.0/CHANGELOG.txt" <<'EOF'
+v2.0.0 - 2023-05-10 Major release
+
+* Added multi-tenant support
+* Deprecated legacy API
+EOF
+
+    cat > "${RELEASES_BASE}/v2.0.0/RELEASE_NOTES.md" <<'EOF'
+# Release Notes for v2.0.0
+
+## Highlights
+- Full RBAC implementation
+EOF
+
+    # v2.1.0 -----------------------------------------------------------
+    mkdir -p "${RELEASES_BASE}/v2.1.0"
+    cat > "${RELEASES_BASE}/v2.1.0/CHANGELOG.txt" <<'EOF'
+v2.1.0 - 2023-08-12 Minor release
+
+* Improved logging
+EOF
+
+    cat > "${RELEASES_BASE}/v2.1.0/RELEASE_NOTES.md" <<'EOF'
+# Release Notes for v2.1.0
+
+## Improvements
+- Faster cache invalidation
+EOF
+
+    # v3.0.0-beta ------------------------------------------------------
+    mkdir -p "${RELEASES_BASE}/v3.0.0-beta"
+    cat > "${RELEASES_BASE}/v3.0.0-beta/CHANGELOG.txt" <<'EOF'
+v3.0.0-beta - 2024-01-20 Beta release
+
+* Brand-new micro-kernel
+EOF
+
+    cat > "${RELEASES_BASE}/v3.0.0-beta/RELEASE_NOTES.md" <<'EOF'
+# Release Notes for v3.0.0-beta
+
+## Beta caveats
+- May eat your data
+EOF
+
+    # Set permissions: directories 755, files 644
+    find /home/user/releases -type d -exec chmod 755 {} +
+    find /home/user/releases -type f -exec chmod 644 {} +
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and Pip executables are on PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author  release-manager-setup
+    Description "Container image prepared for the 'release-manager' task with initial release data and pytest installed."
+
+%help
+    This Apptainer image provides the initial filesystem state for the
+    "release-manager" exercise.  It contains:
+      * /home/user/releases/ with three versioned sub-directories.
+      * Python 3 and pytest installed for automated testing.
+    Students are expected to create /home/user/deployment/ and the required
+    artefacts during the task execution.

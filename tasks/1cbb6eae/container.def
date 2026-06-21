@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #------------------------------------------------------------------
+    # 1. Install Python tooling and pytest (for the validation suite)
+    #------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #------------------------------------------------------------------
+    # 2. Prepare the initial filesystem state expected by the tests
+    #------------------------------------------------------------------
+    # Create the required directory tree
+    mkdir -p /home/user/credentials
+
+    # Seed the legacy credential file with exact required contents
+    cat > /home/user/credentials/old_credentials.txt <<'EOF'
+serviceA,pass1234
+serviceB,mysecret
+serviceC,qwerty
+EOF
+
+    #------------------------------------------------------------------
+    # 3. Ensure the non-root runtime user can perform the rotation drill
+    #------------------------------------------------------------------
+    chmod 0777 /home
+    chmod 0777 /home/user
+    chmod 0777 /home/user/credentials
+    chmod 0666 /home/user/credentials/old_credentials.txt
+
+%labels
+    chmod 755 /home/user
+
+    Author="Apptainer automation"
+    Description="Container providing the initial state for the credential-rotation drill"
+
+%runscript
+    echo "Container for credential-rotation drill. Execute your tasks in an interactive shell."
+    exec /bin/bash --noprofile --norc "$@"

@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required packages
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y git python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the evaluation framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Set up initial repository state expected by the assessment tests
+    # ------------------------------------------------------------------
+    # Create workspace
+    mkdir -p /home/user/etl-pipeline
+    cd /home/user/etl-pipeline
+
+    # Configure Git to use 'main' as the default branch and set identity
+    git config --global init.defaultBranch main
+    git config --global user.email "builder@example.com"
+    git config --global user.name  "Builder"
+
+    # Initialise repository and create initial commit
+    git init
+    printf 'ETL Pipeline\n\n' > README.md
+    git add README.md
+    git commit -m "Initial commit"
+
+    # Ensure all files are writable by the non-root user at runtime
+    chmod -R a+rwX /home/user/etl-pipeline
+
+%labels
+    chmod 755 /home/user
+
+    Author "CI Setup"

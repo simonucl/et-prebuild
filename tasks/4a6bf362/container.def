@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest for the grading suite
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------ #
+    # Prepare initial filesystem state for the student
+    # ------------------------------------------------------------------ #
+
+    # Create /home/user and the server_logs directory
+    mkdir -p /home/user/server_logs
+
+    # Give broad write permissions so the unprivileged runtime user can work
+    chmod 0777 /home/user
+    chmod 0777 /home/user/server_logs
+
+    # Create the required .log files with exact contents
+    cat > /home/user/server_logs/web01.log <<'EOF'
+2023-06-01 00:00:01 status=UP
+2023-06-01 01:00:01 status=UP
+2023-06-01 02:00:01 status=UP
+2023-06-01 03:00:01 status=UP
+2023-06-01 04:00:01 status=UP
+2023-06-01 05:00:01 status=UP
+2023-06-01 06:00:01 status=UP
+2023-06-01 07:00:01 status=DOWN
+2023-06-01 08:00:01 status=DOWN
+2023-06-01 09:00:01 status=DOWN
+EOF
+
+    cat > /home/user/server_logs/db01.log <<'EOF'
+2023-06-01 00:30:01 status=UP
+2023-06-01 01:30:01 status=UP
+2023-06-01 02:30:01 status=UP
+2023-06-01 03:30:01 status=UP
+2023-06-01 04:30:01 status=UP
+2023-06-01 05:30:01 status=DOWN
+2023-06-01 06:30:01 status=DOWN
+2023-06-01 07:30:01 status=DOWN
+2023-06-01 08:30:01 status=DOWN
+2023-06-01 09:30:01 status=DOWN
+EOF
+
+    # Ensure predictable permissions on the log files
+    chmod 0644 /home/user/server_logs/*.log
+
+%labels
+    chmod 755 /home/user
+
+    Author task-prep-script
+    Description "Environment for heartbeat log summary task – includes pytest and initial log files."

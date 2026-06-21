@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the automated tests
+    # ------------------------------------------------------------------
+
+    # Create the home directory and the utilities directory
+    mkdir -p /home/user/dev_utils
+
+    # Ensure the parent home directory has standard permissions
+    chmod 0755 /home/user
+
+    # Create the three helper scripts with the required contents
+    cat <<'EOF' >/home/user/dev_utils/build.sh
+#!/bin/bash
+echo 'build'
+EOF
+
+    cat <<'EOF' >/home/user/dev_utils/test.sh
+#!/bin/bash
+echo 'test'
+EOF
+
+    cat <<'EOF' >/home/user/dev_utils/deploy.sh
+#!/bin/bash
+echo 'deploy'
+EOF
+
+    # Set initial permissions:
+    #   • Directory 0755 (rwxr-xr-x) — no set-gid bit
+    #   • Scripts 0644 (rw-r--r--)
+    chmod 0755 /home/user/dev_utils
+    chmod 0644 /home/user/dev_utils/build.sh \
+               /home/user/dev_utils/test.sh  \
+               /home/user/dev_utils/deploy.sh
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author chatbot
+    Description "Container prepared for permission-hardening exercise: initial state with /home/user/dev_utils and three helper scripts."
+
+%help
+    This container sets up the initial filesystem layout for the permissions
+    hardening task.  After building the image, the learner is expected to run a
+    single compound shell command that:
+      1. Sets the directory /home/user/dev_utils to mode 2750 (set-gid bit on).
+      2. Sets each helper script (build.sh, test.sh, deploy.sh) to mode 750.
+      3. Generates /home/user/dev_utils/perm_report.txt with the required 4-line
+         permissions report.

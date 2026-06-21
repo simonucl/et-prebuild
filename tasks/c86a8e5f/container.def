@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create a regular user “user” (UID/GID 1000) with a home directory
+    groupadd -g 1000 user || true
+    useradd  -m -d /home/user -u 1000 -g user user || true
+
+    # Set up initial filesystem state
+    install -d -m 0755 /home/user/app/conf
+    install -d -m 0755 /home/user/incident_fixes
+
+    cat > /home/user/app/conf/app.conf <<'EOF'
+# Application configuration
+TIMEOUT=30
+LOG_LEVEL=WARN
+ENABLE_CACHE=true
+EOF
+
+    chmod 0644 /home/user/app/conf/app.conf
+
+    # Ensure ownership belongs to the regular user
+    chown -R 1000:1000 /home/user
+
+    # Clean up APT caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Prepend the user’s local bin so any future pip installs are on PATH
+    export PATH=/home/user/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author="Container setup for incident-42 task"
+    Description="Provides initial state for configuration patching exercise"
+
+%runscript
+    echo "Container for incident-42 task. No default runscript actions defined."

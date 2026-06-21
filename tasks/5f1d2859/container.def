@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python, pip and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare the initial on-disk state expected by the automated tests
+    # ------------------------------------------------------------------
+    # Directory structure
+    mkdir -p /home/user/netops
+    chmod 755 /home/user/netops
+
+    # interfaces.cfg with the exact required contents and trailing newline
+    cat > /home/user/netops/interfaces.cfg <<'EOF'
+interface=eth0
+mtu=1500
+state=up
+EOF
+    chmod 644 /home/user/netops/interfaces.cfg
+
+%labels
+    Author network-engineering-task-setup
+    Description "Container image for network optimisation task; provides initial state and pytest"

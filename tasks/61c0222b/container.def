@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Ensure non-interactive apt operations
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update apt index and install required packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        sysbench \
+        python3-pip
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare benchmark artifacts expected by the automated tests
+    # ------------------------------------------------------------------
+    # Create the required directory structure
+    mkdir -p /home/user/benchmarks
+
+    # Generate the performance.log file with three exact lines
+    {
+        echo "DISK_WRITE_MB_S: 500.0"
+        echo "CPU_EVENTS_PER_SEC: 10000.0"
+        echo "TIMESTAMP: $(date '+%Y-%m-%d %H:%M:%S')"
+    chmod 755 /home/user
+
+    } > /home/user/benchmarks/performance.log
+
+    # Set permissions: directory 0755, file 0644 (world-readable, not writable)
+    chmod 0755 /home/user/benchmarks
+    chmod 0644 /home/user/benchmarks/performance.log
+
+    # Clean up apt cache to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure Python and pip are readily available
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author benchmark-setup
+    Description "Container pre-configured with a one-off performance log for automated testing."

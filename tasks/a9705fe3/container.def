@@ -1,0 +1,67 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install required packages
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3 \
+        locales \
+        ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    # Ensure UTF-8 locale is available
+    sed -i 's/# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+    locale-gen
+
+    # Install pytest for the validation framework
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial project directory and SQLite database
+    # ------------------------------------------------------------------
+    PROJECT_DIR="/home/user/projects/i18n"
+    mkdir -p "${PROJECT_DIR}"
+
+    # Create and populate the database with the required starting state
+    DB_PATH="${PROJECT_DIR}/messages.db"
+    sqlite3 "${DB_PATH}" <<'SQL'
+    PRAGMA foreign_keys = OFF;
+    BEGIN TRANSACTION;
+    CREATE TABLE translations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        language TEXT NOT NULL,
+        key TEXT NOT NULL,
+        value TEXT NOT NULL
+    );
+    INSERT INTO translations (language, key, value) VALUES
+        ('en', 'hello', 'Hello'),
+        ('en', 'goodbye', 'Goodbye');
+    COMMIT;
+SQL
+
+    # Make sure the non-root user running inside the container can modify files
+    chmod -R a+rwx /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal environment so UTF-8 I/O works reliably
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%labels
+    Author="Container generated for i18n SQLite task"
+    Description="Provides initial environment with messages.db and pytest installed."
+
+%help
+    This container supplies the starting state for the i18n SQLite exercise.
+    It contains:
+      * /home/user/projects/i18n/messages.db  – pre-populated with two rows
+      * python3, sqlite3 CLI, and pytest      – tools required by the assignment

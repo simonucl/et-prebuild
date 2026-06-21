@@ -1,0 +1,94 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required OS packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        strace \
+        time
+
+    # Install pytest for the grader test-suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory structure and seed workload programs
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/apps
+    mkdir -p /home/user/profiles
+
+    # Ensure the profiles directory is writable by all users so that the
+    # non-root runtime user can create log files there.
+    chmod 0777 /home/user/profiles
+
+    # ------------------------------------------------------------------
+    # cpu_stress.py
+    # ------------------------------------------------------------------
+    cat >/home/user/apps/cpu_stress.py <<'PYCPU'
+#!/usr/bin/env python3
+import math
+
+def busy():
+    total = 0
+    for i in range(5_000_00):  # Five-hundred thousand iterations
+        total += math.sqrt(i)
+    print(total)
+
+if __name__ == "__main__":
+    busy()
+PYCPU
+
+    # ------------------------------------------------------------------
+    # io_stress.py
+    # ------------------------------------------------------------------
+    cat >/home/user/apps/io_stress.py <<'PYIO'
+#!/usr/bin/env python3
+import os, tempfile
+
+def thrash():
+    fd, path = tempfile.mkstemp()
+    with os.fdopen(fd, "w+b") as f:
+        for i in range(1000):
+            f.write(b"x" * 4096)
+        f.flush()
+        os.fsync(f.fileno())
+    os.remove(path)
+
+if __name__ == "__main__":
+    thrash()
+PYIO
+
+    # Make the scripts executable
+    chmod 0755 /home/user/apps/cpu_stress.py /home/user/apps/io_stress.py
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure /home/user/apps is on the PATH for convenience
+    export PATH="/home/user/apps:$PATH"
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author  OpenAI
+    Description "Environment for concurrent profiling task with pre-seeded workloads"
+    Version "1.0"
+
+%help
+This container image provides the initial filesystem and toolchain state for
+the profiling exercise.
+
+Pre-created resources:
+  /home/user/apps/cpu_stress.py
+  /home/user/apps/io_stress.py
+  /home/user/profiles/  (writable)
+
+Available profiling utilities:
+  /usr/bin/time  (GNU time)
+  strace -c
+
+Python 3 and pytest are installed system-wide.

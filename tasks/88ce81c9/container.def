@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest for the grader
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    # Create the directory structure
+    mkdir -p /home/user/microservices/inventory-service
+
+    # Create the initial config.json with the *old* dbHost value
+    cat > /home/user/microservices/inventory-service/config.json <<'EOF'
+{
+  "serviceName": "inventory-service",
+  "port": 8080,
+  "dbHost": "db.internal.old-cluster.local",
+  "dbPort": 5432,
+  "logLevel": "INFO"
+}
+EOF
+
+    # Ensure the student (non-root) user can modify the config file
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author InventoryServicePrep
+    Description Sets up initial state for the inventory-service migration exercise.
+
+%environment
+    # Ensure Python is in PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for the inventory-service migration exercise."
+    echo "Run your commands as instructed in the task description."

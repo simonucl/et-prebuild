@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists
+    apt-get update
+
+    # Install Python 3 and pytest (via pip to get the newest pytest)
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem layout expected by the automated tests
+    # ------------------------------------------------------------------
+
+    # Base directory
+    mkdir -p /home/user/ci-builds
+
+    # First-level project directories
+    for d in artifacts android-app cache ios-app shared-lib; do
+        mkdir -p "/home/user/ci-builds/$d"
+    done
+
+    # Create dummy.bin files with the exact sizes (1 MB = 1 048 576 bytes)
+    dd if=/dev/zero of=/home/user/ci-builds/artifacts/dummy.bin   bs=1M count=25
+    dd if=/dev/zero of=/home/user/ci-builds/android-app/dummy.bin bs=1M count=12
+    dd if=/dev/zero of=/home/user/ci-builds/cache/dummy.bin       bs=1M count=10
+    dd if=/dev/zero of=/home/user/ci-builds/ios-app/dummy.bin     bs=1M count=8
+    dd if=/dev/zero of=/home/user/ci-builds/shared-lib/dummy.bin  bs=1M count=5
+
+    # Ensure readable/executable by anyone
+    chmod -R a+rX /home/user
+
+    # Make /home/user world-writable so the unprivileged agent can create
+    # /home/user/reports during task execution.
+    chmod a+rwx /home/user
+
+    # Clean up APT caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author Mobile‐CI challenge setup
+
+%environment
+    # Ensure python3 is the default python
+    export PYTHONIOENCODING=UTF-8
+    export LANG=C.UTF-8

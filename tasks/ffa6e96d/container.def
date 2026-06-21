@@ -1,0 +1,36 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt package index..."
+    apt-get update -qq
+
+    echo "Installing required system packages..."
+    # coreutils is essential and already present, but list it explicitly for clarity
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        openssl \
+        coreutils \
+        tar \
+        gzip \
+        python3 \
+        python3-pip
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating writable /home/user directory..."
+    mkdir -p /home/user
+    chmod 0777 /home/user   # world-writable so the unprivileged runtime user can write
+
+    echo "Cleaning up apt caches..."
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard paths are available
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin

@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python tooling and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Prepare writable workspace root so the unprivileged runtime user
+    # can create everything needed for the exercise.
+    mkdir -p /home/user
+    chmod 777 /home/user   # world-writable to allow any UID to create contents
+
+%environment
+    chmod 755 /home/user
+
+    #!/bin/sh
+    # This block runs at every container start-up.  It guarantees that the
+    # FinOps “initial state” required by the exercise exists and is owned by
+    # the current (unprivileged) user executing the container.
+
+    CLOUD_DIR="/home/user/cloud_costs"
+
+    # Create the base directory if it doesn’t exist.
+    if [ ! -d "${CLOUD_DIR}" ]; then
+        mkdir -p "${CLOUD_DIR}"
+    fi
+
+    # Ensure the three raw CSV files are present with the correct content
+    # and permissions.  They will be created with the UID/GID of the
+    # runtime user, satisfying the ownership requirement checked by pytest.
+    for M in Jan Feb Mar; do
+        F="${CLOUD_DIR}/raw_costs_${M}.csv"
+        if [ ! -f "${F}" ]; then
+            printf 'cloud_costs_placeholder\n' > "${F}"
+            chmod 644 "${F}"
+        fi
+    done
+
+    # Nothing else is created up-front; the learner will take it from here.
+    export TASK_INITIALIZED=1
+
+%labels
+    Author FinOpsTaskBuilder
+    Description "Environment for FinOps permission-handling exercise."
+
+%help
+    This Apptainer image provides the starting filesystem layout for the
+    FinOps permissions challenge.  Pytest is pre-installed so that the
+    automated grader can validate both the initial state and the learner’s
+    eventual solution.

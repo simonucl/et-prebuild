@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+Author firewall-hardening-task
+Description Base image with Python and pytest installed; prepared for firewall hardening exercise.
+
+%post
+set -e
+
+# Ensure apt is up-to-date and minimal tools are present
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    python3-setuptools \
+    ca-certificates \
+    bash
+
+# Install pytest for the autograder
+pip3 install --no-cache-dir pytest
+
+# Create an unprivileged user 'user' with home directory /home/user
+useradd -m -s /bin/bash user
+chown -R user:user /home/user
+
+# Clean up APT caches to keep the image small
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+
+%runscript
+# Default runscript: just execute whatever the user passes
+exec "$@"

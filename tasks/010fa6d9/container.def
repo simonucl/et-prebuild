@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial ticket data for the student/agent to work on
+    # ------------------------------------------------------------------
+    TICKET_DIR="/home/user/tickets/ticket-5502"
+    STATUS_DIR="$TICKET_DIR/cluster_status"
+
+    mkdir -p "${STATUS_DIR}"
+
+    cat > "${STATUS_DIR}/node-alpha.status" <<'EOF'
+SERVICE=db
+STATE=OK
+EOF
+
+    cat > "${STATUS_DIR}/node-beta.status" <<'EOF'
+SERVICE=db
+STATE=FAIL
+EOF
+
+    cat > "${STATUS_DIR}/node-gamma.status" <<'EOF'
+SERVICE=db
+STATE=OK
+EOF
+
+    # Make sure the resolution log does NOT exist yet
+    rm -f "${TICKET_DIR}/resolution.log"
+
+    # Ensure the future student (non-root) can write into the directory tree
+    chmod -R a+rwX /home/user/tickets
+
+%labels
+    chmod 755 /home/user
+
+    Author IT-Support-Task-Apptainer
+    Ticket 5502
+
+%help
+    Container for ticket #5502 exercise.
+    It contains the initial cluster_status data and pytest pre-installed.
+
+%runscript
+    echo "Container for ticket #5502. Use this environment to solve the task."

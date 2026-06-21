@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #--------------------------------------------------
+    # Base tooling
+    #--------------------------------------------------
+    apt-get update -y && \
+        apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    #--------------------------------------------------
+    # Create required directory structure and files
+    #--------------------------------------------------
+    # Logs directory and sample log file
+    mkdir -p /home/user/app/logs
+
+    cat > /home/user/app/logs/pipeline.log <<'EOF'
+[2023-09-01 10:00:00] INFO Starting pipeline
+[2023-09-01 10:00:01] WARNING Missing optional config value 'threshold', default applied
+[2023-09-01 10:00:02] ERROR Failed to connect to database
+[2023-09-01 10:00:03] INFO Retrying in 5 seconds
+[2023-09-01 10:00:08] INFO Connected after 1 retries
+[2023-09-01 10:00:09] WARNING Deprecated API call 'fetch_data_v1'
+[2023-09-01 10:00:10] INFO Pipeline finished successfully
+EOF
+    chmod 0644 /home/user/app/logs/pipeline.log
+
+    # Reports directory (must be writable by the unprivileged user)
+    mkdir -p /home/user/app/reports
+    chmod 0777 /home/user/app/reports
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal locale settings
+    export LANG=C
+    export LC_ALL=C
+
+%labels
+    Author          "DevOps Task Generator"
+    Description     "Initial state for pipeline log triage assignment"

@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author task-setup
+    Description Container for timezone/locale audit task
+
+%post
+    set -e
+
+    # Ensure basic tools are present
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        locales \
+        tzdata \
+        ca-certificates
+
+    # Install pytest for the grading test suite
+    pip3 install --no-cache-dir pytest
+
+    # Guarantee /etc/timezone exists with the expected content
+    echo "Etc/UTC" > /etc/timezone
+
+    # Create a writable working directory for the student
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Provide the expected LANG value for the grading tests
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%runscript
+    exec /bin/bash "$@"
+
+%help
+    This container provides the baseline environment for the timezone/locale
+    compliance audit task.  The student must create /home/user/audit/
+    and the required log file as specified in the assignment.  Pytest is
+    pre-installed so that the automated grading suite can run.

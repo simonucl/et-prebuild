@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state required by the assignment
+    # ------------------------------------------------------------------
+    # Create the /home/user directory hierarchy
+    mkdir -p /home/user/documents
+
+    # Create the policy file with EXACT contents `abc` (no newline)
+    printf 'abc' > /home/user/documents/policy.txt
+
+    # Ensure sane permissions (non-root users need read access)
+    chmod 644 /home/user/documents/policy.txt
+    chmod 755 /home/user
+    chmod 755 /home/user/documents
+
+    # Do NOT create /home/user/audit: the learner must do that.
+
+    # Clean up apt caches to keep the image small
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure python & pip are on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    exec "$@"
+
+%labels
+    Author="Compliance Training Build"
+    Description="Container with initial state for auditable checksum task"

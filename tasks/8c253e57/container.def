@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt and installing required packages..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        jq \
+        ca-certificates
+
+    echo "Installing pytest via pip..."
+    python3 -m pip install --no-cache-dir --upgrade pip setuptools
+    python3 -m pip install --no-cache-dir pytest
+
+    echo "Creating initial directory structure and files..."
+    mkdir -p /home/user/app_profiling
+    chmod 755 /home/user
+    chmod 755 /home/user/app_profiling
+
+    # Create profile_schema.json
+    cat >/home/user/app_profiling/profile_schema.json <<'EOF'
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["function", "calls", "avg_ms"],
+    "additionalProperties": false,
+    "properties": {
+      "function": { "type": "string" },
+      "calls":    { "type": "integer", "minimum": 0 },
+      "avg_ms":   { "type": "number",  "minimum": 0 }
+    }
+  },
+  "minItems": 1
+}
+EOF
+
+    # Create raw_profile.json
+    cat >/home/user/app_profiling/raw_profile.json <<'EOF'
+[
+  { "function": "core.init",        "calls": 1,   "avg_ms": 5.0  },
+  { "function": "engine.render",    "calls": 90,  "avg_ms": 12.4 },
+  { "function": "engine.update",    "calls": 90,  "avg_ms": 15.8 },
+  { "function": "engine.physics",   "calls": 90,  "avg_ms": 7.1  },
+  { "function": "core.cleanup",     "calls": 1,   "avg_ms": 3.2  }
+]
+EOF
+
+    chmod 644 /home/user/app_profiling/profile_schema.json
+    chmod 644 /home/user/app_profiling/raw_profile.json
+
+%environment
+    export PATH=/usr/local/bin:$PATH
+
+%labels
+    Author="Container setup for profiling hot-spots task"
+    Description="Provides initial state and dependencies for the performance profiling exercise."

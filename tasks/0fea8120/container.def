@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package index and install Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip python3-setuptools
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory structure and raw CSV files for tests
+    # ------------------------------------------------------------------
+    # Create /home and the user workspace if they are missing
+    mkdir -p /home/user
+    # Make sure learners can create new content inside /home/user later on
+    chmod 0777 /home/user
+
+    # Create the raw_data directory and populate the CSV files
+    mkdir -p /home/user/raw_data
+    chmod 0755 /home/user/raw_data
+
+    # dataset_A_v1.csv
+    printf "time,signal\n0,0.123\n" > /home/user/raw_data/dataset_A_v1.csv
+    # dataset_B_v1.csv
+    printf "time,value\n0,42.7\n" > /home/user/raw_data/dataset_B_v1.csv
+
+    # Ensure the files are readable by everyone
+    chmod 0644 /home/user/raw_data/dataset_A_v1.csv /home/user/raw_data/dataset_B_v1.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to export; rely on Apptainer’s default $HOME binding
+
+%runscript
+    echo "Container for the symlink exercise. Launch an interactive shell:"
+    exec /bin/bash

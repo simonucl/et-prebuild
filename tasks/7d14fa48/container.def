@@ -1,0 +1,109 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # --------------------------------------------------------------------- #
+    # Basic tooling: Python + pytest
+    # --------------------------------------------------------------------- #
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip ca-certificates
+    rm -rf /var/lib/apt/lists/*
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------- #
+    # Directory structure for the assignment
+    # --------------------------------------------------------------------- #
+    mkdir -p /home/user/backups
+    chmod 755 /home/user /home/user/backups
+
+    # Helper to write CSV files with the correct permissions (0644)
+    write_csv () {
+        local file="$1"
+        shift
+        install -m 644 /dev/null "$file"        # create file with correct mode
+        # shellcheck disable=SC2129
+        {
+            # All remaining arguments are literal lines; ensure final newline
+            for line in "$@"; do
+                printf '%s\n' "$line"
+            done
+        } >> "$file"
+    }
+
+    # --------------------------------------------------------------------- #
+    # Populate the fourteen nightly CSV backup files
+    # --------------------------------------------------------------------- #
+    write_csv /home/user/backups/primary_backup_20230618.csv \
+        "Date,Hostname,Tables_Backup,Size_MB,Duration" \
+        "2023-06-18,primary-db,83,1225,17m50s"
+
+    write_csv /home/user/backups/replica_backup_20230618.csv \
+        "Date,Hostname,Copy_Start,Copy_End,Status" \
+        "2023-06-18,replica-db,00:15:10,00:37:01,SUCCESS"
+
+    write_csv /home/user/backups/primary_backup_20230619.csv \
+        "Date,Hostname,Tables_Backup,Size_MB,Duration" \
+        "2023-06-19,primary-db,84,1230,18m02s"
+
+    write_csv /home/user/backups/replica_backup_20230619.csv \
+        "Date,Hostname,Copy_Start,Copy_End,Status" \
+        "2023-06-19,replica-db,00:15:15,00:37:10,SUCCESS"
+
+    write_csv /home/user/backups/primary_backup_20230620.csv \
+        "Date,Hostname,Tables_Backup,Size_MB,Duration" \
+        "2023-06-20,primary-db,85,1240,18m15s"
+
+    write_csv /home/user/backups/replica_backup_20230620.csv \
+        "Date,Hostname,Copy_Start,Copy_End,Status" \
+        "2023-06-20,replica-db,00:15:18,00:37:20,SUCCESS"
+
+    write_csv /home/user/backups/primary_backup_20230621.csv \
+        "Date,Hostname,Tables_Backup,Size_MB,Duration" \
+        "2023-06-21,primary-db,86,1248,18m18s"
+
+    write_csv /home/user/backups/replica_backup_20230621.csv \
+        "Date,Hostname,Copy_Start,Copy_End,Status" \
+        "2023-06-21,replica-db,00:15:20,00:37:25,SUCCESS"
+
+    write_csv /home/user/backups/primary_backup_20230622.csv \
+        "Date,Hostname,Tables_Backup,Size_MB,Duration" \
+        "2023-06-22,primary-db,85,1245,18m19s"
+
+    write_csv /home/user/backups/replica_backup_20230622.csv \
+        "Date,Hostname,Copy_Start,Copy_End,Status" \
+        "2023-06-22,replica-db,00:15:22,00:37:30,SUCCESS"
+
+    write_csv /home/user/backups/primary_backup_20230623.csv \
+        "Date,Hostname,Tables_Backup,Size_MB,Duration" \
+        "2023-06-23,primary-db,85,1249,18m20s"
+
+    write_csv /home/user/backups/replica_backup_20230623.csv \
+        "Date,Hostname,Copy_Start,Copy_End,Status" \
+        "2023-06-23,replica-db,00:15:24,00:37:35,SUCCESS"
+
+    write_csv /home/user/backups/primary_backup_20230624.csv \
+        "Date,Hostname,Tables_Backup,Size_MB,Duration" \
+        "2023-06-24,primary-db,85,1250,18m23s"
+
+    write_csv /home/user/backups/replica_backup_20230624.csv \
+        "Date,Hostname,Copy_Start,Copy_End,Status" \
+        "2023-06-24,replica-db,00:15:26,00:37:45,SUCCESS"
+
+%labels
+    Author      backup-task-setup
+    Description Initial state for the weekly backup reporting exercise
+
+%help
+This container image provides the initial filesystem layout needed for the
+“weekly PostgreSQL backup report” assignment.  It contains:
+
+  • /home/user/backups   – 14 nightly CSV files (primary + replica for
+                            2023-06-18 through 2023-06-24)
+  • Python 3 and pytest  – available for the autograder to validate both the
+                            initial and final states of the exercise.
+
+The /home/user/reports directory is intentionally **absent** so the student
+solution can create it and place their deliverables there.

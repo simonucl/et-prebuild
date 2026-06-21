@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author Incident-Frequency Task Builder
+    Description Base image for the "Count incident frequency per component" task.
+
+%post
+    set -e
+
+    echo "Updating package index and installing dependencies..."
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        ca-certificates \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest (needed by the grading system)..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Preparing initial directory structure and seed log file..."
+    # Create /home/user and incident directory
+    mkdir -p /home/user/incidents
+    chmod 0755 /home/user
+    chmod 0755 /home/user/incidents
+
+    # Seed alerts.log with the required 11 lines
+    cat > /home/user/incidents/alerts.log <<'EOF'
+2024-05-06T12:01:02Z ERROR auth-service
+2024-05-06T12:01:03Z WARN payment-service
+2024-05-06T12:01:04Z ERROR auth-service
+2024-05-06T12:01:05Z CRITICAL inventory-service
+2024-05-06T12:01:06Z ERROR payment-service
+2024-05-06T12:01:07Z ERROR auth-service
+2024-05-06T12:01:08Z WARN auth-service
+2024-05-06T12:01:09Z ERROR shipping-service
+2024-05-06T12:01:10Z ERROR payment-service
+2024-05-06T12:01:11Z CRITICAL auth-service
+EOF
+    chmod 0644 /home/user/incidents/alerts.log
+
+    echo "Base image setup completed."
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are in PATH
+    export PATH="/usr/local/bin:$PATH"
+
+%help
+    This Apptainer image provides the starting environment for the
+    "Count incident frequency per component" shell-scripting task.
+    It includes:
+      • /home/user/incidents/alerts.log  – the seed log file
+      • pytest                           – used by the automated grader

@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip ca-certificates && \
+        rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Prepare initial filesystem state required by the grading tests
+    # -----------------------------------------------------------------
+    # Create directory structure
+    mkdir -p /home/user/experiments/run_42
+
+    # Create the model artifact with exact contents: 5 bytes "hello"
+    printf 'hello' > /home/user/experiments/run_42/model.bin
+
+    # Ensure broad read/write permissions so the non-root runtime user
+    # can append to /home/user/experiments/checksums.log
+    chmod -R a+rwX /home/user/experiments
+
+%labels
+    chmod 755 /home/user
+
+    Author YourName
+    Description Container for checksum-ledger task; includes pytest and pre-populated model.bin
+
+%environment
+    # Nothing to override; runtime user inherits host $HOME
+
+%help
+    This container provides the initial state for the checksum logging task.

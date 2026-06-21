@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1.  Basic Python tooling for the grader & learner code
+    # ------------------------------------------------------------------
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3-pip python3-setuptools ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2.  Prepare the initial filesystem expected by the tests
+    # ------------------------------------------------------------------
+    # Home hierarchy
+    mkdir -p /home/user/datasets/raw
+
+    # Three CSV files (single-character content, NO trailing newline)
+    printf 'a' > /home/user/datasets/raw/customers.csv
+    printf 'x' > /home/user/datasets/raw/products.csv   # intentionally corrupted
+    printf 'b' > /home/user/datasets/raw/transactions.csv
+
+    # Reference checksum list
+    cat > /home/user/datasets/reference_md5.txt <<'EOF'
+0cc175b9c0f1b6a831c399e269772661  customers.csv
+4a8a08f09d37b73795649038408b5f33  products.csv
+92eb5ffee6ae2fec3ad71c777531578f  transactions.csv
+EOF
+
+    # ------------------------------------------------------------------
+    # 3.  Permissions – the runtime user is NOT root.
+    #     Make everything under /home/user writable.
+    # ------------------------------------------------------------------
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is available and unbuffered (nice for debugging)
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author="automated build for checksum-audit task"

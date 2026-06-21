@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required packages
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        curl \
+        python3-pip \
+        ca-certificates
+
+    # Install pytest via pip (ensures availability even if distro package name changes)
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------ #
+    # Prepare exercise assets and writable workspace
+    # ------------------------------------------------------------------ #
+    # Create the user home directory (if not already present)
+    mkdir -p /home/user
+
+    # Make /home/user writable for any invoking UID (sticky bit keeps files safe)
+    chmod 1777 /home/user
+
+    # Stage the mock backup status JSON payload
+    cat > /home/user/mock_backup_api.json <<'EOF'
+{
+  "backup_id": "2024-06-15T08:30:00Z",
+  "status": "completed",
+  "duration_seconds": 125,
+  "size_bytes": 10485760
+}
+EOF
+
+    # Ensure readable permissions on the JSON file
+    chmod 0644 /home/user/mock_backup_api.json
+
+    # Clean up APT caches to keep image size small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python binaries from pip are in PATH
+    export PATH="$PATH:/usr/local/bin"
+
+%labels
+    Author="Apptainer Task Prep"
+    Description="Container for the exercise 'Retrieve local backup status via curl and archive it'"
+
+%help
+    This container includes curl, pytest, and the staged mock JSON payload
+    at /home/user/mock_backup_api.json required for the exercise.

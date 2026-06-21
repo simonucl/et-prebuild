@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip.
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the evaluation suite.
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial dataset directory structure and seed files
+    # exactly as required by the task specification.
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/datasets/coral_reef
+    chmod 0777 /home/user/datasets/coral_reef   # Ensure write access.
+
+    # VERSION file: must contain "1.2.3\n" exactly.
+    printf "1.2.3\n" > /home/user/datasets/coral_reef/VERSION
+
+    # CHANGELOG.md with the precise initial contents.
+    cat > /home/user/datasets/coral_reef/CHANGELOG.md <<'EOF'
+## [1.2.3] - 2023-01-10
+### Added
+- Added January 2023 reef imagery.
+
+## [1.2.2] - 2022-12-20
+### Fixed
+- Corrected GPS coordinates.
+EOF
+
+    # Relax permissions so the non-root user running the container
+    # can modify these files during the task.
+    chmod 0666 /home/user/datasets/coral_reef/VERSION \
+               /home/user/datasets/coral_reef/CHANGELOG.md
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python user-installed binaries are discoverable.
+    export PATH="/usr/local/bin:${PATH}"

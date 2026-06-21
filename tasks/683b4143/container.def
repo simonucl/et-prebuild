@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author QA-Task-Builder
+    Description "Base image for SQLite QA testing exercise"
+
+%post
+    set -e
+
+    # Refresh package lists and install required tools
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3 \
+        ca-certificates
+
+    # Install pytest for the grader’s test-suite
+    pip3 install --no-cache-dir pytest
+
+    # Prepare a writable workspace root expected by the exercise
+    mkdir -p /home/user
+    # Give broad write permissions since the container will run unprivileged
+    chmod 0777 /home/user
+
+    # Cleanup APT cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Preserve standard PATH and ensure /usr/local/bin (pip default) is included
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    # Default action: just execute whatever the user supplied
+    exec "$@"
+
+%help
+    This container image provides:
+      • Python 3 with pytest
+      • SQLite 3 CLI
+    It is intended for a QA exercise where the user will create a local
+    SQLite workspace under /home/user/qa_tests/db at runtime.

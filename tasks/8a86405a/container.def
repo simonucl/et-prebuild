@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update and install Python + Pip
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the assessment framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the required dataset directory structure and example files
+    # ------------------------------------------------------------------
+    DATA_DIR="/home/user/data"
+    ORIG_DIR="${DATA_DIR}/original"
+    WORK_DIR="${DATA_DIR}/working"
+
+    # Create directories
+    mkdir -p "${ORIG_DIR}"
+    mkdir -p "${WORK_DIR}"
+
+    # Create placeholder CSV files (regular files, not symlinks)
+    printf "id,value\n1,42\n" > "${ORIG_DIR}/train_set.csv"
+    printf "id,value\n1,24\n" > "${ORIG_DIR}/test_set.csv"
+
+    # Ensure file permissions are read-only for everyone
+    chmod 644 "${ORIG_DIR}/train_set.csv" "${ORIG_DIR}/test_set.csv"
+
+    # Make the working directory writable by any unprivileged user
+    chmod 777 "${WORK_DIR}"
+    chmod 755 "${ORIG_DIR}"
+    chmod 755 "${DATA_DIR}"
+
+%environment
+    chmod 755 /home/user
+
+    # Use Python 3 as default python
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author example_builder
+    Description "Environment for symlink creation task with pytest pre-installed."
+
+%runscript
+    echo "Container for the symlink creation task. Use it with an agent runner or shell."

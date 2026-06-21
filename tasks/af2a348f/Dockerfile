@@ -1,0 +1,41 @@
+FROM ubuntu:22.04
+
+# Set environment variables
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+
+# Install Python + pytest so the grading harness can run.
+RUN apt-get update -y && \
+    apt-get install -y python3-pip python3-setuptools && \
+    pip3 install --no-cache-dir pytest
+
+# Prepare the initial filesystem that the student will start with.
+# Ensure the home directory exists and is user-writable so that the
+# student (non-root) can create new files/directories inside it.
+RUN mkdir -p /home/user && \
+    chmod 777 /home/user
+
+# Create the logs directory with the correct permissions.
+RUN mkdir -p /home/user/logs && \
+    chmod 755 /home/user/logs
+
+# Populate the combined.log file with the required 11 lines.
+RUN cat > /home/user/logs/combined.log <<'EOF'
+2023-03-21 10:15:43,221 INFO  [AUTH] User login succeeded uid=233
+2023-03-21 10:16:02,101 ERROR [API] ERR4152 - Failed to fetch resource id=34
+2023-03-21 10:16:45,312 WARNING [DB] Connection slow, t=527ms
+2023-03-21 10:17:11,998 ERROR [API] ERR5021 - Null pointer exception id=78
+2023-03-21 10:17:45,902 CRITICAL [SECURITY] ERR9001 - Multiple failed login attempts uid=122
+2023-03-21 10:18:10,455 INFO  [SCHED] Job 18 completed in 1234ms
+2023-03-21 10:19:03,211 ERROR [DB] ERR3004 - Timeout while querying orders
+2023-03-21 10:20:47,599 CRITICAL [API] ERR5500 - Data corruption detected id=12
+2023-03-21 10:21:12,772 DEBUG [CACHE] Cache miss key=session:233
+2023-03-21 10:21:45,001 ERROR [FS] ERR6400 - Disk full path=/var/data
+2023-03-21 10:23:11,650 ERROR [API] ERR5021 - Null pointer exception id=78  # duplicate of an earlier line for deduplication testing
+EOF
+
+RUN chmod 644 /home/user/logs/combined.log
+
+# DO NOT create /home/user/alerts or any output files; the student will.
+
+WORKDIR /home/user

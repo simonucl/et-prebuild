@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author example
+    Description Container for server inventory counting task – provides initial servers.log and pytest.
+
+%post
+    set -e
+
+    # Update package lists and install Python and pip
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the /home/user directory exists
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Create the initial servers.log with the required 7 lines
+    cat > /home/user/servers.log <<'EOF'
+srv01,OK,87,0.23
+srv02,DOWN,0,0.00
+srv03,OK,102,0.65
+srv04,WARNING,12,1.10
+srv05,DOWN,0,0.00
+srv06,OK,34,0.40
+srv07,DOWN,0,0.00
+EOF
+
+    # Set appropriate permissions
+    chmod 644 /home/user/servers.log
+
+%environment
+    # Ensure python points to python3
+    export PYTHONIOENCODING=UTF-8
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container built for DOWN_COUNT task. Open a shell with 'apptainer exec -it <image> /bin/bash' to start working."

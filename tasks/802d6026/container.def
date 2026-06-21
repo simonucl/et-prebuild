@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the uptime-monitoring exercise
+    # ------------------------------------------------------------------
+    MON_DIR="/home/user/monitoring"
+    mkdir -p "${MON_DIR}"
+
+    # Make directory writable by any non-root user running inside the container
+    chmod 0777 "${MON_DIR}"
+
+    # Create the monitors.ini file with the exact required contents
+    cat > "${MON_DIR}/monitors.ini" <<'EOF'
+[web]
+url = https://example.com
+expected_status = 200
+
+[db]
+url = tcp://db.internal:5432
+expected_status = alive
+
+[cache]
+url = tcp://cache.internal:6379
+expected_status = alive
+EOF
+
+    # Set file permissions
+    chmod 0644 "${MON_DIR}/monitors.ini"
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default HOME; just ensure sensible locale
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=UTF-8
+
+%labels
+    Author          AI Assistant
+    Description     Container for uptime-monitoring exercise with pytest installed.

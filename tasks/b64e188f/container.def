@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author SecurityAudit Task Setup
+    Description Initial state for audit_demo permissions task.
+
+%post
+    set -eux
+
+    # Update package lists and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        git \
+        curl
+
+    # Install pytest for the test-runner
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the directory structure and files required by the exercise
+    # ------------------------------------------------------------------
+    # Ensure /home and /home/user exist
+    mkdir -p /home/user
+
+    # Create the audit_demo directory and credentials file
+    mkdir -p /home/user/audit_demo
+    cat >/home/user/audit_demo/credentials.txt <<'EOF'
+username=admin
+password=Passw0rd!
+token=SECRETTOKEN123
+EOF
+
+    # Set initial permissions as described in the task
+    chmod 755 /home/user/audit_demo
+    chmod 644 /home/user/audit_demo/credentials.txt
+
+    # Make sure everything is owned by root inside the image
+    chown -R 0:0 /home/user
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure Python and pip are on the PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%help
+    This container provides the starting environment for the
+    "Audit Demo Permissions" task.  It contains:
+
+      /home/user/audit_demo                  (mode 755)
+      /home/user/audit_demo/credentials.txt  (mode 644)
+
+    Pytest is pre-installed so the automated grader can run its tests.

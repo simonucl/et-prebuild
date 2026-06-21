@@ -1,0 +1,71 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package index and install Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # Ensure a normal user and its home directory exist
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -s /bin/bash user
+    fi
+    mkdir -p /home/user
+    chown -R user:user /home/user
+
+    # Provide a minimal stub for the Docker CLI expected by the tests
+    mkdir -p /usr/local/bin
+    cat <<"EOF" >/usr/local/bin/docker
+#!/usr/bin/env bash
+# Lightweight stub emulating a subset of the Docker CLI
+set -e
+
+EXPECTED_ID="87e5c1b4a2d3"
+
+case "$1" in
+  ps)
+    # Expected usage:
+    # docker ps --filter name=^/mysql-prod$ --format {{.ID}}
+    shift
+    if [[ "$1" == "--filter" && "$2" == "name=^/mysql-prod$" && "$3" == "--format" && "$4" == "{{.ID}}" ]]; then
+        echo "$EXPECTED_ID"
+    else
+        echo "Unsupported arguments for docker ps" >&2
+        exit 1
+    fi
+    ;;
+  inspect)
+    # Expected usage:
+    # docker inspect -f {{.State.Running}} 87e5c1b4a2d3
+    shift
+    if [[ "$1" == "-f" && "$2" == "{{.State.Running}}" && "$3" == "$EXPECTED_ID" ]]; then
+        echo "true"
+    else
+        echo "false"
+    fi
+    ;;
+  version|--version)
+    echo "Docker version 20.10.8"
+    ;;
+  *)
+    echo "Unsupported docker command: $1" >&2
+    exit 1
+    ;;
+esac
+EOF
+    chmod 755 /usr/local/bin/docker
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:$PATH
+
+%labels
+    Maintainer="Apptainer Task Prep"
+    Description="Container for MySQL Docker ID retrieval task with pytest installed."

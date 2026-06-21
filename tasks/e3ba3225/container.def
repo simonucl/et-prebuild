@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ## Update package index and install Python & pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    ## Create initial filesystem state for the exercise
+    mkdir -p /home/user/project
+
+    # VERSION file with initial version
+    printf "1.4.2\n" > /home/user/project/VERSION
+
+    # CHANGELOG.md with initial content
+    cat > /home/user/project/CHANGELOG.md <<'EOF'
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [1.4.2] - 2023-08-20
+- Fixed security minor bug
+EOF
+
+    ## Ensure write permissions for non-root users who will run inside the container
+    chmod -R 777 /home/user
+
+    ## Clean up apt cache to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special here; keep default HOME binding
+    export PYTHONIOENCODING=utf-8
+
+%runscript
+    exec "$@"
+
+%labels
+    Author patch-level-bump-sample

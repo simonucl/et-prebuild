@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python tooling (pytest will be installed with pip)
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state required for the assignment
+    # ------------------------------------------------------------------
+    # 1. Create /home/user/release directory.
+    mkdir -p /home/user/release
+
+    # 2. Create the pristine .env file with NO trailing newline.
+    printf 'APP_NAME=webapp\nAPP_ENV=production\nAPP_VERSION=1.4.2' > /home/user/release/.env
+
+    # 3. Ensure the directory and .env file are writable by the (non-root) user
+    #    that will execute the task inside the container.
+    chmod 777 /home/user/release
+    chmod 666 /home/user/release/.env
+
+    # 4. Do NOT create the logs directory or deployment.log file—these are
+    #    intentionally left for the student’s single compound command.
+    :
+
+%environment
+    chmod 755 /home/user
+
+    # No special environment variables required
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    # Default action when the container is executed (no-op; drop to shell)
+    exec "${@:-/bin/bash}"
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Environment for release-manager compound-command exercise."
+
+%help
+    This container image provides the initial filesystem and tooling
+    (Python + pytest) required for the “single compound command” release
+    management task.

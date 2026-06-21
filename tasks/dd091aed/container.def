@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the non-root user that the grading agent will run as
+    # ------------------------------------------------------------------
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g 1000 -s /bin/bash user
+
+    # ------------------------------------------------------------------
+    # Prepare the initial dataset state
+    # ------------------------------------------------------------------
+    DATA_DIR=/home/user/datasets/raw
+    mkdir -p "${DATA_DIR}"
+
+    cat > "${DATA_DIR}/weird_values.csv" << 'EOF'
+id,name,value
+1,Alpha,10
+2,Bravo,NULL
+3,Charlie,30
+2,Bravo,NULL
+4,Delta,N/A
+3,Charlie,30
+5,Echo,50
+EOF
+
+    # Ensure proper ownership for the grading user
+    chown -R 1000:1000 /home/user
+
+    # Clean up apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python user installs (if any) go to a writable location
+    export PYTHONUSERBASE=/home/user/.local
+    export PATH=$PYTHONUSERBASE/bin:$PATH
+
+%runscript
+    exec /bin/bash "$@"
+
+%labels
+    Author="Apptainer Task Preparer"
+    Description="Environment for CSV cleaning task with pytest installed"

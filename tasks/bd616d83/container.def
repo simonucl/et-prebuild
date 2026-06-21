@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #---------------------------------------------------------------------
+    # Base utilities and Python tooling
+    #---------------------------------------------------------------------
+    apt-get update
+    # Minimal install: python3, pip and coreutils (coreutils is usually present
+    # but install explicitly to be safe).  Then install pytest via pip.
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        coreutils
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #---------------------------------------------------------------------
+    # Create required directory structure
+    #---------------------------------------------------------------------
+    mkdir -p /home/user/raw_logs
+    mkdir -p /home/user/reports
+
+    #---------------------------------------------------------------------
+    # Populate the source log files (with real tab characters, not "\t")
+    #---------------------------------------------------------------------
+    cat > /home/user/raw_logs/active_connections.tsv <<'EOF'
+HOSTNAME	IP	PORT	STATE	PID
+web01	10.0.0.1	80	ESTABLISHED	2345
+db01	10.0.0.2	5432	ESTABLISHED	5432
+cache01	10.0.0.3	6379	LISTEN	3333
+EOF
+
+    cat > /home/user/raw_logs/cpu_load.tsv <<'EOF'
+HOSTNAME	1min	5min	15min
+web01	0.10	0.12	0.15
+db01	0.55	0.53	0.50
+cache01	0.20	0.25	0.30
+EOF
+
+    #---------------------------------------------------------------------
+    # Permissions: make sure the invoking (non-root) user can write to all
+    # necessary locations during the exercise.
+    #---------------------------------------------------------------------
+    chmod -R a+rwx /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and coreutils are on the PATH (should be by default)
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%help
+    Container for the “connection load summary” exercise.
+    Pre-populated with:
+      • /home/user/raw_logs/active_connections.tsv
+      • /home/user/raw_logs/cpu_load.tsv
+    The /home/user/reports directory is empty (writable) for the learner to
+    place their output files.
+    Pytest is installed so the automated grading tests can run.

@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the assessment suite
+    # ---------------------------------------------------------------------
+    # Create working directory structure
+    mkdir -p /home/user/iac
+
+    # main.tf
+    cat > /home/user/iac/main.tf <<'EOF'
+resource "aws_security_group" "web" {
+  name = "web"
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+EOF
+
+    # db.tf
+    cat > /home/user/iac/db.tf <<'EOF'
+resource "aws_security_group" "db" {
+  name = "db"
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+EOF
+
+    # variables.tf (empty)
+    : > /home/user/iac/variables.tf
+
+    # Make sure the non-root runtime user can read the files and write to /home/user
+    chmod -R a+r /home/user/iac
+    chmod 0777 /home/user
+
+%runscript
+    chmod 755 /home/user
+
+    exec "$@"

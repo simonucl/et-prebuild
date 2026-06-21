@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "=== Updating apt and installing Python & pytest ==="
+    apt-get update -y
+    # Python is already present in the base image, but make sure pip and pytest are available
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    echo "=== Creating non-root workspace and backup archive ==="
+    # Create the /home/user hierarchy expected by the exercise
+    mkdir -p /home/user/backup_repo
+    chmod 755 /home/user
+    chmod 755 /home/user/backup_repo
+
+    # Build the directory structure that will be archived
+    WORKDIR=/tmp/backup_build
+    mkdir -p "${WORKDIR}/etc/ssh"
+    mkdir -p "${WORKDIR}/var/log"
+
+    # 1) etc/hostname  (17 bytes: "backup-test-host\n")
+    cat > "${WORKDIR}/etc/hostname" <<'EOF'
+backup-test-host
+EOF
+
+    # 2) etc/ssh/sshd_config (89 bytes total)
+    cat > "${WORKDIR}/etc/ssh/sshd_config" <<'EOF'
+# SSH Daemon Config for testing
+Port 2222
+PermitRootLogin no
+PasswordAuthentication yes
+EOF
+
+    # 3) var/log/test.log (43 bytes)
+    cat > "${WORKDIR}/var/log/test.log" <<'EOF'
+This is a test log for restore validation.
+EOF
+
+    # Create the tar.gz archive with the exact internal paths
+    tar -C "${WORKDIR}" -czf /home/user/backup_repo/system_backup_2023-10-05.tar.gz etc var
+
+    # Ensure the archive is readable by any unprivileged user
+    chmod 644 /home/user/backup_repo/system_backup_2023-10-05.tar.gz
+
+    # Clean up temporary build directory
+    rm -rf "${WORKDIR}"
+
+%files
+
+%environment
+    # Minimal, rely on image defaults; no HOME override
+    export LC_ALL=C.UTF-8
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Container Build Script"
+    Description="Environment for backup-restore task with pytest pre-installed."
+
+%help
+    This container prepares the initial state for the “backup-restore” exercise.
+    It installs pytest and provides the backup archive at:
+      /home/user/backup_repo/system_backup_2023-10-05.tar.gz

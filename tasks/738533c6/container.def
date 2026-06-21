@@ -1,0 +1,74 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author      OpenAI ChatGPT
+    Description Environment for “Synchronize a Mock Remote Web Root” task.
+
+%post
+    #!/bin/bash
+    set -e
+
+    #--------------------------------------------------
+    # Install Python tooling (pytest required by grader)
+    #--------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip coreutils
+    pip3 install --no-cache-dir pytest
+
+    #--------------------------------------------------
+    # Prepare writable HOME for the learner
+    #--------------------------------------------------
+    mkdir -p /home/user
+    chmod 0777 /home/user      # Allow the unprivileged learner to create files/dirs
+
+    #--------------------------------------------------
+    # Construct the mock “remote” web root
+    #   /home/user/mock_remote/var/www/html
+    #--------------------------------------------------
+    SRC_ROOT="/home/user/mock_remote/var/www/html"
+    mkdir -p "${SRC_ROOT}/admin" "${SRC_ROOT}/css"
+
+    # index.php  (1254 bytes)
+    cat > "${SRC_ROOT}/index.php" <<'PHP'
+<?php
+echo "Welcome to vulnerable VM!";
+// ...
+PHP
+    truncate -s 1254 "${SRC_ROOT}/index.php"
+
+    # admin/login.php  (2048 bytes)
+    cat > "${SRC_ROOT}/admin/login.php" <<'PHP'
+<?php
+session_start();
+// ...
+PHP
+    truncate -s 2048 "${SRC_ROOT}/admin/login.php"
+
+    # css/style.css  (512 bytes)
+    cat > "${SRC_ROOT}/css/style.css" <<'CSS'
+body {
+    background:#222;
+}
+/* ... */
+CSS
+    truncate -s 512 "${SRC_ROOT}/css/style.css"
+
+    # Ensure readability
+    chmod -R a+rX /home/user/mock_remote
+
+    #--------------------------------------------------
+    # Clean up
+    #--------------------------------------------------
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export PYTHONUNBUFFERED=1
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for the synchronization task is ready."

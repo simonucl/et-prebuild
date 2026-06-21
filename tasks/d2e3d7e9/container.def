@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package list and install Python plus pip
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python-is-python3
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create the non-root user expected by the exercise
+    useradd -m -s /bin/bash user
+
+    # Prepare the initial INI configuration file
+    cat > /home/user/db_config.ini <<'EOF'
+[general]
+max_connections = 100
+shared_buffers  = 128MB
+
+[optimizer]
+enable_hashjoin  = off
+enable_mergejoin = on
+enable_indexscan = off
+
+[logging]
+log_min_duration_statement = 100ms
+EOF
+
+    # Ensure correct ownership so the learner (non-root) can modify it
+    chown user:user /home/user/db_config.ini
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

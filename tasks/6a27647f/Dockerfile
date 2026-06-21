@@ -1,0 +1,43 @@
+# syntax=docker/dockerfile:1
+FROM ubuntu:22.04
+
+# Update package lists and install Python + pip
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked --mount=type=cache,target=/var/lib/apt,sharing=locked apt-get update -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install pytest for the grader
+RUN --mount=type=cache,target=/root/.cache/pip pip3 install --no-cache-dir pytest
+
+# ------------------------------------------------------------------
+# Prepare directory tree and seed the network_traffic.log file
+# ------------------------------------------------------------------
+RUN set -e && \
+    LOG_DIR="/home/user/logs" && \
+    mkdir -p "${LOG_DIR}"
+
+RUN cat > "/home/user/logs/network_traffic.log" <<'EOF'
+2024-05-01T10:00:01Z 192.168.1.10 -> 10.0.0.5 450
+2024-05-01T10:00:02Z 192.168.1.20 -> 10.0.0.5 1500
+2024-05-01T10:00:03Z 192.168.1.10 -> 10.0.0.5 600
+2024-05-01T10:00:04Z 192.168.1.30 -> 10.0.0.5 200
+2024-05-01T10:00:05Z 192.168.1.20 -> 10.0.0.5 700
+2024-05-01T10:00:06Z 192.168.1.20 -> 10.0.0.5 800
+2024-05-01T10:00:07Z 192.168.1.40 -> 10.0.0.5 50
+2024-05-01T10:00:08Z 192.168.1.30 -> 10.0.0.5 300
+2024-05-01T10:00:09Z 192.168.1.10 -> 10.0.0.5 200
+2024-05-01T10:00:10Z 192.168.1.50 -> 10.0.0.5 1000
+2024-05-01T10:00:11Z 192.168.1.20 -> 10.0.0.5 500
+EOF
+
+# Ensure world-writable permissions so the non-root student user can
+# create additional files and directories within /home/user/logs.
+RUN chmod -R 777 /home/user
+
+# Runtime environment setup
+RUN chmod 755 /home/user
+
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8

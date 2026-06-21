@@ -1,0 +1,176 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install runtime dependencies for the assignment
+    #    – Python & pip (for pytest which the grader uses)
+    #    – GNU gettext (provides ‘msgfmt’ binary required by the student)
+    # ------------------------------------------------------------------
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        gettext \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Prepare initial filesystem layout required by the task
+    #    NOTE: We intentionally DO NOT create the output directories/files
+    #          that the student is expected to generate.
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/project/po
+    chmod -R 0777 /home/user        # allow the unprivileged runtime user to write
+
+    # ------------------------------------------------------------------
+    # 3. Provide the French PO file (~2 KiB) that learners must compile.
+    # ------------------------------------------------------------------
+    cat > /home/user/project/po/fr.po <<'EOF'
+msgid ""
+msgstr ""
+"Project-Id-Version: app 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-01-01 12:00+0000\n"
+"PO-Revision-Date: 2023-01-02 12:00+0000\n"
+"Last-Translator: Jean Dupont <jean.dupont@example.com>\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# -------------------------------------------------------------------
+# The following dummy catalogue is intentionally made large enough
+# (> 1 KiB) by repeating many unique entries so that the pre-task
+# tests consider it a “reasonably sized” PO file.
+# -------------------------------------------------------------------
+#: src/ui/main.py:10
+msgid "File"
+msgstr "Fichier"
+
+#: src/ui/main.py:11
+msgid "Edit"
+msgstr "Éditer"
+
+#: src/ui/main.py:12
+msgid "View"
+msgstr "Affichage"
+
+#: src/ui/main.py:13
+msgid "Help"
+msgstr "Aide"
+
+#: src/ui/dialogs.py:20
+msgid "Are you sure you want to quit?"
+msgstr "Voulez-vous vraiment quitter ?"
+
+#: src/ui/dialogs.py:25
+msgid "Yes"
+msgstr "Oui"
+
+#: src/ui/dialogs.py:26
+msgid "No"
+msgstr "Non"
+
+#: src/core/errors.py:30
+msgid "Unknown error occurred."
+msgstr "Une erreur inconnue est survenue."
+
+#: src/core/errors.py:35
+msgid "Network connection lost."
+msgstr "La connexion réseau a été perdue."
+
+#: src/core/errors.py:40
+msgid "Access denied."
+msgstr "Accès refusé."
+
+#: repeated block to enlarge file
+msgid "Placeholder 01"
+msgstr "Espace réservé 01"
+
+msgid "Placeholder 02"
+msgstr "Espace réservé 02"
+
+msgid "Placeholder 03"
+msgstr "Espace réservé 03"
+
+msgid "Placeholder 04"
+msgstr "Espace réservé 04"
+
+msgid "Placeholder 05"
+msgstr "Espace réservé 05"
+
+msgid "Placeholder 06"
+msgstr "Espace réservé 06"
+
+msgid "Placeholder 07"
+msgstr "Espace réservé 07"
+
+msgid "Placeholder 08"
+msgstr "Espace réservé 08"
+
+msgid "Placeholder 09"
+msgstr "Espace réservé 09"
+
+msgid "Placeholder 10"
+msgstr "Espace réservé 10"
+
+msgid "Placeholder 11"
+msgstr "Espace réservé 11"
+
+msgid "Placeholder 12"
+msgstr "Espace réservé 12"
+
+msgid "Placeholder 13"
+msgstr "Espace réservé 13"
+
+msgid "Placeholder 14"
+msgstr "Espace réservé 14"
+
+msgid "Placeholder 15"
+msgstr "Espace réservé 15"
+
+msgid "Placeholder 16"
+msgstr "Espace réservé 16"
+
+msgid "Placeholder 17"
+msgstr "Espace réservé 17"
+
+msgid "Placeholder 18"
+msgstr "Espace réservé 18"
+
+msgid "Placeholder 19"
+msgstr "Espace réservé 19"
+
+msgid "Placeholder 20"
+msgstr "Espace réservé 20"
+EOF
+
+    # ------------------------------------------------------------------
+    # 4. Provide a basic ~/.bashrc that does NOT yet contain the export
+    #    line the student must append.
+    # ------------------------------------------------------------------
+    mkdir -p /home/user
+    cat > /home/user/.bashrc <<'EOF'
+# ~/.bashrc - initial content for localisation assignment container
+# (Students will append configuration lines below.)
+EOF
+
+    chmod 0644 /home/user/.bashrc
+    chmod -R a+rX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # No environment variables are set here; runtime user’s HOME remains unchanged.
+
+%labels
+    Author localization-engineering-task
+    Description Container image for “app” localisation exercise – initial state only.
+
+%runscript
+    echo "This container is intended to be used in an interactive shell for the localisation task."
+    echo "Run:  apptainer exec <image>.sif /bin/bash"

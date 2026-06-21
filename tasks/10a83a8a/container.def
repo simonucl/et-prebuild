@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author container-platform-specialist
+    Description "Base image for micro-service exercise with Python and pytest pre-installed."
+
+%post
+    set -e
+
+    # Update APT index and install required system packages
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        curl \
+        ca-certificates
+
+    # Install pytest globally
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # Create the expected home directory path for the non-root user that will
+    # run the container.  Make it writable so whichever UID enters the
+    # container can create files and directories beneath it.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python and pip are on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    # Default action when the container is executed without arguments
+    exec /bin/bash "$@"

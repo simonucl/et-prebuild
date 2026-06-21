@@ -1,0 +1,68 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic tooling
+    # ------------------------------------------------------------------
+    apt-get update && \
+        apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+        && \
+        apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial messy project structure
+    # ------------------------------------------------------------------
+    # Ensure the home hierarchy exists
+    mkdir -p /home/user/workspace
+
+    RAW_ROOT="/home/user/workspace/raw_data"
+    mkdir -p "${RAW_ROOT}"
+
+    cd "${RAW_ROOT}"
+
+    # Top-level CSVs and other files
+    echo "id,name,value" > customer_data_2020.csv
+    echo "backup of customer_data_2020.csv" > customer_data_2020.csv.bak
+    echo "id,product,price" > product_data_2021.csv
+    echo "temporary notes" > old_notes.txt~
+    echo "quarterly,sales,data" > sales_Q4_2021.csv
+    echo "# Project README" > README.md
+
+    # logs/
+    mkdir -p logs
+    echo "2023-01-01 user login" > logs/usage.log
+    echo "2023-01-01 error: something broke" > logs/error.log~
+    echo "2023-01-01 debug info" > logs/debug.log~
+
+    # archive/old/empty_dir and archive/zip (both empty)
+    mkdir -p archive/old/empty_dir
+    mkdir -p archive/zip
+
+    # archive/old with backup files
+    echo "legacy,data,goes,here" > archive/old/legacy_data.csv.bak
+    echo "placeholder text" > archive/old/placeholder.txt~
+
+    # duplicates/
+    mkdir -p duplicates
+    echo "Some notes about duplicates" > duplicates/duplicates_readme.txt
+
+    # ------------------------------------------------------------------
+    # Permissions – make everything user-writable so tests & solutions can modify
+    # ------------------------------------------------------------------
+    chmod -R a+rwX /home/user/workspace
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author example@example.com
+    Description "Environment for filesystem-cleaning exercise with pytest installed."

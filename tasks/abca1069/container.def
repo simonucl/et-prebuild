@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        time \
+        ca-certificates \
+        --no-install-recommends
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Ensure a writable home directory for the non-root runtime user
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Provide a convenient `python` alias if it’s missing
+    if [ ! -e /usr/local/bin/python ] && [ -x /usr/bin/python3 ]; then
+        ln -s /usr/bin/python3 /usr/local/bin/python
+    fi
+
+%environment
+    chmod 755 /home/user
+
+    # No changes to HOME; rely on Apptainer defaults
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%runscript
+    exec /bin/bash "$@"

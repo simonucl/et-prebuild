@@ -1,0 +1,78 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ########################################################################
+    # 1. System packages
+    ########################################################################
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        locales
+    # Clean up apt caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ########################################################################
+    # 2. Python tooling – pytest for the grader
+    ########################################################################
+    pip3 install --no-cache-dir pytest
+
+    ########################################################################
+    # 3. Fixture directory structure and HTML pages
+    ########################################################################
+    # Ensure /home/user exists with open permissions
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Create the directory tree expected by the assignment
+    mkdir -p /home/user/iot_dashboard/pages
+    chmod 755 /home/user/iot_dashboard
+    chmod 755 /home/user/iot_dashboard/pages
+
+    # Device 001
+    cat > /home/user/iot_dashboard/pages/device_001.html <<'EOF'
+<html><body><span id="device-id">001</span><span id="temp">23.7</span><span id="hum">50</span><span id="bat">87</span><span id="ts">2024-03-11T15:04:22Z</span></body></html>
+EOF
+
+    # Device 002
+    cat > /home/user/iot_dashboard/pages/device_002.html <<'EOF'
+<html><body><span id="device-id">002</span><span id="temp">21.9</span><span id="hum">49</span><span id="bat">92</span><span id="ts">2024-03-11T15:04:34Z</span></body></html>
+EOF
+
+    # Device 003
+    cat > /home/user/iot_dashboard/pages/device_003.html <<'EOF'
+<html><body><span id="device-id">003</span><span id="temp">24.5</span><span id="hum">48</span><span id="bat">90</span><span id="ts">2024-03-11T15:04:47Z</span></body></html>
+EOF
+
+    # Ensure the files are world-readable
+    chmod 644 /home/user/iot_dashboard/pages/device_*.html
+
+    ########################################################################
+    # 4. Locale (UTF-8) – avoids Python warnings in some environments
+    ########################################################################
+    sed -i 's/# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+    locale-gen
+
+%environment
+    export LC_ALL=en_US.UTF-8
+    export LANG=en_US.UTF-8
+    export PYTHONIOENCODING=UTF-8
+
+%labels
+    Author  Scraping-Utility Setup
+    Description  Provides fixture HTML pages and pytest for the scraping assignment.
+
+%help
+    This container image supplies the initial state required for the
+    “IoT dashboard scraping utility” assignment:
+
+        • /home/user/iot_dashboard/pages/ with three HTML pages
+        • Python 3 and pytest pre-installed
+
+    Students will write their own scraping script; the container only
+    guarantees the starting filesystem layout.

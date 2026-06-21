@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Maintainer ai-task-generator
+    Description Minimal environment for the monitoring assignment with pytest pre-installed.
+
+%post
+    set -e
+
+    # Refresh package index and install Python + pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the automated grading system
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create an unprivileged user `user` whose home is /home/user.
+    # The agent will work inside this account.
+    # ------------------------------------------------------------------
+    groupadd -g 1000 user
+    useradd  -m -d /home/user -s /bin/bash -u 1000 -g user user
+
+    # Make sure the home directory is owned by `user`
+    chown -R user:user /home/user
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Default to the unprivileged user's home and ensure its local bin is on PATH
+    export HOME=/home/user
+    export PATH="$HOME/.local/bin:$PATH"
+
+%runscript
+    echo "Container for the monitoring assignment. Launch an interactive shell:"
+    echo "    apptainer shell <this_image>"
+    echo
+    exec /bin/bash

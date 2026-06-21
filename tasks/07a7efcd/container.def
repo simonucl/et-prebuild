@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir -U pip pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem layout for the data-cleaning exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/datasets/raw
+    mkdir -p /home/user/datasets/clean   # must start empty
+
+    # Create non-empty CSV files in raw/
+    echo -e "id,name\n1,Alice"        > /home/user/datasets/raw/customers.csv
+    echo -e "sku,stock\n001,50"       > /home/user/datasets/raw/inventory.csv
+    echo -e "id,product,price\n1,Pen,1.20" > /home/user/datasets/raw/products.csv
+    echo -e "id,date,total\n1,2023-01-01,100" > /home/user/datasets/raw/sales.csv
+
+    # Create a non-empty JSON file in raw/
+    echo '{ "note": "sample content" }' > /home/user/datasets/raw/notes.json
+
+    # Ensure appropriate permissions so the unprivileged runtime user can modify them
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special needed here; keep default HOME from Apptainer
+
+%labels
+    Author "Container pre-population for data-cleaning task"
+    Description "Sets up the initial directory tree and installs pytest."
+
+%runscript
+    echo "This container is prepared for the data-cleaning task."
+    echo "Use 'apptainer exec ... bash' to get a shell."

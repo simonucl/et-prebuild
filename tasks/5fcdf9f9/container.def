@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT and install Python tooling
+    apt-get update -qq
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the “asset list” exercise
+    # ------------------------------------------------------------------
+
+    # Create directory structure
+    mkdir -p /home/user/site/static/utils
+    mkdir -p /home/user/site/static/css
+    mkdir -p /home/user/site/static/images
+
+    # Ensure the student can write under /home/user/site later on
+    chmod -R 777 /home/user
+    chmod -R 777 /home/user/site
+
+    # Create the required text files with exact byte content
+    printf 'console.log("App main");\n' > /home/user/site/static/app.js
+    printf 'export function help() { return true; }\n' > /home/user/site/static/utils/helper.js
+    printf 'body { margin: 0; }\n' > /home/user/site/static/css/style.css
+
+    # Create a non-empty binary PNG stub
+    head -c 256 /dev/urandom > /home/user/site/static/images/logo.png
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special; rely on default environment
+
+%labels
+    Author asset-list-exercise
+    Description Base container for “generate asset list” task with initial static files.
+
+%runscript
+    echo "This container is prepared for the asset-list exercise."
+    echo "Enter the container and work in /home/user/site."

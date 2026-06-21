@@ -1,0 +1,36 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and PyPI, then pytest for validation
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare filesystem layout for the credential-rotation exercise
+    # ------------------------------------------------------------------
+    # Create the target home and secrets directory
+    mkdir -p /home/user/.secrets
+
+    # Make sure the regular (non-root) runtime user can write there
+    chmod 0777 /home/user
+    chmod 0777 /home/user/.secrets
+
+    # Seed the “old” token file with the exact required contents
+    printf "OLD_TOKEN_qwerty\n" > /home/user/.secrets/old_api_token.txt
+    chmod 0666 /home/user/.secrets/old_api_token.txt
+
+    # Guarantee that no other artefacts from a previous build remain
+    rm -f /home/user/.secrets/old_api_token.bak \
+          /home/user/credential_rotation_benchmark.log || true
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure that Python /usr/local/bin is on PATH for pytest
+    export PATH="$PATH:/usr/local/bin"

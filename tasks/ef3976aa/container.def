@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Basic utilities and Python (needed for pytest)
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Prepare initial filesystem state expected by the testing suite
+    # ------------------------------------------------------------------
+    # Create the /home/user hierarchy
+    mkdir -p /home/user/site_backups
+    chmod 755 /home/user
+    chmod 755 /home/user/site_backups
+
+    # Create the three backup files (exactly 5 bytes: "hello")
+    printf 'hello' > /home/user/site_backups/alice.txt
+    printf 'hello' > /home/user/site_backups/bob.txt
+    printf 'hello' > /home/user/site_backups/charlie.txt
+
+    # Create the reference checksum file with a trailing newline
+    cat <<'EOF' > /home/user/site_backups/expected_checksums.txt
+alice,2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
+bob,2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
+charlie,2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
+EOF
+
+    # Ensure readable permissions
+    chmod 644 /home/user/site_backups/*.txt
+
+%environment
+    # Make sure user-local installs from pip are found
+    export PATH="${PATH}:/home/user/.local/bin"
+
+%help
+    This container provides the initial filesystem layout and tools required
+    for the checksum-verification task (alice, bob, charlie backups). Pytest is
+    pre-installed for the automated grading system.

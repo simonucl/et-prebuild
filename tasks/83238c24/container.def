@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Ensure non-interactive APT operations
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package index and install Python & pip
+    apt-get update && \
+        apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create a dedicated, non-privileged user expected by the grader
+    useradd -m -s /bin/bash user
+
+    # Prepare initial filesystem state required by the tests
+    mkdir -p /home/user/sample_certs
+    echo -n "test" > /home/user/sample_certs/ca.pem
+
+    # Set sane permissions so the unprivileged user can work
+    chown -R user:user /home/user
+    chmod 755 /home/user /home/user/sample_certs
+    chmod 644 /home/user/sample_certs/ca.pem
+
+%environment
+    # Ensure Python is accessible
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="GPT-4"
+    Description="Container for db_ssl validation task with initial state and pytest installed."
+
+%runscript
+    exec "$@"

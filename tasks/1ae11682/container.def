@@ -1,0 +1,69 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+Author localization-engineer
+Description "Container for translation-update task; includes initial project skeleton and pytest."
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-venv
+    pip3 install --no-cache-dir --upgrade pip pytest
+
+    # ------------------------------------------------------------------
+    # Create an unprivileged user that the runtime will map to,
+    # along with the required directory hierarchy and seed files.
+    # ------------------------------------------------------------------
+    groupadd -g 1000 user || true
+    useradd  -m -u 1000 -g 1000 -s /bin/bash user || true
+
+    # Base directory
+    install -d -m 0755 /home/user
+
+    # 1. /home/user/project/locale/fr/LC_MESSAGES/
+    install -d -m 0755 /home/user/project/locale/fr/LC_MESSAGES
+
+    cat > /home/user/project/locale/fr/LC_MESSAGES/messages.po <<'EOF'
+# French translations – OLD
+msgid "Hello"
+msgstr "Bonjour (old)"
+msgid "Bye"
+msgstr "Au revoir (old)"
+EOF
+
+    # 2. /home/user/updates/
+    install -d -m 0755 /home/user/updates
+
+    cat > /home/user/updates/fr.po <<'EOF'
+# French translations – NEW
+msgid "Hello"
+msgstr "Bonjour"
+msgid "Bye"
+msgstr "Au revoir"
+EOF
+
+    # 3. /home/user/update_logs/
+    install -d -m 0755 /home/user/update_logs
+    #    (Intentionally leave directory empty; no log file yet.)
+
+    # Ensure ownership for runtime user
+    chown -R 1000:1000 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PYTHONIOENCODING=utf-8
+
+%runscript
+    echo "Container for translation-update task. Open a shell via:"
+    echo "    apptainer exec <image.sif> /bin/bash"
+    echo
+    echo "Then follow the assignment instructions."

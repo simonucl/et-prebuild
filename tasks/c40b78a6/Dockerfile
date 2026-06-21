@@ -1,0 +1,44 @@
+# syntax=docker/dockerfile:1
+# Author: Automated Build
+# Description: Environment for 'Generate a Compliance-Ready Cross-Service ERROR Audit Trail' task with initial log files and pytest installed.
+
+FROM ubuntu:22.04
+
+ENV PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked --mount=type=cache,target=/var/lib/apt,sharing=locked --mount=type=cache,target=/root/.cache/pip set -e && \
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends python3 python3-pip ca-certificates && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /home/user/distributed/logs
+
+RUN cat > /home/user/distributed/logs/auth-service.log <<'EOF'
+2023-08-15T09:05:23Z INFO AuthService Started
+2023-08-15T09:06:10Z ERROR AuthService FailedLogin user=john
+2023-08-15T09:08:45Z WARN AuthService TokenNearExpiry user=anna
+2023-08-15T10:15:00Z ERROR AuthService TokenValidationError tokenId=abc123
+EOF
+
+RUN cat > /home/user/distributed/logs/payment-service.log <<'EOF'
+2023-08-15T09:07:00Z INFO PaymentService Started
+2023-08-15T09:10:12Z ERROR PaymentService PaymentDeclined order=4938
+2023-08-15T09:11:59Z INFO PaymentService PaymentAccepted order=4939
+2023-08-15T10:02:34Z ERROR PaymentService CurrencyMismatch expected=USD got=EUR
+EOF
+
+RUN cat > /home/user/distributed/logs/inventory-service.log <<'EOF'
+2023-08-15T08:55:12Z INFO InventoryService Started
+2023-08-15T09:12:10Z ERROR InventoryService OutOfStock sku=8821
+2023-08-15T09:20:33Z WARN InventoryService SlowResponse time=1200ms
+2023-08-15T10:25:44Z ERROR InventoryService DBConnectionLost host=db1
+EOF
+
+RUN chmod 755 /home/user && \
+    chmod 755 /home/user/distributed && \
+    chmod 755 /home/user/distributed/logs && \
+    chmod 644 /home/user/distributed/logs/*.log && \
+    if [ -d /home/user/audit ]; then rm -rf /home/user/audit; fi
+
+CMD ["/bin/bash"]

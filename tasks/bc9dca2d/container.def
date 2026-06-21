@@ -1,0 +1,36 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing Python tooling..."
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-venv \
+        python3-pip
+
+    echo "Installing pytest for the grader..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating the /home/user directory with write permissions..."
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    echo "Cleaning up apt cache to keep the image small..."
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure the default python and pip commands are available
+    export PATH=/usr/bin:$PATH
+
+%labels
+    Author="Container setup for webdev_venv exercise"
+    Description="Ubuntu 22.04 base with Python, venv support, and pytest installed."
+
+%runscript
+    echo "Container for the webdev_venv exercise. Run your commands inside /home/user."

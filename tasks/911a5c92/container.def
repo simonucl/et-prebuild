@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python & PyTest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create required directory structure and data file for the student
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data
+
+    cat >/home/user/data/transactions.csv <<'EOF'
+id,product,quantity,price
+1,Widget,3,9.99
+2,Gadget,2,19.50
+3,Doodad,5,4.00
+EOF
+
+    # ------------------------------------------------------------------
+    # Permissions: allow the non-root runtime user to write under /home/user
+    # ------------------------------------------------------------------
+    chmod 777 /home/user          # Writable for whoever runs the container
+    chmod 755 /home/user/data
+    chmod 644 /home/user/data/transactions.csv
+
+%environment
+    # No environment variables need to be set for this task.
+    :
+
+%runscript
+    echo "This container is prepared for the transaction-analysis exercise."
+    echo "Launch an interactive shell with:  apptainer shell <image>.sif"
+    echo "Then follow the instructions provided in the assignment."
+
+%labels
+    Author user
+    Description "Container for transaction-analysis task with pre-loaded CSV and pytest installed."

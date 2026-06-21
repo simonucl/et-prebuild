@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        iputils-ping
+
+    # Install pytest for the runtime exercise validation
+    pip3 install --no-cache-dir pytest
+
+    # Create the base home directory expected by the exercise
+    # (BUT DO NOT create /home/user/incident_logs)
+    mkdir -p /home/user
+    # Give broad write permissions so the non-root runtime user can work here
+    chmod 0777 /home/user
+
+    # Clean up APT cache to keep the image lean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard binary paths are available
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author incident-prep
+    Description "Base image for incident-response exercise; pytest installed, initial filesystem state prepared."
+
+%runscript
+    echo "Container for incident-response exercise.  Launch an interactive shell to begin."

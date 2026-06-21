@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package index and install Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel
+
+    # Install pytest for the validation suites
+    pip3 install --no-cache-dir pytest
+
+    # Create the non-privileged user expected by the grading scripts
+    useradd -m -s /bin/bash user
+
+    # Ensure ownership of the home directory
+    chown -R user:user /home/user
+
+    # Clean up APT caches to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure user-level Python binaries (if any) are found first
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%runscript
+    # Default runscript simply execs its arguments
+    exec "$@"

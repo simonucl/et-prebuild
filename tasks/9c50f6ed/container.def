@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ########################################################################
+    # Install Python and pytest
+    ########################################################################
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ########################################################################
+    # Prepare initial filesystem state for the exercise
+    ########################################################################
+    # Create the required directory structure
+    mkdir -p /home/user/logs
+    chmod 0777 /home/user/logs   # Allow the student to create new files here
+
+    # Create the initial uptime_full.csv with exact expected content
+    cat > /home/user/logs/uptime_full.csv << 'EOF'
+timestamp,status,response_ms
+2023-05-01T00:00:00Z,UP,123
+2023-05-01T00:05:00Z,UP,110
+2023-05-01T00:10:00Z,DOWN,0
+2023-05-01T00:15:00Z,UP,130
+EOF
+    chmod 0644 /home/user/logs/uptime_full.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Keep environment minimal; don't override HOME
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=UTF-8
+
+%runscript
+    echo "Container for uptime summary exercise. Start an interactive shell to begin."
+    exec /bin/bash
+
+%help
+    This Apptainer image provides the initial environment for the “uptime summary”
+    task. Python and pytest are pre-installed, and the required CSV file is placed in
+    /home/user/logs/ with writable permissions on the directory so students can
+    create the summary file.

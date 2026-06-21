@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip
+    pip install --no-cache-dir pytest
+
+    # Create required directory structure
+    mkdir -p /home/user/app/config
+    mkdir -p /home/user/logs
+
+    # Populate configuration files with initial contents
+    cat <<'EOF' >/home/user/app/config/service.yaml
+# orders service configuration
+maintenance_mode: false
+port: 8080
+EOF
+
+    cat <<'EOF' >/home/user/app/config/service.toml
+# orders service configuration
+maintenance_mode = false
+port = 8080
+EOF
+
+    # Ensure non-root users can modify the files and directories
+    chmod -R 777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author example@example.com

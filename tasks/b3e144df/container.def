@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        pip3 install --no-cache-dir pytest && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Create initial project workspace expected by the automated tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/project/data/raw
+
+    # Populate the raw data files
+    cat > /home/user/project/data/raw/report1.txt <<'EOF'
+Q1 RESULTS
+CONFIDENTIAL
+Numbers …
+EOF
+
+    cat > /home/user/project/data/raw/report2.txt <<'EOF'
+Public release – nothing confidential.
+EOF
+
+    cat > /home/user/project/data/raw/secret_notes.txt <<'EOF'
+CONFIDENTIAL
+Internal roadmap …
+EOF
+
+    cat > /home/user/project/data/raw/analysis.txt <<'EOF'
+Executive summary
+CONFIDENTIAL data enclosed …
+EOF
+
+    cat > /home/user/project/data/raw/draft.log <<'EOF'
+[log lines]
+EOF
+
+    # Ensure the directory tree is writable by the unprivileged user who will
+    # run the assignment inside the container.
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure the default python and pip executables are available
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export PYTHONIOENCODING=UTF-8
+
+%labels
+    Author Automation-Workflow Exercise
+    Description Container image for the “CONFIDENTIAL file-copy” workflow task.

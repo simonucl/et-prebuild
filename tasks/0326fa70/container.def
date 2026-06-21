@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # 1) Install Python tooling and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # 2) Create the project skeleton expected by the grading suite
+    mkdir -p /home/user/project/scripts
+
+    # md_lint script with exact, line-for-line content
+    cat <<'EOF' >/home/user/project/scripts/md_lint
+#!/usr/bin/env bash
+echo "README.md:1 MD001/heading-increment Header levels should only increment by one level at a time"
+echo "CHANGELOG.md:5 MD012/no-multiple-blanks Multiple consecutive blank lines"
+EOF
+    chmod 755 /home/user/project/scripts/md_lint
+
+    # Placeholder markdown files (contents irrelevant for tests)
+    touch /home/user/project/README.md
+    touch /home/user/project/CHANGELOG.md
+
+    # 3) Ensure the runtime (non-root) user can create new files inside /home/user/project
+    chmod -R a+rwX /home/user/project
+    # Keep correct executable permissions on the linter
+    chmod 755 /home/user/project/scripts/md_lint
+
+%environment
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Apptainer Task Prep"
+    Description="Environment with initial repository state for Markdown linter task."

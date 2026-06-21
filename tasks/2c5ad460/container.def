@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author MLOps-Setup
+    Description "Environment for version-bump single-command task"
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial project state expected by the automated tests
+    # ------------------------------------------------------------------
+    # Ensure base directory exists
+    mkdir -p /home/user/experiments
+
+    # Create VERSION file with initial semantic version
+    echo "1.4.2" > /home/user/experiments/VERSION
+
+    # Create initial CHANGELOG.md following Keep a Changelog structure
+    cat > /home/user/experiments/CHANGELOG.md <<'EOF'
+# Changelog
+## [1.4.2] - 2023-08-22
+### Fixed
+- Resolved metrics logging race condition.
+
+## [1.4.1] - 2023-08-15
+### Added
+- Introduced early stopping callback.
+EOF
+
+    # Give write permissions to any unprivileged user that will run the container
+    chmod -R a+rwX /home/user/experiments
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are on PATH (they should be, but make explicit)
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    exec "$@"

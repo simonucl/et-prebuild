@@ -1,0 +1,70 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip
+
+    # Install pytest for the grading framework.
+    pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Seed data – placed inside the image so it is present if the host
+    # home directory is NOT bound, e.g. when the container is started
+    # with --no-home.  Permissions are set lax enough so any unprivileged
+    # user can work in the directory.
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/scan-results
+    chmod 777 /home/user/scan-results
+
+    cat >/home/user/scan-results/nmap_output.gnmap <<'EOF'
+# Nmap 7.80 scan initiated
+Host: 10.10.0.5 ()  Status: Up
+Host: 10.10.0.5 ()  Ports: 21/open/tcp//ftp///, 80/open/tcp//http///, 8080/open/tcp//http-proxy///
+Host: 10.10.0.15 () Status: Up
+Host: 10.10.0.15 () Ports: 22/open/tcp//ssh///, 139/open/tcp//netbios-ssn///, 445/open/tcp//microsoft-ds///
+# Nmap done
+EOF
+    chmod 644 /home/user/scan-results/nmap_output.gnmap
+
+    # ------------------------------------------------------------------
+    # Runtime bootstrap helper
+    # The host $HOME is usually bind-mounted into the container.  That
+    # would shadow the files created above.  Therefore we ship a small
+    # environment script that, on every container start, guarantees the
+    # expected seed directory and file exist in the (possibly bound)
+    # /home/user path.
+    # ------------------------------------------------------------------
+    cat > /.singularity.d/env/95-seed-scan-results.sh <<'SEED'
+# This script runs at *runtime* (sourced by Apptainer) to ensure the
+# exercise's initial files are present in the real /home/user even when
+# that directory is bind-mounted from the host.
+TARGET_DIR="/home/user/scan-results"
+TARGET_FILE="${TARGET_DIR}/nmap_output.gnmap"
+
+if [ ! -f "${TARGET_FILE}" ]; then
+    mkdir -p "${TARGET_DIR}"
+    chmod 777 "${TARGET_DIR}" || true
+    cat > "${TARGET_FILE}" <<'EOF'
+# Nmap 7.80 scan initiated
+Host: 10.10.0.5 ()  Status: Up
+Host: 10.10.0.5 ()  Ports: 21/open/tcp//ftp///, 80/open/tcp//http///, 8080/open/tcp//http-proxy///
+Host: 10.10.0.15 () Status: Up
+Host: 10.10.0.15 () Ports: 22/open/tcp//ssh///, 139/open/tcp//netbios-ssn///, 445/open/tcp//microsoft-ds///
+# Nmap done
+EOF
+    chmod 644 "${TARGET_FILE}" || true
+fi
+SEED
+    chmod 755 /.singularity.d/env/95-seed-scan-results.sh
+
+%environment
+    chmod 755 /home/user
+
+    # Basic locale and PATH – do NOT override HOME; let Apptainer handle it.
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

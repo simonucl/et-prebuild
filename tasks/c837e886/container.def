@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the validation test-suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the laboratory-readings task
+    # ------------------------------------------------------------------
+
+    # Create the directory structure
+    mkdir -p /home/user/datasets
+
+    # Populate the raw data file with the required content
+    cat > /home/user/datasets/measurements_2023.txt <<'EOF'
+EXP001 23.4 2023-05-01
+EXP002 19.8 2023-05-02
+EXP003 25.1 2023-05-03
+EXP004 21.0 2023-05-04
+EXP005 20.7 2023-05-05
+EOF
+
+    # Set permissions:
+    #   • directories: world-writable so the unprivileged agent can add files
+    #   • data file   : read-only for world (644) as required by the tests
+    chmod 777 /home/user
+    chmod 777 /home/user/datasets
+    chmod 644 /home/user/datasets/measurements_2023.txt
+
+%labels
+    chmod 755 /home/user
+
+    Author YourName
+    Description "Environment for the laboratory readings standardisation task"

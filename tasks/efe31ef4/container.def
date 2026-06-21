@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Install Python tooling and pytest
+    apt-get update && \
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip && \
+        pip3 install --no-cache-dir pytest && \
+        rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Establish initial filesystem state required by the exercise
+    # ------------------------------------------------------------------
+
+    # Base directories
+    mkdir -p /home/user/tickets/issue_20230815
+    mkdir -p /home/user/backups
+
+    # Text files with exact, newline-terminated content
+    printf 'User unable to connect to VPN.\n' \
+        > /home/user/tickets/issue_20230815/notes.txt
+
+    printf '[2023-08-15 10:03] Ping to vpn.company.com failed.\n' \
+        > /home/user/tickets/issue_20230815/diagnostics.log
+
+    # Non-empty binary placeholder for the screenshot
+    dd if=/dev/urandom of=/home/user/tickets/issue_20230815/screenshot.png \
+        bs=10 count=1 status=none
+
+    # Permissions:
+    #  - tickets directory: readable (not writable) by everyone
+    #  - backups directory: writable by any unprivileged user
+    chmod -R a+rX /home/user/tickets
+    chmod 0777 /home/user/backups
+
+%environment
+    chmod 755 /home/user
+
+    # Preserve default HOME binding; only ensure common paths are available
+    export PATH=/usr/local/bin:/usr/bin:/bin

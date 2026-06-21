@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python & pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Prepare the required directory structure and seed files
+    # -----------------------------------------------------------------
+    # Create base directory for the student
+    mkdir -p /home/user
+    chmod 0777 /home/user          # allow the unprivileged runtime user to write here
+
+    # Create the vuln_scans directory and set correct permissions
+    mkdir -p /home/user/vuln_scans
+    chmod 0755 /home/user/vuln_scans
+
+    # Populate the scan files with exact content & sizes
+    printf 'AAAA\n'  > /home/user/vuln_scans/scan1.nmap   # 5 bytes
+    printf 'BBBBB\n' > /home/user/vuln_scans/scan2.nmap   # 6 bytes
+    printf 'CCCCC\n' > /home/user/vuln_scans/errors.log   # 6 bytes
+
+    # Set file permissions
+    chmod 0644 /home/user/vuln_scans/scan1.nmap
+    chmod 0644 /home/user/vuln_scans/scan2.nmap
+    chmod 0644 /home/user/vuln_scans/errors.log
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special needed; keep default environment
+
+%help
+    Container pre-configured for the “disk-usage summary” task.
+    The directory /home/user/vuln_scans already contains three scan files.
+    Students must create /home/user/scan_usage.log as instructed.
+    Pytest is installed for automated grading.

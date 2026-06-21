@@ -1,0 +1,67 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author configuration-manager-initializer
+    Description "Environment for configuration-tracking assignment (mock API pre-populated, pytest installed)."
+
+%post
+    set -e
+
+    # Basic tooling
+    apt-get update -y
+    # python3, pip and other small utilities required by the assignment/tests
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        curl \
+        diffutils
+
+    # Install pytest for the grader/test-harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create a non-root user whose UID/GID will line-up with the host’s
+    # invoking user inside the Apptainer runtime (common pattern in these
+    # automated graders).  Even if UID/GID differ, ownership=0 (root) is
+    # still readable by everyone, but we set permissive modes anyway.
+    # ------------------------------------------------------------------
+    useradd --create-home --shell /bin/bash user || true
+
+    # ------------------------------------------------------------------
+    # Pre-populate the mock API directory with the exact JSON resources
+    # required by the public task description and the initial-state tests.
+    # No trailing newlines are permitted.
+    # ------------------------------------------------------------------
+    MOCK_DIR=/home/user/mock_api
+    mkdir -p "${MOCK_DIR}"
+
+    printf '{"version":"1.0","settings":{"feature":false}}' \
+        > "${MOCK_DIR}/before.json"
+
+    printf '{"version":"2.0","settings":{"feature":true}}' \
+        > "${MOCK_DIR}/after.json"
+
+    # Ensure everything is world-readable so the (non-root) agent can use it.
+    chmod 755 /home/user
+    chmod 755 "${MOCK_DIR}"
+    chmod 644 "${MOCK_DIR}/before.json" "${MOCK_DIR}/after.json"
+
+    # Leave /home/user/config_tracker *absent* – it will be created by
+    # the learner’s solution script, and the initial tests confirm it is
+    # not present at container start-up.
+    :
+
+%environment
+    # Ensure Python and pip installed via /usr/local/bin are on PATH.
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    # Default action when the container is executed without an explicit
+    # command.  Show a brief help message.
+    echo "This container sets up the initial environment for the configuration-tracking assignment."
+    echo "Invoke your own commands with:  apptainer exec <image.sif> <command>"
+    echo "Example:  apptainer exec <image.sif> bash"
+    exit 0

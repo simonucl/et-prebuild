@@ -1,0 +1,68 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author climate-task-setup
+    Description "Container for climate data structuring task. Provides initial filesystem state and installs pytest."
+
+%post
+    set -e
+
+    #------------------------------------------------------------------
+    # 1. Install required packages and pytest
+    #------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #------------------------------------------------------------------
+    # 2. Create non-root user `user`
+    #------------------------------------------------------------------
+    useradd -m -s /bin/bash user
+
+    #------------------------------------------------------------------
+    # 3. Set up initial directory tree and files
+    #    /home/user/downloads/    <- populated with raw data + README
+    #    /home/user/research/     <- empty directory (except itself)
+    #------------------------------------------------------------------
+    mkdir -p /home/user/downloads
+    mkdir -p /home/user/research
+
+    # Climate temperature v1
+    cat >/home/user/downloads/climate_temp_v1.txt <<'EOF'
+date,temp
+2024-01-01,23
+2024-01-02,22
+EOF
+
+    # Climate temperature v2
+    cat >/home/user/downloads/climate_temp_v2.txt <<'EOF'
+date,temp
+2024-01-01,24
+2024-01-02,23
+2024-01-03,25
+EOF
+
+    # Climate precipitation v1
+    cat >/home/user/downloads/climate_precip_v1.txt <<'EOF'
+date,precip_mm
+2024-01-01,5
+2024-01-02,0
+EOF
+
+    # Unrelated README that must stay untouched
+    echo "Placeholder README – do not move." >/home/user/downloads/readme.txt
+
+    # Ensure proper ownership so the non-root agent can work freely
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python is on PATH for the runtime user.
+    PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export PATH

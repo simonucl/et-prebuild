@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the automated tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/secure_data
+    cd /home/user/secure_data
+
+    # Create the required files with placeholder content
+    printf 'Top Secret\n'          > secret.conf
+    printf 'Public data\n'         > public.txt
+    printf 'Log notes\n'           > notes.log
+    printf 'Project readme\n'      > readme.md
+    printf 'Archive placeholder\n' > archive.tar.gz
+
+    # Apply the exact permissions specified in the task description
+    chmod 640 secret.conf      # -rw-r-----
+    chmod 666 public.txt       # -rw-rw-rw-
+    chmod 606 notes.log        # -rw----rw-
+    chmod 644 readme.md        # -rw-r--r--
+    chmod 600 archive.tar.gz   # -rw-------
+
+    # Ensure directory permissions are sensible
+    chmod 755 /home/user
+    chmod 755 /home/user/secure_data
+
+%environment
+    # Preserve a sensible default USER value inside the container
+    export USER=user
+
+%labels
+    Author SecurityAuditor Setup
+    Description Container for world-writable audit task
+
+%help
+    This container sets up the initial filesystem state for the
+    "world-writable file audit" exercise and includes pytest for testing.

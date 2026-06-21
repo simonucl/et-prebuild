@@ -1,0 +1,28 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-venv \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Prepare initial project directory (without venv or confirmation file)
+    mkdir -p /home/user/web_project
+    # Ensure the runtime user can write inside the project directory
+    chmod -R 777 /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author "Container Setup Script for Virtual-Env Exercise"
+
+%help
+    This container provides the initial filesystem state for the
+    virtual-environment creation exercise.
+    • python3 and pytest are installed
+    • /home/user/web_project exists (empty except for VCS files the student may add)
+    • No virtual-environment artefacts or confirmation file exist

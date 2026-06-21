@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Refresh package index and install required software
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        openssh-client \
+        ca-certificates
+
+    # Install pytest for the grader/agent
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the working user and its home directory.
+    # ------------------------------------------------------------------
+    # Create the logical user “user” with UID 1000 if it does not exist.
+    if ! id -u user >/dev/null 2>&1 ; then
+        useradd -m -u 1000 -d /home/user -s /bin/bash user
+    fi
+
+    # Ensure the home directory exists and is writable by any unprivileged
+    # UID that might run inside the container (e.g. the grading agent).
+    mkdir -p /home/user
+    chmod 0777 /home/user   # world-writable so the agent can write inside
+    chown -R 1000:1000 /home/user || true  # best-effort; ignore if UID differs
+
+    # Clean up apt caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C
+    export LANG=C
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%runscript
+    # Default entry: present an interactive shell
+    exec /bin/bash

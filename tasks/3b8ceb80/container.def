@@ -1,0 +1,63 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state required by the challenge
+    # ------------------------------------------------------------------
+
+    # Create the home directory structure
+    mkdir -p /home/user/credentials
+
+    # Create the rotations.log file with the exact expected contents
+    cat >/home/user/credentials/rotations.log <<'EOF'
+alice
+bob
+charlie
+alice
+alice
+bob
+dave
+eve
+bob
+frank
+EOF
+
+    # Ensure the directory is writable by any (host) user and the log
+    # file is readable (and ideally writable) by the same.
+    chmod 0777 /home/user/credentials
+    chmod 0666 /home/user/credentials/rotations.log
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python and pip are on the PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for credential rotation frequency task."
+    echo "Open a shell to begin solving the challenge."
+    exec /bin/bash
+
+%help
+    This container sets up the environment for the "Credential Rotation
+    Frequency Report" task.
+
+    Inside, you will find:
+      • /home/user/credentials/rotations.log  – the source data
+      • A writable /home/user/credentials directory for your output
+
+    Use only standard GNU coreutils commands (sort, uniq, etc.) to
+    create /home/user/credentials/rotation_frequency.txt as described
+    in the task instructions.

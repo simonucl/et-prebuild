@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python 3, pip, and pytest for the verification suite
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare the experiment logs required by the task description
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/experiments
+
+    # log1.txt (must end with a single trailing newline)
+    cat > /home/user/experiments/log1.txt << 'EOF'
+model_v1.ckpt
+dataset_v1.zip
+model_v1.ckpt
+metrics_v1.json
+dataset_v1.zip
+EOF
+
+    # log2.txt (must end with a single trailing newline)
+    cat > /home/user/experiments/log2.txt << 'EOF'
+model_v2.ckpt
+dataset_v1.zip
+model_v1.ckpt
+metrics_v1.json
+metrics_v1.json
+model_v2.ckpt
+EOF
+
+    # Ensure the directory is writable by any non-root user so the agent
+    # can create the required output file.
+    chmod 0777 /home/user/experiments
+
+    # Read-only permissions are fine for the initial log files.
+    chmod 0644 /home/user/experiments/log1.txt /home/user/experiments/log2.txt
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to override here; rely on the defaults.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

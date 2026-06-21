@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required utilities
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        make \
+        iputils-ping \
+        traceroute
+
+    # Clean up apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for grading
+    pip3 install --no-cache-dir pytest
+
+    # Create a non-privileged user `user` with home directory /home/user
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g user -s /bin/bash user
+
+    # Ensure correct ownership of the home directory
+    chown -R user:user /home/user
+
+    # Make sure no remnants of the exercise directory exist
+    rm -rf /home/user/netdiag || true
+
+%environment
+    chmod 755 /home/user
+
+    # Add the user's local bin to PATH (for potential venv/-m installs)
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%runscript
+    # Default action: start an interactive shell
+    exec /bin/bash
+
+%labels
+    Author="Apptainer Task Prep"
+    Description="Base image for loop-back connectivity automation task with pytest installed"

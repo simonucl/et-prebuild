@@ -1,0 +1,111 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating APT and installing prerequisites..."
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        jq \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest (and handy jsonschema just in case)..."
+    pip3 install --no-cache-dir pytest jsonschema
+
+    echo "Creating initial ETL workspace..."
+    # Create required directory structure
+    install -d -m 0755 /home/user/etl/raw
+    install -d -m 0755 /home/user/etl/schema
+
+    echo "Populating raw events.json ..."
+    cat > /home/user/etl/raw/events.json <<'EOF'
+[
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "timestamp": "2023-06-01T12:00:00Z",
+    "type": "click",
+    "payload": {
+      "element_id": "btn_signup"
+    }
+  },
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174001",
+    "timestamp": "2023-06-01T12:05:00Z",
+    "type": "view",
+    "payload": {
+      "page": "/home"
+    }
+  },
+  {
+    "id": "not-a-uuid",
+    "timestamp": "2023-06-01T12:10:00Z",
+    "type": "purchase",
+    "payload": {
+      "amount": 19.99
+    }
+  },
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174002",
+    "timestamp": "invalid-date",
+    "type": "click",
+    "payload": {
+      "element_id": "btn_login"
+    }
+  },
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174003",
+    "timestamp": "2023-06-01T12:15:00Z",
+    "type": "purchase",
+    "payload": {
+      "amount": 49.99
+    }
+  }
+]
+EOF
+    chmod 0644 /home/user/etl/raw/events.json
+
+    echo "Populating JSON schema ..."
+    cat > /home/user/etl/schema/event_schema.json <<'EOF'
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Event",
+  "type": "object",
+  "required": ["id", "timestamp", "type", "payload"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-f0-9-]{36}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["click", "view", "purchase"]
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}
+EOF
+    chmod 0644 /home/user/etl/schema/event_schema.json
+
+    echo "Initial ETL workspace ready."
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal environment tweaks if needed
+    export LC_ALL=C
+    export LANG=C
+
+%runscript
+    echo "Container for ETL exercise. Open a shell with:"
+    echo "  apptainer exec <container>.sif /bin/bash"
+    echo "The starter ETL workspace is at /home/user/etl/"

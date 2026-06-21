@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the required directory structure
+    mkdir -p /home/user/deployment/firewall
+    mkdir -p /home/user/deployment/logs
+
+    # Populate the initial iptables rule set
+    cat > /home/user/deployment/firewall/iptables.rules <<'EOF'
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -p tcp --dport 22 -j ACCEPT
+COMMIT
+EOF
+
+    # Ensure write permissions for the normal user
+    chmod 666 /home/user/deployment/firewall/iptables.rules
+    chmod 777 /home/user/deployment/firewall
+    chmod 777 /home/user/deployment/logs
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=UTF-8

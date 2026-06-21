@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # Prepare the required baseline directory
+    mkdir -p /home/user
+    chmod 0777 /home/user   # allow the unprivileged agent to write inside
+
+    # Ensure the docs directory does NOT exist at build time
+    rm -rf /home/user/docs || true
+
+%environment
+    chmod 755 /home/user
+
+    # Basic PATH setup
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Environment for cron-file exercise with pytest pre-installed."

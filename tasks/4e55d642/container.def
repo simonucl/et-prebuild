@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT and install Python + pip
+    apt-get update \
+        && apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            ca-certificates \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test-suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the assignment/tests
+    # ------------------------------------------------------------------
+    # Create configuration directory
+    mkdir -p /home/user/configs
+
+    # Populate the initial webserver.conf file
+    cat <<'EOF' > /home/user/configs/webserver.conf
+# Web Server Configuration
+ENABLE_LOGS=false
+MAX_USERS=50
+PORT=8080
+TIMEZONE=UTC
+EOF
+
+    # Set required permissions
+    chmod 755 /home/user/configs
+    chmod 644 /home/user/configs/webserver.conf
+
+%labels
+    Author  "Task Builder"
+    Purpose "Starter image for the configuration-management exercise"
+
+%help
+    This container sets up the initial environment for the webserver
+    configuration task.  The directory /home/user/configs contains
+    webserver.conf with predefined settings.  Pytest is available for
+    automated grading.

@@ -1,0 +1,31 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # Prepare the QA resources directory and zero-byte patch file
+    mkdir -p /home/user/qa_resources
+    chmod 755 /home/user/qa_resources
+
+    touch /home/user/qa_resources/patch_release_v1.0.0.zip
+    truncate -s 0 /home/user/qa_resources/patch_release_v1.0.0.zip  # ensure zero bytes
+
+    # Clean up APT cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author "Apptainer Task Builder"
+    Description "Container for automated QA checksum verification task."

@@ -1,0 +1,67 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3 \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Create the canonical source database in a safe, read-only location
+    # -----------------------------------------------------------------
+    mkdir -p /opt
+    sqlite3 /opt/source_sales.db <<'SQL'
+    CREATE TABLE sales(
+        id   INTEGER PRIMARY KEY,
+        item TEXT,
+        qty  INTEGER
+    );
+    INSERT INTO sales(item, qty) VALUES
+        ('Widget',      10),
+        ('Gadget',      20),
+        ('Doodad',      15),
+        ('Thingamajig', 5),
+        ('Whatsit',     8);
+SQL
+    # Make sure it is world-readable
+    chmod 644 /opt/source_sales.db
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    #!/bin/sh
+    # Ensure the expected source DB exists at /home/user/source_sales.db
+    SRC_DB_PATH="/home/user/source_sales.db"
+    TEMPLATE_DB="/opt/source_sales.db"
+
+    if [ ! -e "$SRC_DB_PATH" ]; then
+        mkdir -p /home/user 2>/dev/null || true
+        cp "$TEMPLATE_DB" "$SRC_DB_PATH" 2>/dev/null || true
+        chmod 644 "$SRC_DB_PATH" 2>/dev/null || true
+    fi
+
+%labels
+    Author "Backup-Verification Task"
+    Description "Environment providing initial SQLite database and tooling for the migration/validation exercise."
+
+%help
+This container supplies:
+
+  • Python 3, pytest, and the sqlite3 CLI
+  • A template database at /opt/source_sales.db containing table `sales`
+    with exactly 5 rows
+
+At runtime, if /home/user/source_sales.db does not yet exist, it is
+copied from the template so that the student starts from the correct
+initial state.

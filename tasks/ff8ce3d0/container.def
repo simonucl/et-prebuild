@@ -1,0 +1,84 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial workspace under /home/user
+    # ------------------------------------------------------------------
+    USER_HOME="/home/user"
+    FIREWALL_DIR="${USER_HOME}/firewall"
+    LOCALISE_DIR="${USER_HOME}/localise-site"
+
+    # Create required directory structure
+    mkdir -p "${FIREWALL_DIR}"
+    mkdir -p "${LOCALISE_DIR}/templates"
+
+    # ------------------------------------------------------------------
+    # 1.  /home/user/firewall/active_rules.conf  (six-line baseline)
+    # ------------------------------------------------------------------
+    cat > "${FIREWALL_DIR}/active_rules.conf" <<'EOF'
+# Firewall Rules
+# -----------------------------------------------------------------------------
+# default policy : deny incoming, allow outgoing
+# -----------------------------------------------------------------------------
+# BEGIN RULES
+# END RULES
+EOF
+    # Ensure the engineer can modify the file
+    chmod 0666 "${FIREWALL_DIR}/active_rules.conf"
+
+    # ------------------------------------------------------------------
+    # 2.  /home/user/localise-site/templates/messages.pot
+    #     Provide at least the 17-line header followed by a placeholder.
+    # ------------------------------------------------------------------
+    cat > "${LOCALISE_DIR}/templates/messages.pot" <<'EOT'
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2023-01-01 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: placeholder:1
+msgid "Hello, world!"
+msgstr ""
+EOT
+
+    # Give write permissions so the engineer can add new translations
+    chmod -R 0777 "${LOCALISE_DIR}"
+
+    # Also allow write access to the firewall directory itself
+    chmod 0777 "${FIREWALL_DIR}"
+
+%labels
+    chmod 755 /home/user
+
+    Author          example-builder
+    Description     Environment for localisation & user-level firewall exercise
+
+%help
+    This container sets up the initial filesystem state for the localisation and
+    mock-firewall task. It provides:
+      * /home/user/firewall/active_rules.conf  – six-line baseline policy
+      * /home/user/localise-site/templates/messages.pot – template with 17-line header
+    Pytest is pre-installed for automated validation.

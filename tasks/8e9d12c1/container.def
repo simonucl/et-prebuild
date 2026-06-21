@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python tooling and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial on-disk state expected by the automated tests
+    # ------------------------------------------------------------------
+    # Directory layout
+    mkdir -p /home/user/backups/daily
+
+    # Manifest file (exact contents, LF endings, no trailing blank line)
+    cat <<'EOF' > /home/user/backups/manifest.size
+56 users.bak
+59 inventory.bak
+80 orders.bak
+EOF
+
+    # users.bak  (56 bytes)
+    cat <<'EOF' > /home/user/backups/daily/users.bak
+USERS BACKUP 2023-01-01
+ID,NAME
+1,John Doe
+2,Jane Smith
+EOF
+
+    # inventory.bak  (59 bytes)
+    cat <<'EOF' > /home/user/backups/daily/inventory.bak
+INVENTORY BACKUP 2023-01-01
+SKU,COUNT
+ABC123,100
+XYZ789,50
+EOF
+
+    # orders.bak  (85 bytes)
+    cat <<'EOF' > /home/user/backups/daily/orders.bak
+ORDERS BACKUP 2023-01-01
+ORDER_ID,USER_ID,SKU,AMOUNT
+1001,1,ABC123,2
+1002,2,XYZ789,1
+EOF
+
+    # Ensure every future container user can read/write these paths
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to override; keep default HOME binding
+    :

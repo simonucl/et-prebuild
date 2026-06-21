@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tooling
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        ca-certificates \
+        bash \
+        coreutils
+    pip3 install --no-cache-dir pytest
+
+    # Create non-root user “user” with home directory /home/user
+    useradd -m -s /bin/bash user
+
+    # ------------------------------------------------------------------
+    # Prepare the backup log directory structure and populate the files
+    # ------------------------------------------------------------------
+    BACKUP_BASE="/home/user/backups"
+    mkdir -p "${BACKUP_BASE}/2023-08-01" \
+             "${BACKUP_BASE}/2023-08-02" \
+             "${BACKUP_BASE}/2023-08-03"
+
+    # 2023-08-01 log ----------------------------------------------------
+    cat > "${BACKUP_BASE}/2023-08-01/backup_20230801.log" <<'EOF'
+2023-08-01 00:59:59 INFO Starting backup
+2023-08-01 01:15:42 ERROR db01.tar.gz checksum mismatch
+2023-08-01 01:22:10 INFO db01.tar.gz uploaded
+2023-08-01 01:30:00 INFO Backup finished
+EOF
+
+    # 2023-08-02 log ----------------------------------------------------
+    cat > "${BACKUP_BASE}/2023-08-02/backup_20230802.log" <<'EOF'
+2023-08-02 00:59:58 INFO Starting backup
+2023-08-02 01:12:02 ERROR web_assets.zip checksum mismatch
+2023-08-02 01:12:03 WARN Retrying web_assets.zip upload
+2023-08-02 01:44:22 ERROR db02.tar.gz checksum mismatch
+2023-08-02 02:01:00 INFO Backup finished
+EOF
+
+    # 2023-08-03 log ----------------------------------------------------
+    cat > "${BACKUP_BASE}/2023-08-03/backup_20230803.log" <<'EOF'
+2023-08-03 01:00:01 INFO Starting backup
+2023-08-03 01:33:47 INFO No errors detected
+2023-08-03 02:00:00 INFO Backup finished
+EOF
+
+    # ------------------------------------------------------------------
+    # Permissions: directories 755; log files 644
+    # ------------------------------------------------------------------
+    chmod 755 /home/user
+    chmod 755 "${BACKUP_BASE}"
+    chmod 755 "${BACKUP_BASE}/2023-08-01" "${BACKUP_BASE}/2023-08-02" "${BACKUP_BASE}/2023-08-03"
+    chmod 644 "${BACKUP_BASE}/2023-08-01/backup_20230801.log"
+    chmod 644 "${BACKUP_BASE}/2023-08-02/backup_20230802.log"
+    chmod 644 "${BACKUP_BASE}/2023-08-03/backup_20230803.log"
+
+    # Give ownership to the non-root user so that the agent can modify /home/user
+    chown -R user:user /home/user
+
+%help
+Container pre-loaded with backup logs for the “backup-integrity engineer” exercise.
+Includes pytest for automated evaluation.

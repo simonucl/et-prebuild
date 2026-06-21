@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing Python tooling..."
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    echo "Installing pytest for internal test execution..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating initial filesystem state for the edge_app releases..."
+    # Ensure base home directory exists
+    mkdir -p /home/user
+
+    # Create release directories
+    mkdir -p /home/user/edge_app/releases/v1.2.0
+    mkdir -p /home/user/edge_app/releases/v1.2.1
+
+    # Populate build.txt files with required contents
+    printf "v1.2.0 build completed\n" > /home/user/edge_app/releases/v1.2.0/build.txt
+    printf "v1.2.1 build completed\n" > /home/user/edge_app/releases/v1.2.1/build.txt
+
+    # Create the current symlink pointing to v1.2.0
+    ln -s /home/user/edge_app/releases/v1.2.0 /home/user/edge_app/current
+
+    # NOTE: Do NOT create /home/user/edge_app/previous or /home/user/deployment_logs here.
+    # They must not exist in the initial state.
+
+    echo "Adjusting permissions so the non-root agent can modify needed paths..."
+    chmod 777 /home/user
+    chmod 777 /home/user/edge_app
+
+    # Set sensible default permissions for the rest of the tree
+    find /home/user/edge_app -type d -exec chmod 755 {} \;
+    find /home/user/edge_app -type f -exec chmod 644 {} \;
+
+%labels
+    chmod 755 /home/user
+
+    Author  edge_container_build_system
+    Description Initial state for OTA upgrade task with pytest pre-installed.
+
+%help
+    This Apptainer image contains the prepared directory structure for the
+    edge_app OTA deployment exercise and has pytest installed for automated
+    grading.

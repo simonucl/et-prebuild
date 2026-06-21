@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Base tooling
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        curl \
+        jq \
+        ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Python testing framework
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare task resources
+    # ------------------------------------------------------------------
+    # Ensure the home directory exists
+    mkdir -p /home/user
+
+    # Create directory that will act as the local mock API root
+    mkdir -p /home/user/mock_api
+
+    # Artifact A
+    cat > /home/user/mock_api/artifactA.json <<'EOF'
+{
+  "artifact": "library-core",
+  "version": "1.4.2",
+  "checksum": "3b7f3aaf79be67fcb10"
+}
+EOF
+
+    # Artifact B
+    cat > /home/user/mock_api/artifactB.json <<'EOF'
+{
+  "artifact": "service-api",
+  "version": "2.0.0",
+  "checksum": "7dcb73d9ce5fa26c881"
+}
+EOF
+
+    # Permissions – readable by every non-root user; writable by the user
+    chmod -R 755 /home/user/mock_api
+
+    # The build_outputs directory must not yet exist; make sure it’s absent
+    rm -rf /home/user/build_outputs || true
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author      "container-prep bot"
+    Description "Environment for the 'mock_api build-and-publish' task"

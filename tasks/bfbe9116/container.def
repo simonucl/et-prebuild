@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python and pytest
+    apt-get update -y
+    apt-get install -y python3 python3-pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial project structure for the agent
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/mlops_project
+
+    # Create the initial config.yml (only exp_001 present)
+    cat > /home/user/mlops_project/config.yml <<'EOF'
+experiments:
+  - id: exp_001
+    model: resnet50
+    accuracy: 0.85
+artifacts_dir: artifacts/
+EOF
+
+    # Create the initial pyproject.toml
+    cat > /home/user/mlops_project/pyproject.toml <<'EOF'
+[tool.mymlpipe]
+version = "0.1.0"
+default_data_dir = "data/"
+EOF
+
+    # Ensure the non-root user can modify everything inside /home/user
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PYTHONIOENCODING="utf-8"
+    export LC_ALL="C.UTF-8"
+
+%runscript
+    # Default action: open a shell unless something else is provided
+    exec "${@:-bash}"

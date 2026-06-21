@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the automated tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/sys-hardening
+
+    # VERSION file with the initial version number
+    printf '2.1.9\n' > /home/user/sys-hardening/VERSION
+
+    # CHANGELOG.md with the exact 10-line initial content
+    cat > /home/user/sys-hardening/CHANGELOG.md <<'EOF'
+# Change Log
+All notable changes to this project will be documented in this file.
+
+## [Unreleased]
+### Added
+- Implemented new SSL cipher suites.
+- Added automated backup rotation.
+
+### Fixed
+- Corrected typo in Nginx worker_connections directive.
+EOF
+
+    # Ensure non-root users can read the repository files
+    chmod -R a+rX /home/user/sys-hardening
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure python and pytest are on PATH
+    PATH=/usr/local/bin:/usr/bin:/bin:$PATH

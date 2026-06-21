@@ -1,0 +1,63 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install system dependencies
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        jq \
+        curl \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare directory structure and mock-API JSON fixtures
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/finops/mock_api
+    mkdir -p /home/user/finops/responses
+
+    # cost-data.json
+    cat > /home/user/finops/mock_api/cost-data.json <<'EOF'
+{
+  "accountId": "123456789012",
+  "currency": "USD",
+  "totalMonthlyCost": 1423.55,
+  "services": [
+    { "name": "AmazonEC2", "monthlyCost": 823.10 },
+    { "name": "AmazonS3", "monthlyCost": 211.22 },
+    { "name": "AmazonRDS", "monthlyCost": 389.23 }
+  ]
+}
+EOF
+
+    # rightsizing-suggestions.json
+    cat > /home/user/finops/mock_api/rightsizing-suggestions.json <<'EOF'
+{
+  "generatedAt": "2023-10-01T00:00:00Z",
+  "suggestions": [
+    { "name": "i-02468ec2", "monthlySavings": 120.35 },
+    { "name": "i-13579ec2", "monthlySavings": 98.99 },
+    { "name": "db-42rds", "monthlySavings": 45.10 }
+  ]
+}
+EOF
+
+    # Make everything in /home/user world-writable so the unprivileged
+    # learner account can create the required artefacts later.
+    chmod -R 777 /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Maintainer "ChatGPT"
+    Description "Environment for FinOps analyst task – mock API data pre-seeded, pytest installed."
+
+%runscript
+    exec "$@"

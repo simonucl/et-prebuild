@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Avoid tzdata prompting during installation
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install required packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        locales \
+        tzdata \
+        python3-pip \
+        ca-certificates
+
+    # ------------------------------------------------------------------
+    # Configure system locale to C.UTF-8
+    # ------------------------------------------------------------------
+    sed -i 's/^# *\(C\.UTF-8 UTF-8\)/\1/' /etc/locale.gen
+    locale-gen C.UTF-8
+    update-locale LANG=C.UTF-8
+    echo 'LANG=C.UTF-8' > /etc/default/locale
+    echo 'LC_ALL=C.UTF-8' >> /etc/default/locale
+
+    # ------------------------------------------------------------------
+    # Configure system time-zone to Etc/UTC
+    # ------------------------------------------------------------------
+    ln -sf /usr/share/zoneinfo/Etc/UTC /etc/localtime
+    echo 'Etc/UTC' > /etc/timezone
+    dpkg-reconfigure -f noninteractive tzdata
+
+    # ------------------------------------------------------------------
+    # Python tooling (pytest for the grader)
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the directory structure expected by the challenge
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/logs
+    chmod 0755 /home /home/user /home/user/logs || true  # ensure accessibility
+
+    # Clean up APT caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+    export TZ=Etc/UTC
+
+%labels
+    Author="Autograder Setup"
+    Description="Challenge container with predefined timezone, locale, pytest, and directory skeleton."
+
+%help
+    This container is prepared for the "system context" challenge.
+    • Time-zone: Etc/UTC
+    • Locale:    C.UTF-8
+    • Pytest installed for internal grading.
+    Directory /home/user/logs (0755) is pre-created for the learner.

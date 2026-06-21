@@ -1,0 +1,70 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing Python tooling..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates \
+        tzdata \
+        locales
+
+    # Clean up apt caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating non-root user 'user'..."
+    groupadd --gid 1000 user
+    useradd  --uid 1000 --gid 1000 --create-home --shell /bin/bash user
+
+    echo "Setting up initial directory structure and fixture files..."
+    RAW_DIR=/home/user/api_logs/raw
+    SUMMARY_DIR=/home/user/api_logs/summary
+
+    mkdir -p "${RAW_DIR}"
+    mkdir -p "${SUMMARY_DIR}"
+
+    # Place a placeholder allowed by the tests so the directory is considered empty.
+    touch "${SUMMARY_DIR}/.gitkeep"
+
+    # Populate the raw log files with exact contents
+    cat > "${RAW_DIR}/service_2023-05-12.log" <<'EOF'
+2023-05-12T14:23:11Z - {"service":"user","endpoint":"/v1/register","status":200,"response_time_ms":132}
+2023-05-12T14:25:46Z - {"service":"auth","endpoint":"/v1/login","status":500,"error":"DB_TIMEOUT","response_time_ms":987}
+2023-05-12T14:28:09Z - {"service":"user","endpoint":"/v1/profile","status":200,"response_time_ms":84}
+2023-05-12T14:31:55Z - {"service":"payment","endpoint":"/v1/pay","status":500,"error":"CARD_DECLINED","response_time_ms":453}
+EOF
+
+    cat > "${RAW_DIR}/service_2023-05-13.log" <<'EOF'
+2023-05-13T07:12:44Z - {"service":"payment","endpoint":"/v1/refund","status":200,"response_time_ms":211}
+2023-05-13T07:15:02Z - {"service":"auth","endpoint":"/v1/login","status":200,"response_time_ms":153}
+2023-05-13T07:18:27Z - {"service":"user","endpoint":"/v1/delete","status":500,"error":"UNKNOWN_USER","response_time_ms":674}
+2023-05-13T07:20:19Z - {"service":"payment","endpoint":"/v1/pay","status":500,"error":"INSUFFICIENT_FUNDS","response_time_ms":502}
+EOF
+
+    # Ensure proper ownership for the non-root user
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are on PATH for all users
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author="Apptainer Build Script"
+    Description="Container for classic Unix text-processing task (API log aggregation)."
+
+%runscript
+    echo "This Apptainer image is intended for an educational exercise."
+    echo "Switch to the 'user' account before running the tests or doing work:"
+    echo "   sudo -u user -i"
+    echo "Happy coding!"

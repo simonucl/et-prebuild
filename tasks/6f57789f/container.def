@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic system utilities and Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel \
+        sqlite3 \
+        ca-certificates \
+        curl
+
+    # Install pytest for the verification test-suite
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the expected directory structure exists
+    mkdir -p /home/user/project
+
+    # Give write permissions to any unprivileged user who will run the container
+    chmod 0777 /home/user
+    chmod 0777 /home/user/project
+
+    # Guarantee that no pre-existing artefacts are present
+    rm -f /home/user/project/meta.db || true
+    rm -f /home/user/project/category_counts.log || true
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author="Apptainer build script"
+    Description="Environment for SQLite meta-information & summary report assignment"

@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing Python + pip..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        curl \
+        git \
+        locales
+
+    echo "Installing pytest..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Configuring locale (UTF-8)…"
+    locale-gen en_US.UTF-8
+    update-locale LANG=en_US.UTF-8
+
+    echo "Creating initial directory structure and dashboard files..."
+    mkdir -p /home/user/dashboards
+
+    # Ensure write permissions for non-root container users
+    chmod 0777 /home/user
+    chmod 0777 /home/user/dashboards
+
+    # Create the three JSON dashboard files with exact contents.
+    cat > /home/user/dashboards/app_error.json <<'EOF'
+{"dashboard":"app_error"}
+EOF
+
+    cat > /home/user/dashboards/latency_overview.json <<'EOF'
+{"dashboard":"latency_overview"}
+EOF
+
+    cat > /home/user/dashboards/system_health.json <<'EOF'
+{"dashboard":"system_health"}
+EOF
+
+    # Ensure a single trailing newline on each file and make them world-writable
+    for f in /home/user/dashboards/*.json; do
+        sed -i -e '$a\' "$f"      # guarantee trailing newline
+        chmod 0666 "$f"
+    done
+
+    # Do NOT create /home/user/archive/ here; the student must create it.
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=en_US.UTF-8
+    export LANG=en_US.UTF-8
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Apptainer Autograder Setup"
+    Description="Environment for Grafana dashboard batch-operations exercise"
+
+%help
+This container provides the initial filesystem state and required tooling
+(pytest, GNU core utilities) for the “Grafana dashboard batch-operations”
+exercise.

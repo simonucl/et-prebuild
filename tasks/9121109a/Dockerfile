@@ -1,0 +1,27 @@
+FROM ubuntu:22.04
+
+# Labels
+LABEL Author="test"
+
+# Ensure package index is up-to-date and install Python tooling
+RUN apt-get update -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-venv \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install pytest for the upcoming evaluation suites
+RUN pip3 install --no-cache-dir --upgrade pip pytest
+
+# Create a standard, writable home for the non-root user expected by the grader
+RUN mkdir -p /home/user && \
+    chmod 755 /home/user
+
+# Make sure Python and pip are easily reachable
+ENV PATH=$PATH:/usr/local/bin
+
+# Default command
+CMD ["echo", "Container for the ML diagnostics task. Use 'docker exec' to interact."]

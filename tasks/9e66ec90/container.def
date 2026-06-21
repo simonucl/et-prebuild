@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the automated tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/k8s/templates
+    mkdir -p /home/user/k8s/env
+
+    # Create the deployment template with exact required content
+    cat > /home/user/k8s/templates/deployment.yaml.tpl <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${APP_NAME}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${APP_NAME}
+  template:
+    metadata:
+      labels:
+        app: ${APP_NAME}
+    spec:
+      containers:
+        - name: ${APP_NAME}
+          image: "docker.io/library/${APP_NAME}:${IMAGE_TAG}"
+          env:
+            - name: ENVIRONMENT
+              value: ${ENVIRONMENT}
+EOF
+
+    # Create the .env file with exact required content
+    cat > /home/user/k8s/env/.env <<'EOF'
+APP_NAME=myapp
+IMAGE_TAG=v1.2.3
+ENVIRONMENT=production
+EOF
+
+    # Ensure appropriate permissions for non-root execution
+    chmod 755 /home/user
+    chmod -R 755 /home/user/k8s
+    chmod 644 /home/user/k8s/templates/deployment.yaml.tpl
+    chmod 644 /home/user/k8s/env/.env
+
+%environment
+    # Nothing to override; keep default HOME binding.
+
+%labels
+    Author example
+    Description "Environment for Kubernetes manifest rendering exercise"
+
+%help
+    This container supplies the initial state for the Kubernetes manifest
+    rendering task. pytest is pre-installed for validation.

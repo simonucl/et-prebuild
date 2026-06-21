@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update apt and install Python & pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the checker
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    # Create the required directory structure
+    mkdir -p /home/user/project
+
+    # Make sure the project directory is writable by any non-root user
+    chmod 0777 /home/user/project
+
+    # Create the cleaning.log file with the exact expected content
+    cat >/home/user/project/cleaning.log <<'EOF'
+2023-09-01 09:15:21,123 INFO Removed duplicate row id=3
+2023-09-01 09:15:22,456 INFO Replaced null price in row id=2 with mean=1.07
+2023-09-01 09:15:23,789 INFO Replaced null quantity in row id=4 with mean=8.25
+2023-09-01 09:15:24,012 INFO Replaced null price in row id=5 with mean=1.07
+2023-09-01 09:15:25,345 INFO Removed duplicate row id=7
+2023-09-01 09:15:26,678 INFO Replaced null price in row id=8 with mean=1.07
+2023-09-01 09:15:27,901 INFO Replaced null quantity in row id=9 with mean=8.25
+2023-09-01 09:15:29,234 INFO Replaced null quantity in row id=10 with mean=8.25
+EOF
+
+    # Set the required file permissions (0644)
+    chmod 0644 /home/user/project/cleaning.log
+
+%labels
+    chmod 755 /home/user
+
+    Author "Your Name <you@example.com>"
+    Description "Environment for the cleaning log analysis exercise"
+
+%help
+This container provides the initial state for the “cleaning log” task.
+It contains:
+  • /home/user/project/cleaning.log with the required 8 log lines.
+  • pytest installed for automated checking.

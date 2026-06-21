@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the grading tests
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem required for the task
+    # ------------------------------------------------------------------
+    # Create the base directory and sub-directory for sample code
+    mkdir -p /home/user/security_scan/sample_code
+
+    # Make the parent directory world-writable so the unprivileged user
+    # inside the running container can create scan_report.txt later.
+    chmod 0777 /home/user/security_scan
+
+    # ------------------------------------------------------------------
+    # Create sample Python files with EXACT contents (including newlines)
+    # ------------------------------------------------------------------
+    cat >/home/user/security_scan/sample_code/app.py <<'EOF'
+# Sample app
+user_input = input("Enter expression: ")
+result = eval(user_input)  # insecure
+print(result)
+data = "print('hello')"
+eval(data)
+EOF
+
+    cat >/home/user/security_scan/sample_code/utils.py <<'EOF'
+def calculate(expr):
+    return eval(expr)  # insecure
+EOF
+
+    # Ensure the source files are readable
+    chmod -R 755 /home/user/security_scan/sample_code
+
+%environment
+    chmod 755 /home/user
+
+    # Keep a clean PATH; do not override HOME
+    export PATH="/usr/local/bin:/usr/bin:/bin"
+
+%labels
+    Author Security-Scan-Setup
+    Description "Environment prepared for security-oriented source code scan task."

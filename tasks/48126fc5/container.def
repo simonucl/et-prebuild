@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tools and Python testing framework
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        pigz \
+        time \
+        ca-certificates \
+        locales
+    pip3 install --no-cache-dir pytest
+
+    # Ensure locale (avoids some Python / LC_* warnings)
+    locale-gen en_US.UTF-8
+
+    # ------------------------------------------------------------------
+    # Create the normal user and its home directory if not already there
+    # ------------------------------------------------------------------
+    if ! id -u user >/dev/null 2>&1; then
+        groupadd -g 1000 user || true
+        useradd  -m -u 1000 -g 1000 -s /bin/bash user || true
+    fi
+
+    # ------------------------------------------------------------------
+    # Prepare the source data directory required by the assignment
+    # (/home/user/data_to_backup) and populate it with ~8 MB of text data
+    # so that the directory is definitely non-empty.
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data_to_backup
+    for i in $(seq 1 8); do
+        yes "Sample data for backup benchmark file $i" \
+            | head -c 1048576 \
+            > /home/user/data_to_backup/file${i}.txt
+    done
+
+    # Give ownership to the unprivileged 'user' account
+    chown -R 1000:1000 /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure that software installed via pip is in the default PATH
+    export PATH="/usr/local/bin:${PATH}"
+
+%runscript
+    echo "Container for the 'backup benchmark' assignment."
+    echo "Run your benchmark script inside this container as the normal user."

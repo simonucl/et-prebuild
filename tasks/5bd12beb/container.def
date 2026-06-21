@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-dev \
+        ca-certificates \
+        curl
+
+    # Install pytest for the grader and learner
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create non-root user “user” with UID 1000 so that the exercise
+    # files can be created under /home/user during runtime.
+    # (If the UID/GID already exist, skip creation gracefully.)
+    # ------------------------------------------------------------------
+    if ! id -u 1000 >/dev/null 2>&1; then
+        groupadd -g 1000 user
+        useradd  -m -u 1000 -g 1000 -s /bin/bash user
+    fi
+
+    # Ensure the home directory exists and is owned by UID 1000
+    mkdir -p /home/user
+    chown -R 1000:1000 /home/user
+
+    # Clean up apt caches to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Put per-user Python packages (if any) ahead of system PATH
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%labels
+    Author="Capacity-Planning Task Image"
+    Description="Base container for capacity-planning exercise. Contains pytest and a clean /home/user."

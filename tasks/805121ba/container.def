@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        make \
+        python3 \
+        python3-pip \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial filesystem layout and monitoring scripts
+    # ------------------------------------------------------------------
+    MON_DIR="/home/user/monitoring"
+    mkdir -p "${MON_DIR}"
+
+    cat <<'EOF' > "${MON_DIR}/check_disk.sh"
+#!/usr/bin/env bash
+echo "DISK OK"
+EOF
+
+    cat <<'EOF' > "${MON_DIR}/check_memory.sh"
+#!/usr/bin/env bash
+echo "MEMORY OK"
+EOF
+
+    chmod 0755 "${MON_DIR}/check_disk.sh" "${MON_DIR}/check_memory.sh"
+
+    # Allow the (non-root) agent to create new files such as the Makefile
+    chmod 0777 "${MON_DIR}"
+
+%environment
+    chmod 755 /home/user
+
+    # Give priority to user-level Python packages, if installed later.
+    export PATH="/home/user/.local/bin:$PATH"
+
+%runscript
+    exec "$@"
+
+%labels
+    Author      Monitoring-Makefile-Starter
+    Description "Container preloaded with monitoring scripts and pytest."

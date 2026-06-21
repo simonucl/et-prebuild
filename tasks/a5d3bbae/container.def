@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python & pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Set up the repository skeleton at /home/user/my_project
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/my_project/docs
+    mkdir -p /home/user/my_project/src
+    mkdir -p /home/user/my_project/tests
+
+    # Create the six required regular files (simple placeholder content)
+    echo "Project README" > /home/user/my_project/README.md
+    echo "Usage documentation" > /home/user/my_project/docs/usage.txt
+    echo 'print("app running")' > /home/user/my_project/src/app.py
+    echo '# Helper functions' > /home/user/my_project/src/helpers.py
+    echo '# Tests for app.py' > /home/user/my_project/tests/test_app.py
+    echo '# Tests for helpers.py' > /home/user/my_project/tests/test_helpers.py
+
+    # Ensure proper permissions (directories 755, files 644)
+    find /home/user/my_project -type d -exec chmod 755 {} \;
+    find /home/user/my_project -type f -exec chmod 644 {} \;
+
+    # DO NOT create file_manifest.log here; that is the learner's task.
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure /home/user exists in PATH-related vars if necessary
+    export PROJECT_ROOT=/home/user/my_project
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Environment for manifest creation task with pytest pre-installed."

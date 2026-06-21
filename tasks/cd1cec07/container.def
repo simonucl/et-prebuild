@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Ensure non-interactive apt operations
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install Python and pip
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        adduser
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # Create the unprivileged “user” account with home directory /home/user
+    if ! id -u user >/dev/null 2>&1; then
+        adduser --disabled-password --gecos '' user
+    fi
+
+    # Double-check the home directory exists and correct permissions
+    mkdir -p /home/user
+    chown -R user:user /home/user
+
+    # Clean up apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Preserve a sane PATH
+    export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+%labels
+    Author  Task Preparer
+    Description "Ubuntu 22.04 base with pytest and a pre-created 'user' account for the assignment"
+
+%runscript
+    # If invoked without arguments, start an interactive shell as 'user'
+    if [ "$#" -eq 0 ]; then
+        exec su - user
+    else
+        # Run the provided command as 'user'
+        exec su - user -c "$*"
+    fi

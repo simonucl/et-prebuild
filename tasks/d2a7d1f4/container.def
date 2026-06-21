@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        gnupg \
+        ca-certificates \
+        coreutils
+
+    # Clean up apt caches to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the evaluation framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the task
+    # ------------------------------------------------------------------
+    # Create the directory structure
+    mkdir -p /home/user/experiments/run_15
+
+    # Create metrics.json with the required contents (ending with a newline)
+    cat > /home/user/experiments/run_15/metrics.json <<'EOF'
+{
+  "accuracy": 0.953,
+  "loss": 0.127
+}
+EOF
+
+    # Ensure there is exactly one trailing newline
+    echo >> /home/user/experiments/run_15/metrics.json
+
+    # Set permissions as mandated by the tests
+    chmod 0700 /home/user/experiments/run_15
+    chmod 0600 /home/user/experiments/run_15/metrics.json
+
+    # Give ownership to the typical non-root user (UID 1000 / GID 1000)
+    # so that the agent running inside the container can write to it.
+    # (Most CI environments run the container as uid 1000.)
+    chown -R 1000:1000 /home/user
+
+%runscript
+    chmod 755 /home/user
+
+    echo "Container for GPG encryption task. Run your commands inside an interactive shell."
+    exec /bin/bash
+
+%help
+    This container provides the initial state for the “archive experiment
+    artifacts” task. The directory /home/user/experiments/run_15 contains
+    metrics.json with the correct permissions. GNU GPG and Python (with
+    pytest) are installed.

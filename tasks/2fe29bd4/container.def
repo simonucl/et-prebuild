@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    #!/bin/bash
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package index and install Python + pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the grader
+    # ------------------------------------------------------------------
+    # Create the user’s home structure
+    mkdir -p /home/user/incoming_reports
+    chmod 755 /home/user
+    chmod 755 /home/user/incoming_reports
+
+    # Populate the three raw CSV files with exact fixture data
+    cat > /home/user/incoming_reports/aws_costs_2023-09.csv <<'EOF'
+service,cost_usd
+EC2,25.50
+S3,7.25
+Lambda,2.40
+EOF
+
+    cat > /home/user/incoming_reports/azure_costs_2023-09.csv <<'EOF'
+service,cost_usd
+VM,30.00
+Storage,5.75
+Functions,1.10
+EOF
+
+    cat > /home/user/incoming_reports/gcp_costs_2023-09.csv <<'EOF'
+service,cost_usd
+ComputeEngine,18.60
+CloudStorage,6.90
+CloudFunctions,0.95
+EOF
+
+    # Set file permissions to 0644 as required
+    chmod 644 /home/user/incoming_reports/*.csv
+
+%labels
+    Author "OpenAI ChatGPT"
+    Description "Base image for the FinOps month-end export task. Provides initial CSV data and pytest for automated grading."

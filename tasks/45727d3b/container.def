@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author server_reports_container_setup
+    Description "Base image for the 'server_reports' exercise. Provides Python, pytest, jq and a writable workspace at /home/user."
+
+%post
+    set -e
+
+    # Update package lists and install required utilities
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        jq \
+        ca-certificates
+
+    # Clean up APT cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install Python libraries needed for testing & validation
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest jsonschema
+
+    # ------------------------------------------------------------------
+    # Prepare writable workspace for the student/agent under /home/user
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/server_reports
+
+    # Make sure every user can write inside /home/user and its sub-dirs.
+    chmod 0777 /home /home/user /home/user/server_reports
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python scripts use UTF-8 by default
+    export PYTHONIOENCODING="utf-8"
+    export LC_ALL="C.UTF-8"
+    export LANG="C.UTF-8"
+
+%runscript
+    echo "This container is ready for the 'server_reports' exercise."
+    echo "A writable workspace is available at /home/user/server_reports."
+    echo "Use 'pytest' to run the assessment tests."

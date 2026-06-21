@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Speed up APT and avoid interactive dialogs
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Basic tools and Python with pytest
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory structure and snapshot input file
+    # ------------------------------------------------------------------
+    # Create /home/user with open write permissions so the unprivileged
+    # runtime user can create /home/user/audit_results later on.
+    mkdir -p /home/user
+    chmod 777 /home/user
+
+    # Directory that stores the provided permissions snapshot
+    mkdir -p /home/user/audit_samples
+    chmod 755 /home/user/audit_samples
+
+    # Populate the snapshot file exactly as specified (each line + '\n')
+    cat > /home/user/audit_samples/perms_report.txt <<'EOF'
+-rwxr-xr-x
+-rw-r--r--
+drwxr-xr-x
+-rwxr-xr-x
+-rw-------
+drwxr-x---
+-rwxr-xr-x
+-rw-r--r--
+-rw-r--r--
+drwxr-xr-x
+EOF
+
+    # Ensure correct permissions: world-readable, but not writable
+    chmod 644 /home/user/audit_samples/perms_report.txt
+
+%environment
+    # Ensure Python and pip are on PATH for convenience
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author security-auditor-setup
+    Description "Environment for permission-frequency audit task with pytest pre-installed."

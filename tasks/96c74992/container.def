@@ -1,0 +1,89 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Installing Python and pytest ..."
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        && rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    echo "Preparing initial dataset ..."
+    # Create base directory for the non-root user that will run the exercise
+    mkdir -p /home/user/raw_runs
+    chmod 0777 /home/user            # allow the runtime user to create new dirs/files
+    chmod 0755 /home/user/raw_runs   # as specified (read & execute for owner/group/other)
+
+    # --- app_alpha.run ----------------------------------------------------
+    cat > /home/user/raw_runs/app_alpha.run <<'EOF'
+tick 1
+tick 2
+tick 3
+tick 4
+tick 5
+tick 6
+tick 7
+tick 8
+tick 9
+tick 10
+tick 11
+tick 12
+tick 13
+tick 14
+tick 15
+EOF
+
+    # --- app_beta.run -----------------------------------------------------
+    cat > /home/user/raw_runs/app_beta.run <<'EOF'
+tick 1
+tick 2
+tick 3
+tick 4
+tick 5
+tick 6
+tick 7
+tick 8
+tick 9
+tick 10
+tick 11
+tick 12
+tick 13
+tick 14
+tick 15
+tick 16
+tick 17
+tick 18
+tick 19
+tick 20
+tick 21
+tick 22
+EOF
+
+    # --- app_gamma.run ----------------------------------------------------
+    cat > /home/user/raw_runs/app_gamma.run <<'EOF'
+tick 1
+tick 2
+tick 3
+tick 4
+tick 5
+tick 6
+tick 7
+tick 8
+tick 9
+EOF
+
+    # Set file permissions
+    chmod 0644 /home/user/raw_runs/*.run
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=utf-8

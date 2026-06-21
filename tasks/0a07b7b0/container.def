@@ -1,0 +1,63 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eu
+
+    # Install Python and pytest
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Prepare initial workspace expected by the tests
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/docs
+    cd /home/user/docs
+
+    # introduction.md (4 lines)
+    cat > introduction.md <<'EOF'
+# Introduction to Our Deployment Process
+
+This document describes how to deploy the application.
+It covers prerequisites, environment variables, and step-by-step procedures that ensure a smooth rollout to production.
+EOF
+
+    # deploy_guide.md (2 lines)
+    cat > deploy_guide.md <<'EOF'
+# Deployment Guide
+Make sure you have completed all unit tests, integration tests, and performance benchmarks before proceeding to deployment.
+EOF
+
+    # changelog.md (5 lines)
+    cat > changelog.md <<'EOF'
+# Changelog
+## [1.0.1] - 2023-04-21
+- Fixed bug in authentication.
+- Improved latency.
+- Added support for distributed tracing which lets the system gracefully handle and visualize end-to-end request flow, even under high load.
+EOF
+
+    # README.md (1 line)
+    cat > README.md <<'EOF'
+# Project Documentation
+EOF
+
+    # Permissions
+    chmod 0755 /home/user/docs
+    chmod 0644 /home/user/docs/*.md
+
+%environment
+    chmod 755 /home/user
+
+    # Preserve default HOME; nothing to override.
+    export PYTHONIOENCODING=utf-8
+
+%labels
+    Author example@example.com
+    Description "Container prepared for Markdown line-length lint task"
+
+%runscript
+    exec "$@"

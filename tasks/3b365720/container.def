@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required packages
+    apt-get update
+    # python3 is already in ubuntu:22.04, but ensure full interpreter and pip
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        procps     # provides `free`
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Prepare initial workspace for the student
+    # ---------------------------------------------------------------------
+    # Create /home/user with liberal permissions so the (non-root) runtime
+    # user can freely write there.
+    mkdir -p /home/user/data
+    chmod -R 0777 /home/user
+
+    # Provide the sample CSV dataset
+    cat >/home/user/data/transactions.csv <<'CSV_EOF'
+transaction_id,customer_id,amount,currency
+T001,C001,100,USD
+T002,C002,250,USD
+T003,C001,75,USD
+T004,C003,300,USD
+T005,C002,150,USD
+CSV_EOF
+
+    # Ensure world-readable access to the dataset
+    chmod 0666 /home/user/data/transactions.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip user base executables (if any) are on PATH
+    export PATH="$PATH:$HOME/.local/bin"
+
+%labels
+    Author="Container builder"
+    Description="Environment for 'system-snapshot & CSV business summary' assignment. Includes pytest and sample dataset."
+
+%runscript
+    echo "Container for the assignment is ready."
+    echo "Navigate to /home/user to start working."

@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #------------------------------------------------------------------
+    # Basic tooling
+    #------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the tests
+    #------------------------------------------------------------------
+    # Base path
+    BASE="/home/user/support-sim"
+
+    # Create directory structure
+    mkdir -p "${BASE}/admin"
+    mkdir -p "${BASE}/logs"
+    mkdir -p "${BASE}/releases/v1"
+    mkdir -p "${BASE}/releases/v2"
+
+    # Populate release files
+    printf 'version=v1\n' > "${BASE}/releases/v1/app.conf"
+    printf 'version=v2\n' > "${BASE}/releases/v2/app.conf"
+
+    # Populate log files
+    touch "${BASE}/logs/2023-07-28.log"
+    touch "${BASE}/logs/2023-08-01.log"
+    touch "${BASE}/logs/2023-08-15.log"
+
+    # Current symlink pointing to v2 (as per initial state)
+    ln -s "${BASE}/releases/v2" "${BASE}/current"
+
+    #------------------------------------------------------------------
+    # Make sure the future unprivileged agent can read/write everything
+    #------------------------------------------------------------------
+    chmod -R a+rwx /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author="Apptainer Setup Script for Support-Sim Task"

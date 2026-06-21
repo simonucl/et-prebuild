@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update apt database and install Python & Pytest
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # ---------------------------------------------------------------------
+    # Prepare initial (incorrect) backup-configuration files
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/db_backup
+
+    # Initial, intentionally incorrect config.yaml
+    cat >/home/user/db_backup/config.yaml <<'EOF'
+version: "2.0"
+retention_days: 7
+compression: "lz4"
+backup_type: "full"
+encryption: "aes128"
+EOF
+
+    # Initial, intentionally incorrect settings.toml
+    cat >/home/user/db_backup/settings.toml <<'EOF'
+# Application-level settings
+[app]
+name = "pg-backup-agent"
+version = "1.2.3"
+
+# Storage backend
+[storage]
+provider = "gcs"
+region   = "us-central1"
+bucket   = "dev-backups"
+
+# Databases being backed up
+[[databases]]
+name     = "test"
+host     = "test.db.internal"
+port     = 5432
+EOF
+
+    # Ensure the student (non-root) can edit the files in-place.
+    chmod -R 777 /home/user/db_backup
+
+%labels
+    chmod 755 /home/user
+
+    Author example
+    Description Container for PostgreSQL backup-configuration editing task
+
+%help
+    This Apptainer image sets up the initial environment for the
+    backup-configuration editing exercise. Pytest is included so the
+    verification suite can run.

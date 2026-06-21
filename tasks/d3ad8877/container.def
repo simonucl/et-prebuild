@@ -1,0 +1,63 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package list and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem expected by the tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/configs/nginx/sites-available
+    mkdir -p /home/user/configs/app/db
+    mkdir -p /home/user/configs/obsolete
+
+    # nginx/nginx.conf
+    printf 'user  www-data;\nworker_processes  auto;\npid /run/nginx.pid;\n' \
+        > /home/user/configs/nginx/nginx.conf
+
+    # nginx/sites-available/default.conf
+    printf 'server {\n    listen 80 default_server;\n    server_name _;\n    root /var/www/html;\n}\n' \
+        > /home/user/configs/nginx/sites-available/default.conf
+
+    # app/app.conf
+    printf '[app]\nname = SampleApp\nversion = 1.2.3\n' \
+        > /home/user/configs/app/app.conf
+
+    # app/db/database.conf
+    printf '[database]\nhost = localhost\nport = 5432\n' \
+        > /home/user/configs/app/db/database.conf
+
+    # obsolete/old.conf
+    printf 'deprecated=true\n' \
+        > /home/user/configs/obsolete/old.conf
+
+    # ------------------------------------------------------------------
+    # Set modification timestamps
+    #   • recent files  : now - 2 days
+    #   • obsolete file : now - 90 days
+    # ------------------------------------------------------------------
+    touch -d '2 days ago'  /home/user/configs/nginx/nginx.conf
+    touch -d '2 days ago'  /home/user/configs/nginx/sites-available/default.conf
+    touch -d '2 days ago'  /home/user/configs/app/app.conf
+    touch -d '2 days ago'  /home/user/configs/app/db/database.conf
+
+    touch -d '90 days ago' /home/user/configs/obsolete/old.conf
+
+    # Ensure the backup target does NOT exist initially
+    rm -rf /home/user/configs_recent_backup
+
+    # Make /home/user writable for the unprivileged runtime user
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Maintainer="Configuration Manager Task – Apptainer setup"

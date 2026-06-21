@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create a non-root user `user` (UID 1000) and its home directory
+    useradd -m -u 1000 user
+
+    # Create the logs directory with the required permissions
+    mkdir -p /home/user/logs
+    chmod 0755 /home/user/logs
+
+    # Populate /home/user/logs/system.log with the exact required content
+    cat > /home/user/logs/system.log <<'EOF'
+[2023-05-15 10:03:17] [INFO] System booting
+[2023-05-15 10:05:42] [ERROR] Failed to mount /dev/sda1
+[2023-05-15 10:07:03] [WARNING] Low disk space
+[2023-05-15 10:12:55] [ERROR] Network unreachable
+[2023-05-15 10:15:00] [INFO] User login: alice
+EOF
+
+    chmod 0644 /home/user/logs/system.log
+
+    # Ensure ownership so the unprivileged agent can write into /home/user/logs
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Add Python user base binaries (pip) to PATH just in case
+    export PATH="$PATH:$HOME/.local/bin"
+
+%runscript
+    echo "Container for log-processing task.  Run your commands inside an interactive shell."
+    exec /bin/bash
+
+%help
+    This Apptainer image sets up the environment for the incident-response log
+    filtering task.  It provides:
+      • /home/user/logs/system.log with the exact required contents.
+      • Correct permissions and ownership so the non-root agent can create
+        /home/user/logs/incident_ERRORs_20230515.log.
+      • pytest installed for automated grading.

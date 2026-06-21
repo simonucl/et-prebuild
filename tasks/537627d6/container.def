@@ -1,0 +1,29 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author      k8s-operator-task-preparer
+    Description Base image with Python and pytest installed; provides a writable \
+/home/user starting point for the exercise.
+
+%post
+    set -e
+
+    # Install Python and pip
+    apt-get update && \
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            python3 python3-pip && \
+        apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # Create a writable home directory for the student/agent
+    mkdir -p /home/user
+    # Ensure any non-root user can write into it during execution.
+    chmod 777 /home/user
+
+%runscript
+    chmod 755 /home/user
+
+    exec "$@"

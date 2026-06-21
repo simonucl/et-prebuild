@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial project structure and seed files for the agent
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/project/i18n
+
+    cat > /home/user/project/i18n/messages.po <<'EOF'
+# SOME DESCRIPTIVE TITLE.
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Language: es_ES\n"
+
+#: src/main.c:10
+msgid "File"
+msgstr ""
+
+#: src/main.c:11
+msgid "Edit"
+msgstr ""
+
+#: src/main.c:12
+msgid "View"
+msgstr "Vista"
+
+#: src/main.c:13
+msgid "Help"
+msgstr ""
+EOF
+
+    # Ensure the non-root runtime user can read/write everything under /home/user
+    chmod -R 777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author localization-task-setup

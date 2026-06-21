@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Ensure system is up-to-date and Python tooling is available
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Prepare the initial filesystem state required by the assignment
+    # ---------------------------------------------------------------------
+
+    # Create directory hierarchy
+    mkdir -p /home/user/backups/daily
+
+    # Create the critical archive with exact ASCII content "abc" (no newline)
+    printf 'abc' > /home/user/backups/daily/important_data.tar.gz
+
+    # Tighten permissions just enough for read-only access by the student
+    chmod 755 /home/user
+    chmod -R 755 /home/user/backups
+    chmod 644 /home/user/backups/daily/important_data.tar.gz
+
+%labels
+    Author backup-integrity-template
+    Description Container prepared for backup-integrity verification task.
+
+%help
+    This Apptainer image contains the initial state for the backup-integrity
+    exercise.  A single file
+        /home/user/backups/daily/important_data.tar.gz
+    has been pre-placed with the exact SHA-256 digest required by the tests.
+    Students must create a verification log as described in the assignment.

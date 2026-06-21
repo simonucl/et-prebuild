@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    apt-get update
+    # Install required tools
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        make \
+        tar \
+        gzip \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    # Install pytest for test execution
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Prepare initial filesystem state for the backup-automation task
+    # -----------------------------------------------------------------
+    # Create seed data directory and file
+    mkdir -p /home/user/project/data
+    printf 'Sample data for backup.\n' > /home/user/project/data/file1.txt
+
+    # Ensure the student (non-root runtime user) can freely work here
+    chmod -R 0777 /home/user
+
+    # Clean up apt caches to keep image slim
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author backup-automation-task
+
+%help
+    This container provides the initial environment for the “backup automation”
+    Makefile assignment. Pytest is installed, and the seed data set is located
+    in /home/user/project/data/file1.txt.

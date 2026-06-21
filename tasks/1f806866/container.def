@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author "Apptainer Task Setup"
+
+%post
+    set -e
+
+    # Update package index
+    apt-get update
+
+    # Install required CLI tools and Python package manager
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        iputils-ping \
+        dnsutils \
+        curl \
+        wget \
+        python3-pip \
+        ca-certificates
+
+    # Upgrade pip and install pytest
+    python3 -m pip install --no-cache-dir --upgrade pip setuptools
+    python3 -m pip install --no-cache-dir pytest
+
+    # Ensure the expected home directory exists with appropriate permissions
+    mkdir -p /home/user
+    chmod 0775 /home/user
+
+    # Clean up APT caches to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    chmod 755 /home/user
+
+    echo "Container for migration diagnostics lab. Execute your commands as needed."

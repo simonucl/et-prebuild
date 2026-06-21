@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update apt cache and install Python & pip
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the evaluation framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------ #
+    # Prepare filesystem required for the task
+    # ------------------------------------------------------------------ #
+
+    # Create the user home directory hierarchy if it doesn't exist
+    mkdir -p /home/user/build_logs
+
+    # Make sure the agent (run as an unprivileged user) can write here
+    chmod 0777 /home/user/build_logs
+
+    # Populate the CI build log with the exact required contents
+    cat > /home/user/build_logs/ci_build.log <<'EOF'
+[2023-09-12 10:15:01] [INFO] Starting build step 1
+[2023-09-12 10:15:05] [ERROR] Failed to fetch dependencies
+[2023-09-12 10:16:12] [WARN] Deprecated API usage
+[2023-09-12 10:17:30] [INFO] Running unit tests
+[2023-09-12 10:17:45] [ERROR] Unit test failures detected
+[2023-09-12 10:18:02] [INFO] Build completed
+[2023-09-12 10:18:06] [ERROR] Post-build hook failed
+EOF
+
+    # Ensure the log file is world-readable
+    chmod 0644 /home/user/build_logs/ci_build.log
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip from /usr/local are in PATH (pip installs here)
+    export PATH="/usr/local/bin:$PATH"
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Container with initial CI build log and pytest installed for agent task."
+
+%help
+    This Apptainer image sets up the environment for the CI build log
+    filtering task, providing:
+      • /home/user/build_logs/ci_build.log with predefined contents
+      • Writable /home/user/build_logs directory for the agent
+      • Python 3 and pytest pre-installed

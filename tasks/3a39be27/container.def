@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package lists and install Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-venv \
+        python3-pip \
+        ca-certificates
+
+    # Install pytest for the forthcoming test suites
+    pip3 install --no-cache-dir pytest
+
+    # Create non-root user `user` with home directory /home/user
+    if ! getent group user >/dev/null 2>&1; then
+        groupadd -g 1000 user
+    fi
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 -g user -s /bin/bash user
+    fi
+    chown -R user:user /home/user
+
+    # Clean up apt caches
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Keep standard paths; ensure pip installs are discoverable
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    # Default runscript just opens a shell
+    exec /bin/bash "$@"

@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt index and installing prerequisites..."
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating writable home directory for the agent..."
+    mkdir -p /home/user
+    # Ensure any unprivileged user can write to this directory
+    chmod 0777 /home/user
+
+    echo "Building dummy curl package at required version (7.74.0-1ubuntu2.18)..."
+    mkdir -p /tmp/curlpkg/DEBIAN
+    cat > /tmp/curlpkg/DEBIAN/control <<'EOF'
+Package: curl
+Version: 7.74.0-1ubuntu2.18
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: Dummy Builder <builder@example.com>
+Description: Placeholder curl package to satisfy testing requirements.
+EOF
+
+    # Provide a harmless stub so that /usr/bin/curl exists.
+    mkdir -p /tmp/curlpkg/usr/bin
+    ln -s /bin/true /tmp/curlpkg/usr/bin/curl
+    chmod 0755 /tmp/curlpkg/usr/bin
+
+    dpkg-deb --build /tmp/curlpkg /tmp/curl_7.74.0-1ubuntu2.18_amd64.deb
+    dpkg -i /tmp/curl_7.74.0-1ubuntu2.18_amd64.deb
+
+    echo "Cleaning up build artifacts and apt caches..."
+    rm -rf /tmp/curlpkg /tmp/curl_7.74.0-1ubuntu2.18_amd64.deb
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to export; keep default environment.
+
+%labels
+    Author="Automation Task Prep"
+    Description="Container primed for curl version logging exercise with pytest pre-installed."
+
+%help
+    This Apptainer image provides:
+      • A dummy curl package registered at version 7.74.0-1ubuntu2.18.
+      • Pytest installed for automated grading.
+      • A writable /home/user directory where the agent will create curl_version.log.

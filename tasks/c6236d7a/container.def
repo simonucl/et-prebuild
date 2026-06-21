@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python tooling and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    # Create the /home/user hierarchy (no actual 'user' account required)
+    mkdir -p /home/user/build
+
+    # Ensure permissions are exactly as the tests expect
+    chmod 755 /home/user
+    chmod 755 /home/user/build
+
+    # Populate the raw_artifacts.log file with ground-truth data
+    cat > /home/user/build/raw_artifacts.log <<'EOF'
+libfoo.so
+libbar.so
+libfoo.so
+libbaz.so
+libfoo.so
+libbar.so
+libqux.so
+EOF
+    chmod 644 /home/user/build/raw_artifacts.log
+
+    # Do NOT create artifact_frequency.log; the student will generate it
+
+%runscript
+    echo "Container for artifact frequency exercise."
+    echo "Activate a shell with:  apptainer exec <image> /bin/bash"
+
+%labels
+    Author="Auto-generated for artifact frequency task"
+    Description="Base image with pytest and initial data setup"
+
+%test
+    echo "Basic sanity check: python3 - <<'PY'
+import pytest, sys, pathlib, textwrap, os
+print('pytest version:', pytest.__version__)
+assert pathlib.Path('/home/user/build/raw_artifacts.log').exists()
+print('All good!')
+PY"

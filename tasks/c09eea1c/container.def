@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python (with venv support) plus utilities
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-venv \
+        python3-pip \
+        python-is-python3 \
+        ca-certificates \
+        build-essential
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the expected home directory exists
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Avoid overriding $HOME per instructions; only ensure /usr/local/bin is in PATH
+    export PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+%labels
+    Author  log_analysis_container
+    Description  "Base environment for log_review_env exercise – includes Python, venv support, and pytest."
+
+%help
+    This container provides a pristine Ubuntu 22.04 environment with Python 3,
+    the standard ‘venv’ module, and pytest pre-installed.  It intentionally
+    does NOT contain /home/user/log_review_env so that students can create
+    the virtual environment themselves during the exercise.

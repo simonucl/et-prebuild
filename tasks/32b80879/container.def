@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic packages
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # Ensure /usr/bin/python exists for convenience
+    if [ ! -e /usr/bin/python ]; then
+        ln -s /usr/bin/python3 /usr/bin/python
+    fi
+
+    # ------------------------------------------------------------------
+    # Create the initial dataset directory and CSV file expected by tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/datasets
+
+    cat << 'EOF' > /home/user/datasets/temperature_readings.csv
+Date,City,TempC
+2023-01-01,Paris,5
+2023-01-01,New York,-3
+2023-01-02,Paris,6.5
+2023-01-02,New York,-1
+EOF
+
+    # Permissions:
+    #  - Allow any non-root user (the student) to create /home/user/output later.
+    #  - Dataset must be readable but not writable by others to avoid accidental changes.
+    chmod 777 /home/user
+    chmod 755 /home/user/datasets
+    chmod 644 /home/user/datasets/temperature_readings.csv
+
+%environment
+    export LC_ALL=C.UTF-8
+    export PYTHONDONTWRITEBYTECODE=1
+
+%runscript
+    echo "Container for the temperature-conversion assignment. Use this as a build image; no default action."

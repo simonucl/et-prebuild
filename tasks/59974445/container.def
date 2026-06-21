@@ -1,0 +1,32 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3
+
+    # Install pytest for the learner tests
+    pip3 install --no-cache-dir pytest
+
+    # Clean up apt caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Ensure the dedicated non-privileged workspace exists
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+%environment
+    # Minimal PATH and HOME setup
+    export PATH=/usr/local/bin:/usr/bin:/bin
+    export HOME=/home/user
+
+%labels
+    Author="Container build automation"
+    Description="Clean environment for the build-artifacts SQLite/CSV task with pytest and sqlite3 pre-installed."

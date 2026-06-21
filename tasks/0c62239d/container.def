@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling required for the test harness
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the test suite
+    # ---------------------------------------------------------------------
+    # Directory skeleton
+    mkdir -p /home/user/repos/ci-cd-scripts/releases/v0.9
+
+    # Legacy deploy script (must be executable)
+    cat <<'EOF' > /home/user/repos/ci-cd-scripts/releases/v0.9/deploy.sh
+#!/usr/bin/env bash
+echo "Deploy v0.9"
+EOF
+    chmod +x /home/user/repos/ci-cd-scripts/releases/v0.9/deploy.sh
+
+    # 'current' symlink pointing to the legacy release
+    ln -sfn releases/v0.9 /home/user/repos/ci-cd-scripts/current
+
+    # Make sure everything under /home/user is world-readable/executable as needed
+    chmod -R a+rX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author CI Task Generator
+
+%help
+    Container providing the initial state for the CI/CD cut-over exercise.
+    Includes pytest for the test harness.

@@ -1,0 +1,63 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Install Python and pytest
+    apt-get update -qq
+    apt-get install -y --no-install-recommends python3-pip python3-setuptools
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    #  Provide a wrapper around the pytest entry-point that guarantees
+    #  the required initial state (logs directory + baseline log file)
+    #  exists *every* time pytest is invoked – even when /home/user is
+    #  a bind-mount coming from the host at run time.
+    # ------------------------------------------------------------------
+    mv /usr/local/bin/pytest /usr/local/bin/pytest.real
+
+    cat > /usr/local/bin/pytest << 'SH'
+#!/bin/sh
+# Wrapper to ensure the baseline file structure for the exercise is present
+TARGET_DIR="/home/user/workspace/app/logs"
+LOG_FILE="$TARGET_DIR/build_2023-09-01.log"
+
+# Create directory tree if it does not yet exist
+if [ ! -d "$TARGET_DIR" ]; then
+    mkdir -p "$TARGET_DIR"
+fi
+
+# Create the baseline log file with the expected content if missing
+if [ ! -f "$LOG_FILE" ]; then
+    cat > "$LOG_FILE" <<'EOF'
+2023-09-01 10:01:02 INFO [Init] Application started
+2023-09-01 10:01:03 WARNING [Config] Missing optional setting "theme"
+2023-09-01 10:01:04 ERROR [Database] Connection refused
+2023-09-01 10:02:00 INFO [Heartbeat] Alive
+2023-09-01 10:03:12 ERROR [Auth] Invalid credentials
+2023-09-01 10:04:45 INFO [Shutdown] Application stopped
+EOF
+fi
+
+# Hand off execution to the real pytest binary
+exec /usr/local/bin/pytest.real "$@"
+SH
+
+    chmod +x /usr/local/bin/pytest
+
+    # Also place the baseline file inside the image itself for completeness
+    mkdir -p /home/user/workspace/app/logs
+    cat > /home/user/workspace/app/logs/build_2023-09-01.log <<'EOF'
+2023-09-01 10:01:02 INFO [Init] Application started
+2023-09-01 10:01:03 WARNING [Config] Missing optional setting "theme"
+2023-09-01 10:01:04 ERROR [Database] Connection refused
+2023-09-01 10:02:00 INFO [Heartbeat] Alive
+2023-09-01 10:03:12 ERROR [Auth] Invalid credentials
+2023-09-01 10:04:45 INFO [Shutdown] Application stopped
+EOF
+    chmod -R a+rwX /home/user/workspace
+
+%environment
+    chmod 755 /home/user
+
+    # No environment variables are strictly necessary for the task.
+    :

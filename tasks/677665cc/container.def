@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Refresh package index and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        nmap \
+        net-tools \
+        iproute2 \
+        --no-install-recommends
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create a non-privileged user with home directory /home/user
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -s /bin/bash user
+    fi
+    chown -R user:user /home/user
+
+    # Ensure the user’s local bin directory is on PATH for interactive shells
+    echo 'export PATH=$HOME/.local/bin:$PATH' > /etc/profile.d/10-user-local-bin.sh
+
+    # DO NOT create the scan_results directory or result file here.
+    # Leaving the environment pristine so the student can generate them.
+
+%environment
+    chmod 755 /home/user
+
+    # Propagate local user-installed Python tools
+    export PATH=$HOME/.local/bin:$PATH
+
+%labels
+    Author "Auto-generated for Localhost Vulnerability Scan task"
+
+%help
+    This container provides a clean Ubuntu 22.04 environment with:
+      • python3 and pip
+      • pytest (for the autograder)
+      • nmap and common networking tools
+
+    The scan-results file /home/user/scan_results/localhost_scan.txt
+    intentionally does NOT exist at build time.

@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tooling
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare starter filesystem state for the SSH-log filtering exercise
+    # ------------------------------------------------------------------
+    # 1. Create /home/user (world-writable so the unprivileged runner can
+    #    add new files/directories such as /home/user/filtered_logs later).
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # 2. Create the logs directory and the baseline auth.log file.
+    mkdir -p /home/user/logs
+
+    cat > /home/user/logs/auth.log <<'EOF'
+Jan 10 09:00:01 server sshd[12345]: Accepted password for alice from 192.168.1.10 port 53422 ssh2
+Jan 10 09:02:15 server sshd[12346]: Failed password for invalid user root from 203.0.113.1 port 61123 ssh2
+Jan 10 09:05:47 server sshd[12347]: Failed password for bob from 192.168.1.11 port 51234 ssh2
+Jan 10 09:07:32 server sshd[12348]: Accepted password for charlie from 192.168.1.12 port 55211 ssh2
+Jan 10 09:10:09 server sshd[12349]: Failed password for invalid user admin from 203.0.113.2 port 62345 ssh2
+Jan 10 09:15:55 server sshd[12350]: Accepted password for alice from 192.168.1.10 port 53445 ssh2
+Jan 10 09:20:16 server sshd[12351]: Failed password for dave from 192.168.1.13 port 50001 ssh2
+Jan 10 09:25:45 server sshd[12352]: Failed password for invalid user test from 203.0.113.3 port 63211 ssh2
+Jan 10 09:30:12 server sshd[12353]: Accepted password for bob from 192.168.1.11 port 51333 ssh2
+Jan 10 09:35:24 server sshd[12354]: Received disconnect from 192.168.1.12 port 55211:11: disconnected by user
+EOF
+
+    chmod 0755 /home/user/logs
+    chmod 0644 /home/user/logs/auth.log
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is easily accessible
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author someone@example.com
+    Description "Container for SSH log filtering exercise – includes starter auth.log and pytest."

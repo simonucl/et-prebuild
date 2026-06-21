@@ -1,0 +1,69 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "==> Installing required packages"
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    echo "==> Creating directory structure under /home/user"
+    mkdir -p /home/user/data/logs
+    mkdir -p /home/user/data/reports
+    mkdir -p /home/user/bin
+
+    echo "==> Populating pre-existing log files"
+    cat >/home/user/data/logs/app1.log <<'EOF'
+[2023-01-01 10:00:01] "GET /index.html" 200
+[2023-01-01 10:00:02] "GET /login" 404
+[2023-01-01 10:00:03] "POST /api/data" 500
+[2023-01-01 10:00:04] "GET /about" 200
+EOF
+
+    cat >/home/user/data/logs/app2.log <<'EOF'
+[2023-01-02 11:05:05] "GET /" 200
+[2023-01-02 11:05:06] "GET /doesnotexist" 404
+[2023-01-02 11:05:07] "GET /" 200
+EOF
+
+    cat >/home/user/data/logs/app3.log <<'EOF'
+[2023-01-03 09:15:05] "POST /submit" 500
+[2023-01-03 09:15:06] "GET /home" 200
+[2023-01-03 09:15:07] "GET /contact" 200
+[2023-01-03 09:15:08] "GET /notfound" 404
+EOF
+
+    echo "==> Setting permissions"
+    # Logs: read-only for everyone
+    chmod 644 /home/user/data/logs/*.log
+    chmod 755 /home/user/data/logs
+
+    # Directories where the student must write
+    chmod 0777 /home/user/data/reports
+    chmod 0777 /home/user/bin
+    chmod 755  /home/user
+    chmod 755  /home/user/data
+
+    echo "==> Cleaning up apt caches"
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Add /home/user/bin to PATH for convenience (do not override HOME)
+    export PATH="/home/user/bin:${PATH}"
+    export LC_ALL=C.UTF-8
+
+%labels
+    Author shell-scripting-log-task
+    Description "Environment for the 'Shell-scripting automation for a log analyst' task"
+
+%help
+This container image provides the pre-populated HTTP log files and
+directory structure required for the “Shell-scripting automation for a
+log analyst” exercise.
+It also includes pytest so that the grading harness can execute tests.

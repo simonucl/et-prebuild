@@ -1,0 +1,95 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+Author OpenAI-ChatGPT
+Description "Base image for headless local-HTML scraping task with test fixtures pre-installed."
+
+%post
+    set -e
+
+    # Update APT catalogue and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        curl \
+        wget \
+        nano \
+        git
+
+    # Upgrade pip and install pytest (needed for automated grading)
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create working directory structure expected by the assignment
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/website/pages
+    mkdir -p /home/user/output
+
+    # Give wide write permissions to /home/user/output so the non-root
+    # agent can create the required artefacts at runtime.
+    chmod -R 0777 /home/user/output
+
+    # ------------------------------------------------------------------
+    # Populate the three HTML source pages exactly as specified
+    # ------------------------------------------------------------------
+    cat >/home/user/website/pages/page1.html <<'EOF'
+<table id="weather">
+<thead>
+<tr><th>Date</th><th>Temperature</th><th>Humidity</th></tr>
+</thead>
+<tbody>
+<tr><td>2021-06-01</td><td>25</td><td>60</td></tr>
+<tr><td>2021-06-02</td><td>28</td><td>55</td></tr>
+<tr><td>2021-06-03</td><td>27</td><td>50</td></tr>
+<tr><td>2021-06-04</td><td>26</td><td>65</td></tr>
+<tr><td>2021-06-05</td><td>30</td><td>45</td></tr>
+</tbody>
+</table>
+EOF
+
+    cat >/home/user/website/pages/page2.html <<'EOF'
+<table id="weather">
+<thead>
+<tr><th>Date</th><th>Temperature</th><th>Humidity</th></tr>
+</thead>
+<tbody>
+<tr><td>2021-06-04</td><td>26</td><td>65</td></tr>
+<tr><td>2021-06-05</td><td>30</td><td>45</td></tr>
+<tr><td>2021-06-06</td><td>31</td><td>40</td></tr>
+<tr><td>2021-06-07</td><td>29</td><td>50</td></tr>
+<tr><td>2021-06-08</td><td>28</td><td>55</td></tr>
+</tbody>
+</table>
+EOF
+
+    cat >/home/user/website/pages/page3.html <<'EOF'
+<table id="weather">
+<thead>
+<tr><th>Date</th><th>Temperature</th><th>Humidity</th></tr>
+</thead>
+<tbody>
+<tr><td>2021-06-09</td><td>26</td><td>60</td></tr>
+<tr><td>2021-06-10</td><td>27</td><td>58</td></tr>
+<tr><td>2021-06-11</td><td>30</td><td>48</td></tr>
+<tr><td>2021-06-12</td><td>31</td><td>47</td></tr>
+<tr><td>2021-06-13</td><td>29</td><td>50</td></tr>
+</tbody>
+</table>
+EOF
+
+    # Ensure non-root users have read access to the website pages
+    chmod -R 0755 /home/user/website
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is available by default
+    export PATH="/usr/bin:$PATH"
+
+%runscript
+    echo "Container for the headless scraping task."
+    echo "Run your own commands inside the container to complete the assignment."

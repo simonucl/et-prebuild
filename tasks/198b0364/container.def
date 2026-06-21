@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update APT index and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        openssh-client
+
+    # Install pytest for the assessment harness
+    pip3 install --no-cache-dir pytest
+
+    # Prepare writable workspace for the exercises
+    mkdir -p /home/user
+    chmod 0777 /home/user        # Allow whichever host UID executes the
+                                 # container to create files/directories here.
+
+    # Clean up APT caches to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Standard PATH
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author "Apptainer SSH-exercise base image"

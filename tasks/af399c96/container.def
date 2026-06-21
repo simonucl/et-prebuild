@@ -1,0 +1,73 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author Kubernetes-Manifest-Prep
+    Description "Container that provides the initial (pre-conversion) state of three Kubernetes manifests encoded in ISO-8859-1 with CRLF endings. Pytest is installed for task validation."
+
+%post
+    set -e
+
+    ############################
+    # 1. Install dependencies  #
+    ############################
+    apt-get update
+    # Python and pip for pytest (kept minimal to speed up build)
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    ############################
+    # 2. Create user & home    #
+    ############################
+    # Ensure a non-root user called 'user' exists with UID 1000 so that
+    # the testing harness (which usually enters the container as UID 1000)
+    # can access the prepared files without permission problems.
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 -s /bin/bash user
+    fi
+
+    ############################
+    # 3. Prepare file system   #
+    ############################
+    # Directory structure:
+    #   /home/user/k8s/manifests/         <-- original problem files
+    #
+    # No manifests_utf8 directory and no conversion.log yet.
+    #
+    install -d -m 0755 /home/user/k8s/manifests
+
+    ############################
+    # 4. Populate manifests    #
+    ############################
+    # All files need to be encoded as ISO-8859-1 WITH CRLF endings.
+    # Using printf ensures exact control over newline sequences.
+
+    # Deployment
+    printf 'apiVersion: extensions/v1beta1\r\nkind: Deployment\r\nmetadata:\r\n  name: my-app\r\nspec:\r\n  replicas: 2\r\n  template:\r\n    metadata:\r\n      labels:\r\n        app: my-app\r\n    spec:\r\n      containers:\r\n      - name: my-app\r\n        image: nginx:1.19\r\n' \
+        > /home/user/k8s/manifests/deployment.yaml
+
+    # Service
+    printf 'apiVersion: v1\r\nkind: Service\r\nmetadata:\r\n  name: my-app-service\r\nspec:\r\n  selector:\r\n    app: my-app\r\n  ports:\r\n    - port: 80\r\n      targetPort: 80\r\n' \
+        > /home/user/k8s/manifests/service.yaml
+
+    # Ingress
+    printf 'apiVersion: networking.k8s.io/v1\r\nkind: Ingress\r\nmetadata:\r\n  name: my-app-ingress\r\nspec:\r\n  rules:\r\n    - host: myapp.example.com\r\n      http:\r\n        paths:\r\n          - path: /\r\n            pathType: Prefix\r\n            backend:\r\n              service:\r\n                name: my-app-service\r\n                port:\r\n                  number: 80\r\n' \
+        > /home/user/k8s/manifests/ingress.yaml
+
+    ############################
+    # 5. Permissions           #
+    ############################
+    chown -R 1000:1000 /home/user
+    chmod 0644 /home/user/k8s/manifests/*.yaml
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default HOME binding behaviour; only ensure PATH has python3
+    export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin"
+
+%runscript
+    echo "Container for Kubernetes manifest conversion task."
+    echo "You can now run pytest to execute the provided tests."

@@ -1,0 +1,41 @@
+FROM ubuntu:22.04
+
+# Base OS packages and Python tooling
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3 python3-pip gzip ca-certificates && \
+    pip3 install --no-cache-dir pytest
+
+# Prepare exercise directory layout
+RUN mkdir -p /home/user/logs && \
+    chmod 777 /home/user && \
+    chmod 777 /home/user/logs
+
+# Build log file
+RUN cat << 'EOF' > /tmp/webapp-2023-09-16.log
+2023-09-16T00:01:02Z GET /api/users 200 OK 110ms
+2023-09-16T00:02:03Z POST /api/users 201 Created 95ms
+2023-09-16T00:02:55Z GET /api/products 503 Service_Unavailable 220ms
+2023-09-16T00:03:21Z GET /api/orders 200 OK 180ms
+2023-09-16T00:04:12Z GET /api/products 500 Internal_Server_Error 210ms
+2023-09-16T00:05:37Z GET /api/users 504 Gateway_Timeout 330ms
+2023-09-16T00:06:30Z GET /api/products 502 Bad_Gateway 250ms
+2023-09-16T00:07:11Z GET /api/users 200 OK 120ms
+2023-09-16T00:07:30Z POST /api/login 500 Internal_Server_Error 150ms
+2023-09-16T00:08:04Z POST /api/users/logout 200 OK 90ms
+2023-09-16T00:09:46Z GET /api/products 503 Service_Unavailable 225ms
+2023-09-16T00:10:22Z GET /api/users 200 OK 115ms
+2023-09-16T00:11:17Z GET /api/products 200 OK 185ms
+2023-09-16T00:11:44Z POST /api/orders 500 Internal_Server_Error 310ms
+2023-09-16T00:12:10Z GET /api/users 502 Bad_Gateway 280ms
+EOF
+
+# Compress and move log file
+RUN gzip -c /tmp/webapp-2023-09-16.log > /home/user/logs/webapp-2023-09-16.log.gz && \
+    rm -f /tmp/webapp-2023-09-16.log && \
+    chmod 644 /home/user/logs/webapp-2023-09-16.log.gz
+
+# Environment settings
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+RUN chmod 755 /home/user

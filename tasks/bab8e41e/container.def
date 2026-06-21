@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT and install Python and pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-venv \
+        ca-certificates \
+        git \
+        sudo
+
+    # Install pytest for the forthcoming test suites
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the non-root account expected by the grader
+    # ------------------------------------------------------------------
+    # Use fixed UID/GID 1000 so that file permissions are predictable.
+    groupadd --gid 1000 user
+    useradd  --uid 1000 --gid 1000 --create-home --shell /bin/bash user
+
+    # Ensure the user has a usable .bashrc (but WITHOUT the ANDROID_HOME line)
+    if [ -f /etc/skel/.bashrc ]; then
+        cp /etc/skel/.bashrc /home/user/.bashrc
+    else
+        touch /home/user/.bashrc
+    fi
+    chown -R user:user /home/user
+
+    # Clean up apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal environment—do NOT override $HOME per instructions
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author="Apptainer Task Provisioner"
+    Description="Base image for Android CI bootstrap exercise"
+
+%runscript
+    # Default command: start a shell as the non-root “user”
+    if [ "$(id -u)" -eq 0 ]; then
+        exec su - user
+    else
+        exec /bin/bash
+    fi

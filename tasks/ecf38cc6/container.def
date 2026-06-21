@@ -1,0 +1,70 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ############################################
+    # Install Python tooling and pytest
+    ############################################
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    ############################################
+    # Prepare initial filesystem state for task
+    ############################################
+    # Create required directories
+    mkdir -p /home/user/ci_artifacts
+    mkdir -p /home/user/ci_cd_archives
+    mkdir -p /home/user/task_output
+
+    # Populate log files with exact expected content
+    cat > /home/user/ci_artifacts/build.log <<'EOF'
+BUILD START
+Compiling modules...
+All modules compiled.
+BUILD END
+Status: SUCCESS
+EOF
+
+    cat > /home/user/ci_artifacts/test.log <<'EOF'
+TEST SUITE START
+All 128 tests passed.
+Duration: 00:01:34
+TEST SUITE END
+EOF
+
+    cat > /home/user/ci_artifacts/deploy.log <<'EOF'
+DEPLOYMENT START
+Pushing container to registry...
+Container SHA: abcdef123456
+Scaling services...
+DEPLOYMENT END
+Status: SUCCESS
+EOF
+
+    ############################################
+    # Permissions: make task directories writable
+    ############################################
+    chmod 777 /home/user
+    chmod 777 /home/user/ci_artifacts
+    chmod 777 /home/user/ci_cd_archives
+    chmod 777 /home/user/task_output
+    chmod 666 /home/user/ci_artifacts/*.log
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python user base binaries are on PATH (covers pip-installed pytest)
+    export PATH=$PATH:/usr/local/bin
+
+%labels
+    Author pipeline-setup
+    Description "Container prepared for the 'pipeline logs backup' task. Contains initial log files and pytest preinstalled."
+
+%help
+    This container provides the starting point for the CI/CD pipeline log backup task.
+    Log files are located in /home/user/ci_artifacts/, and pytest is installed for automated grading.

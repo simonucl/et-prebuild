@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic build utilities
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory structure and baseline configuration
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/monitoring/conf
+    mkdir -p /home/user/monitoring/logs
+
+    # alerts.yaml with baseline content (no high_cpu alert yet)
+    cat > /home/user/monitoring/conf/alerts.yaml <<'EOF'
+# Managed by monitoring team
+alerts:
+  - name: disk_space_low
+    severity: warning
+    expr: (node_filesystem_free_bytes / node_filesystem_size_bytes) < 0.1
+    for: 5m
+    labels:
+      team: ops
+    annotations:
+      summary: Low disk space on {{ $labels.instance }}
+      description: Free disk space is below 10% for more than 5 minutes.
+    chmod 755 /home/user
+
+
+  # --- ADD NEW ALERTS BELOW THIS LINE ---
+EOF
+
+    # thresholds.toml with baseline content (no [alert.high_cpu] block yet)
+    cat > /home/user/monitoring/conf/thresholds.toml <<'EOF'
+[global]
+timezone = "UTC"
+
+# --- ADD ALERT THRESHOLDS BELOW THIS LINE ---
+EOF
+
+    # Make sure ownership and permissions are friendly to the unprivileged user
+    chown -R 1000:1000 /home/user || true
+    chmod -R u+rwX,go+rX-w /home/user
+
+%environment
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%labels
+    Author highcpu-task-prep
+    Description "Container with baseline monitoring configuration for high_cpu alert exercise"

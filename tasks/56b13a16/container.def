@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ---- Install Python and pytest ------------------------------------------------
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ---- Prepare initial directory layout and input data --------------------------
+    mkdir -p /home/user/data
+
+    cat > /home/user/data/uptime_checks.log <<'EOF'
+2024-05-20T00:00:00Z web-1 UP
+2024-05-20T00:05:00Z web-1 DOWN
+2024-05-20T00:10:00Z web-1 UP
+2024-05-20T00:15:00Z web-2 UP
+2024-05-20T00:20:00Z web-2 UP
+2024-05-20T00:25:00Z web-2 DOWN
+2024-05-20T00:30:00Z db-1 UP
+2024-05-20T00:35:00Z db-1 UP
+2024-05-20T00:40:00Z db-1 UP
+EOF
+
+    # Ensure sensible permissions so the (non-root) runtime user can read everything
+    chmod 0644 /home/user/data/uptime_checks.log
+    chmod 0755 /home/user /home/user/data
+
+%environment
+    chmod 755 /home/user
+
+    # Guarantee that `python3` and `pip` are on PATH (they already are by default)
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    echo "Container for the uptime reporting task."
+    echo "Run your solution script manually after entering the shell, e.g.:"
+    echo "  $ apptainer exec <image.sif> /bin/bash"
+    exec /bin/bash

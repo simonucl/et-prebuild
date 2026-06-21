@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python tooling
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the future test suite
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------------------
+    # Prepare initial filesystem state for the IT-support ticket exercise
+    # -----------------------------------------------------------------------------
+    # Create the required directory hierarchy
+    mkdir -p /home/user/support/tickets/open/12345
+    mkdir -p /home/user/support/tickets/resolved
+
+    # Create the description file with the exact expected contents
+    printf 'User cannot connect to VPN\n' > /home/user/support/tickets/open/12345/description.txt
+
+    # Ensure directories and files are readable and writable by any unprivileged user
+    chmod -R a+rX /home/user/support
+    chmod a+rw /home/user/support/tickets/open/12345/description.txt
+
+%labels
+    chmod 755 /home/user
+
+    Author "Task preparation by Apptainer AI assistant"
+    Description "Container pre-configured with ticket directory structure and pytest for automated testing."

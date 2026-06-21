@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # Prepare demo project directory
+    mkdir -p /home/user/project
+    # Allow non-root users to create /home/user/security_logs later
+    chmod 777 /home/user
+
+    # README.md
+    cat <<'EOF' >/home/user/project/README.md
+Demo project for secret scanning.
+EOF
+
+    # .env with exactly three LF-terminated lines
+    cat <<'EOF' >/home/user/project/.env
+# Demo environment file
+DB_PASSWORD=supersecret
+AWS_SECRET_ACCESS_KEY=ABCD1234SECRETTEST
+EOF
+
+    # Simple app.py placeholder
+    cat <<'EOF' >/home/user/project/app.py
+"""
+Minimal application file for the demo project.
+"""
+def main():
+    print("Hello, world!")
+
+if __name__ == "__main__":
+    main()
+EOF
+
+    # Set sensible permissions
+    chmod 755 /home/user/project
+    chmod 644 /home/user/project/*
+
+%labels
+    Author "Platform Engineering Demo Container"

@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required tools
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        curl \
+        jq
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------ #
+    # Prepare initial project structure expected by the automated tests  #
+    # ------------------------------------------------------------------ #
+    # Ensure /home/user exists
+    mkdir -p /home/user
+
+    # Create project directories
+    mkdir -p /home/user/project/locales
+
+    # English locale (must remain untouched by the agent)
+    cat >/home/user/project/locales/en.json <<'EOF'
+{"hello":"Hello","bye":"Goodbye"}
+EOF
+
+    # French locale in its PRE-change state
+    cat >/home/user/project/locales/fr.json <<'EOF'
+{"hello":"Bonjour","bye":"Au revoir","obsolete":"obsolète"}
+EOF
+
+    # Give non-root container users read/write access so they can perform the task
+    chmod -R a+rwX /home/user/project
+
+%environment
+    chmod 755 /home/user
+
+    # Provide a helpful default PATH including pip-installed scripts
+    export PATH="/home/user/.local/bin:$PATH"
+
+%labels
+    Author localization-task-setup
+    Description "Container for Localization Engineer exercise – initial state prepared"
+
+%help
+    This Apptainer image contains the initial filesystem state and dependencies
+    for the “Localization Engineer: Update French Translations & Record API-style
+    Tests With curl” exercise.

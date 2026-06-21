@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author TaskSetup
+    Description "Environment for packaging exercise – pre-populated release tree and pytest installed"
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the pre-existing source tree expected by the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/releases/v2/scripts
+
+    # README.md
+    cat > /home/user/releases/v2/README.md <<'EOF'
+# App v2 Update
+This release fixes bugs and improves performance.
+EOF
+
+    # app.conf
+    cat > /home/user/releases/v2/app.conf <<'EOF'
+version=2.0.1
+environment=production
+debug=false
+EOF
+
+    # scripts/start.sh
+    cat > /home/user/releases/v2/scripts/start.sh <<'EOF'
+#!/bin/bash
+echo "Starting App v2..."
+EOF
+    chmod +x /home/user/releases/v2/scripts/start.sh
+
+    # Make the whole /home/user tree writable so the non-privileged user
+    # (mapped in by Apptainer at runtime) can create further artefacts.
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python is accessible as `python`
+    export PYTHONPATH=""
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    /bin/bash
+
+%help
+    This container provides the initial filesystem state for the packaging
+    exercise.  The release files are located under /home/user/releases/v2 and
+    pytest is pre-installed so the grading tests can run.

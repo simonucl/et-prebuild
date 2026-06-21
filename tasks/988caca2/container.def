@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Installing Python tooling (pytest)…"
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    echo "Preparing initial filesystem state for the exercise…"
+    # Create the base home directory that the exercise expects
+    mkdir -p /home/user
+    # Make it writable for whichever unprivileged UID runs the container
+    chmod 1777 /home/user   # sticky-bit world-writable (similar to /tmp)
+
+    # Create the snapshot directory and file
+    mkdir -p /home/user/data
+    cat >/home/user/data/dpkg_status_snapshot.txt <<'EOF'
+coreutils 8.32-4.1
+bash 5.1-2
+grep 3.6-1
+dpkg 1.20.9
+sed 4.8-1
+EOF
+    chmod 644 /home/user/data/dpkg_status_snapshot.txt
+    chmod 755 /home/user/data
+
+%environment
+    # Ensure Python user base binaries (if any) are in PATH
+    export PATH="$PATH:$HOME/.local/bin"
+
+%labels
+    Author="Apptainer build script for the package-archive exercise"
+    Description="Container pre-populated with snapshot data and pytest for autograding."

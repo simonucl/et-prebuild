@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the verification suites
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state required by the assignment
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/app_logs
+
+    # Create app.log with the required 10 timestamped lines
+    cat > /home/user/app_logs/app.log <<'EOF'
+2023-03-01 10:00:00 INFO Service started
+2023-03-01 10:05:00 WARN Cache miss
+2023-03-01 10:10:00 ERROR Connection timeout
+2023-03-01 10:15:00 INFO Retrying...
+2023-03-01 10:20:00 INFO Connected
+2023-03-01 10:25:00 INFO Health check OK
+2023-03-01 10:30:00 WARN Slow response
+2023-03-01 10:35:00 INFO Cleanup initiated
+2023-03-01 10:40:00 INFO Cleanup finished
+2023-03-01 10:45:00 INFO Service running
+EOF
+
+    # Create config.ini with the required [general] section
+    cat > /home/user/app_logs/config.ini <<'EOF'
+[general]
+version = 2.4.7
+maintainer = ops-team
+EOF
+
+    # Ensure the agent (non-root) will be able to work inside /home/user
+    chmod -R a+rX /home/user
+    chmod a+w  /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure the common binary directories are on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+
+%labels
+    Author          ChatGPT
+    Description     "Container for diagnostic bundle exercise – provides initial log and config files and includes pytest for automated grading."

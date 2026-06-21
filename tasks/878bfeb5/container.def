@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt repositories and installing required packages..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        make \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        findutils \
+        coreutils
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest (system-wide)..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating user 'user' and workspace directories..."
+    useradd -m -s /bin/bash user
+
+    # Workspace root
+    WORKDIR=/home/user/compliance_audit
+    SAMPLEDIR=${WORKDIR}/sample_data
+
+    mkdir -p "${SAMPLEDIR}"
+
+    # Create sample files with exact required content
+    # file1.txt -> empty
+    touch "${SAMPLEDIR}/file1.txt"
+
+    # file2.txt -> contains ASCII 'abc' with NO trailing newline
+    printf 'abc' > "${SAMPLEDIR}/file2.txt"
+
+    # Ensure appropriate permissions
+    chown -R user:user /home/user
+    chmod 755 /home/user
+    chmod 755 "${WORKDIR}" "${SAMPLEDIR}"
+    chmod 644 "${SAMPLEDIR}/file1.txt" "${SAMPLEDIR}/file2.txt"
+
+%environment
+    # Preserve PATH and make sure python & make are available
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author  "Automated build for compliance_audit starter environment"
+    Version "1.0"
+
+%help
+    This container provides the starter filesystem layout for the
+    “one-touch” compliance audit assignment.  It includes:
+
+      • /home/user/compliance_audit/sample_data/ with two predefined files
+      • GNU make and standard POSIX utilities
+      • Python 3 and pytest for automated grading
+
+    Students are expected to supply a Makefile and generated artefacts;
+    none are present in the image.

@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT and install Python & pip
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem expected by the automated tests
+    # ------------------------------------------------------------------
+
+    # Ensure /home/user exists and is writable for the unprivileged agent
+    mkdir -p /home/user
+    chmod 0777 /home/user   # allow the agent (non-root) to create /home/user/restores
+
+    # Create /home/user/backups directory with correct permissions
+    mkdir -p /home/user/backups
+    chmod 0755 /home/user/backups
+
+    # Create the catalogue file with exact required contents
+    cat >/home/user/backups/backup_filelist.txt <<'EOF'
+/etc/nginx/nginx.conf
+/etc/ssh/sshd_config
+/var/www/html/index.html
+/etc/mysql/my.cnf
+/home/user/.bashrc
+/etc/supervisor/supervisord.conf
+/var/log/syslog
+/etc/httpd/conf/httpd.conf
+EOF
+    chmod 0644 /home/user/backups/backup_filelist.txt
+
+    # Clean up APT caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    chmod 755 /home/user
+
+    echo "Container for backup restore-preview task.  Launch an interactive shell."
+    exec bash
+
+%labels
+    Author backup-ops-challenge
+    Description Container with initial state for the restore-preview task.

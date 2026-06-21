@@ -1,0 +1,38 @@
+FROM ubuntu:22.04
+
+# Install Python 3 and pytest
+RUN set -e && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Prepare home directory
+RUN mkdir -p /home/user && \
+    chmod 0777 /home/user
+
+# Provide sample firewall dump
+RUN cat >/home/user/sample_firewall_output.txt <<'EOF'
+Chain INPUT (policy ACCEPT 104 packets, 8920 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+   10   600 ACCEPT     all  --  lo     *       0.0.0.0/0            0.0.0.0/0           
+   50  5000 ACCEPT     tcp  --  *      *       192.168.1.0/24       0.0.0.0/0            tcp dpt:22
+   20  1000 DROP       all  --  *      *       10.0.0.0/8           0.0.0.0/0           
+
+Chain FORWARD (policy DROP 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+
+Chain OUTPUT (policy ACCEPT 98 packets, 8700 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+   10   600 ACCEPT     all  --  *      lo      0.0.0.0/0            0.0.0.0/0           
+   30  3000 ACCEPT     tcp  --  *      *       0.0.0.0/0            192.168.1.10         tcp dpt:80
+EOF
+
+RUN chmod 0644 /home/user/sample_firewall_output.txt && \
+    chmod 755 /home/user
+
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+
+CMD echo "Container for 'Firewall Resource-Usage Audit & Baseline Ruleset Proposal' ready."

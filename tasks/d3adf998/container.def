@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Set non-interactive frontend for apt.
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install Python tooling.
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        locales \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Generate a UTF-8 locale for Python / pytest.
+    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+    locale-gen
+
+    # Install pytest for the test harness.
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial fixture expected by the assignment.
+    # Directory: /home/user/dev-utils
+    # File:      words.txt  (contains seven specific lines)
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/dev-utils
+
+    cat > /home/user/dev-utils/words.txt <<'EOF'
+apple
+banana
+apple
+orange
+banana
+apple
+grape
+EOF
+
+    # Ensure correct permissions.
+    chmod 0755 /home/user/dev-utils
+    chmod 0644 /home/user/dev-utils/words.txt
+
+%environment
+    chmod 755 /home/user
+
+    # Keep locale consistent for predictable ordering behaviour.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export LANGUAGE=C.UTF-8
+
+%labels
+    Author      frequency-utility-container
+    Description Initial state for the “frequency counter” task. Contains
+                /home/user/dev-utils/words.txt and pytest installed.
+
+%runscript
+    echo "Container for the frequency-counter task."
+    echo "You can open a shell with:  apptainer exec <image> /bin/bash"

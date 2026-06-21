@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install Python tooling so that the grading harness can run pytest
+    # ------------------------------------------------------------------
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the assignment tests
+    # ------------------------------------------------------------------
+    # Create the scripts directory tree
+    mkdir -p /home/user/cicd/scripts
+
+    # Populate the required script files with exact content
+    printf '#!/usr/bin/env bash\n'        >  /home/user/cicd/scripts/build.sh
+    printf 'echo "Running build"\n'       >> /home/user/cicd/scripts/build.sh
+
+    printf '#!/usr/bin/env bash\n'        >  /home/user/cicd/scripts/deploy.sh
+    printf 'echo "Deploying application"\n' >> /home/user/cicd/scripts/deploy.sh
+
+    printf '#!/usr/bin/env bash\n'        >  /home/user/cicd/scripts/test.sh
+    printf 'echo "Executing tests"\n'     >> /home/user/cicd/scripts/test.sh
+
+    # Make scripts executable and readable by all users
+    chmod 0755 /home/user/cicd/scripts/*.sh
+
+    # ------------------------------------------------------------------
+    # Adjust permissions so the unprivileged runtime user can create
+    # /home/user/backups later during assessment.
+    # ------------------------------------------------------------------
+    chmod 0777 /home/user
+    chmod 0755 /home/user/cicd
+    chmod 0755 /home/user/cicd/scripts
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and shell utilities are on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    # Default action: drop into an interactive shell
+    exec /bin/bash "$@"

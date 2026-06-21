@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required software
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create initial project structure and template file
+    mkdir -p /home/user/app
+    cat > /home/user/app/sample.env <<'EOF'
+# Sample configuration file
+APP_ENV=development
+RELEASE_TAG=dev
+EOF
+
+    # Ensure non-root users can work within the project directory
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author      "Apptainer Task Setup"
+    Description "Container pre-populated for release-manager task with pytest installed."
+
+%help
+This container provides the starting filesystem state for the release-manager
+exercise. The student will create /home/user/app/.env and
+/home/user/deploy_summary.log during assessment. Pytest is installed for
+automated grading.

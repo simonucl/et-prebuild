@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author      chatbot
+    Description Base image for FinOps virtual-env exercise. \
+                Provides Python, pip, venv tooling and pytest for grading.
+
+%post
+    set -eux
+
+    # Basic development tools
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-venv \
+        ca-certificates \
+        build-essential
+
+    # Ensure pip itself is reasonably up-to-date
+    python3 -m pip install --no-cache-dir --upgrade pip
+
+    # Install pytest for the test harness (system-wide, not in a venv).
+    python3 -m pip install --no-cache-dir pytest
+
+    # Create a non-privileged workspace directory expected by the tests.
+    # Do NOT create any of the artefacts the learner must produce later.
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Clean up apt cache to reduce image size.
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure Python and pip are on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    echo "Container for FinOps exercise."
+    echo "Run 'pytest' to execute the validation tests."

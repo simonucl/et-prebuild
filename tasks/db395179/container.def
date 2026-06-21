@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package lists and install runtime dependencies
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        locales \
+        tzdata \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Generate the UTF-8 locale required for the task
+    sed -i 's/^# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+    locale-gen
+
+    # Install pytest for the testing framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial workspace expected by the assessment framework
+    # ------------------------------------------------------------------
+
+    # Create user home hierarchy
+    mkdir -p /home/user/data
+    mkdir -p /home/user/task_logs
+
+    # Ensure the directories are writable by the unprivileged runtime user
+    chmod 0777 /home/user
+    chmod 0777 /home/user/data
+    chmod 0777 /home/user/task_logs
+
+    # Create the raw_transactions.csv file with the exact required content
+    cat > /home/user/data/raw_transactions.csv <<'EOF'
+id,product,price_usd,utc_time
+1,Book,12.99,2022-03-13T06:30:00Z
+2,Pen,1.50,2022-11-06T05:15:00Z
+3,Notebook,4.20,2022-12-01T16:00:00Z
+EOF
+    chmod 0666 /home/user/data/raw_transactions.csv
+
+%labels
+    chmod 755 /home/user
+
+    Author="Apptainer build script for transactions-cleaning task"
+    Description="Sets up initial directories, data file, and installs pytest for grading."

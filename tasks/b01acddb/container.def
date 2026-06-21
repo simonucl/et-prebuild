@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grading tests
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial project hierarchy and seed the required files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/api-gateway/test_results
+
+    # YAML configuration file
+    cat >/home/user/api-gateway/config.yaml <<'YAML_EOF'
+api:
+  base_url: "https://dev.example.com/v1"
+  timeout: 30
+logging:
+  level: "info"
+YAML_EOF
+
+    # TOML configuration file
+    cat >/home/user/api-gateway/config.toml <<'TOML_EOF'
+[api]
+base_url = "https://dev.example.com/v1"
+timeout   = 30
+
+[logging]
+level = "info"
+TOML_EOF
+
+    # Ensure the student can freely modify everything under the project dir
+    chmod -R 0777 /home/user/api-gateway
+
+%environment
+    chmod 755 /home/user
+
+    # Preserve a sane PATH; do NOT override HOME
+    export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+%labels
+    Author      "ChatGPT – Apptainer setup"
+    Description "Initial state for API-gateway smoke-tests task"
+
+%help
+    This container prepares the filesystem and dependencies needed for the
+    “API-gateway smoke-tests” exercise.

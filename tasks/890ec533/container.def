@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        pip3 install --no-cache-dir pytest && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Prepare initial filesystem state
+    mkdir -p /home/user
+    chmod 0755 /home/user
+
+    # Create the nginx configuration file with the vulnerable setting
+    printf 'server_tokens on;\n' > /home/user/nginx.conf
+    chmod 0644 /home/user/nginx.conf
+
+    # Ensure the patch log does not exist at build time
+    rm -f /home/user/security_patch.log
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python user-installed binaries are in PATH
+    export PATH="$PATH:/usr/local/bin"
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Initial state for server_tokens patching challenge"

@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # --------------------------------------------------------------------- #
+    # Basic tooling                                                         #
+    # --------------------------------------------------------------------- #
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------------------------- #
+    # Create initial directory structure and seed configuration files       #
+    # --------------------------------------------------------------------- #
+    mkdir -p /home/user/configs
+
+    # config_20230115.conf
+    cat <<'EOF' >/home/user/configs/config_20230115.conf
+# Sample app config
+  host = localhost
+port=8080
+max_connections = 100
+# End
+EOF
+
+    # config_20230410.conf
+    cat <<'EOF' >/home/user/configs/config_20230410.conf
+# Updated config
+host = prod.example.com
+port = 80
+max_connections= 250
+timeout = 30
+EOF
+
+    # config_20230718.conf
+    cat <<'EOF' >/home/user/configs/config_20230718.conf
+## Production patch
+host=prod.example.com
+port=443
+max_connections =300
+timeout=45
+enable_tls = true
+#some comment
+  cache_size= 512
+EOF
+
+    # --------------------------------------------------------------------- #
+    # Permissions                                                           #
+    # --------------------------------------------------------------------- #
+    chmod 755 /home/user
+    chmod 755 /home/user/configs
+    chmod 644 /home/user/configs/*.conf
+
+%environment
+    # Ensure Python user base binaries (e.g., pytest) are on PATH
+    export PATH="$PATH:$HOME/.local/bin"
+
+%runscript
+    echo "Container for configuration management task. No default run action."

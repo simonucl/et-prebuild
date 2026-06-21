@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # ------------------------------------------------------------------
+    # 1. Install Python tooling and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    # Basic Python runtime + pip
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # 2. Prepare the filesystem layout required for the exercise
+    # ------------------------------------------------------------------
+    # Ensure the /home/user hierarchy exists.
+    mkdir -p /home/user
+    chmod 0755 /home/user
+
+    # Create the incident_artifacts directory with the correct permissions.
+    INCIDENT_DIR="/home/user/incident_artifacts"
+    mkdir -p "${INCIDENT_DIR}"
+    chmod 0755 "${INCIDENT_DIR}"
+
+    # Create the zero-byte suspicious file with correct permissions (0644).
+    touch "${INCIDENT_DIR}/suspicious.bin"
+    chmod 0644 "${INCIDENT_DIR}/suspicious.bin"
+
+    # Do NOT create suspicious_checksum.log here; that is for the learner.
+
+%environment
+    chmod 755 /home/user
+
+    # Keep environment minimal; do not override HOME.
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=UTF-8
+
+%labels
+    Author fictitious@example.com
+    Description "Setup for the 'suspicious file checksum' exercise"

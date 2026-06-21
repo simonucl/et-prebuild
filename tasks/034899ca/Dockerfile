@@ -1,0 +1,38 @@
+FROM ubuntu:22.04
+
+# Help:
+# This container ships the initial dataset required for the “SSN leak” exercise
+# plus Python and pytest so that the automated grading harness can run its tests.
+# No solution artefacts are pre-created; the student will generate them at run time.
+
+LABEL Author="Apptainer Build Script"
+LABEL Description="Environment for SSN-leak detection programming exercise"
+
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+ENV HOME=/home/user
+
+RUN set -e && \
+    echo "Updating package index and installing Python tooling..." && \
+    apt-get update -qq && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir pytest
+
+RUN echo "Creating dataset directory structure..." && \
+    mkdir -p /home/user/datasets
+
+RUN cat > /home/user/datasets/employees.csv <<'EOF'
+Name,Email,SSN,Phone,Salary
+Alice Smith,alice@example.com,123-45-6789,555-123-4567,90000
+Bob Jones,bob@example.com,234-56-7890,555-234-5678,85000
+Charlie Doe,charlie@example.com,,555-345-6789,80000
+Diana Prince,diana@example.com,345-67-8901,555-456-7890,95000
+Evan Lee,evan@example.com,,555-567-8901,78000
+EOF
+
+RUN chmod 755 /home/user && chmod -R 755 /home/user/datasets

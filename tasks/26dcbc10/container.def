@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author      DevOpsTaskGen
+    Description Base image for “SECURITY ALERT” log-parsing challenge
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # ------------------------------------------------------------------ #
+    # 1. OS packages + Python tooling
+    # ------------------------------------------------------------------ #
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------ #
+    # 2. Prepare initial filesystem state expected by the exercise
+    # ------------------------------------------------------------------ #
+    # Ensure /home/user and working directory exist
+    mkdir -p /home/user/devops
+
+    # Populate the pre-existing application log
+    cat > /home/user/devops/server.log <<'EOF'
+2024-05-15 10:01:22 INFO User login succeeded: user=alice ip=192.168.1.10
+2024-05-15 10:05:03 SECURITY ALERT Failed password attempt: user=root ip=203.0.113.45
+2024-05-15 10:07:45 ERROR Database connection timeout
+2024-05-15 10:12:11 SECURITY ALERT Multiple invalid login attempts: user=bob ip=198.51.100.23
+2024-05-15 10:15:55 INFO Cron job finished
+2024-05-15 10:17:20 SECURITY ALERT Failed password attempt: user=carol ip=203.0.113.45
+2024-05-15 10:20:00 INFO Backup completed
+EOF
+
+    # Correct permissions
+    chmod 644 /home/user/devops/server.log
+    chmod 777 /home/user/devops    # allow learners to create output files
+
+    # Ensure the output files do NOT exist yet
+    rm -f /home/user/devops/security_alerts.log /home/user/devops/blacklist.txt
+
+    # Clean up apt caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

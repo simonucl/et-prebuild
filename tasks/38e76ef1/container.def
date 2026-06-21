@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic OS packages
+    # ------------------------------------------------------------------
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        rsync \
+        python3-pip \
+        ca-certificates \
+        tzdata
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Python tooling (pytest)
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the required upstream artefact
+    # ------------------------------------------------------------------
+    REMOTE_DIR="/home/user/remote_repo/libalpha"
+    mkdir -p "${REMOTE_DIR}"
+
+    # Create a small, non-empty tarball placeholder with the expected content.
+    # Tests only check that the file exists, is regular, non-empty, and
+    # contains the identifying string.
+    cat > "${REMOTE_DIR}/libalpha-1.2.3.tar.gz" <<'EOF'
+This is libalpha binary version 1.2.3
+EOF
+
+    # Ensure permissions are world-readable so the unprivileged test user can
+    # access them.
+    chmod 755 /home /home/user /home/user/remote_repo /home/user/remote_repo/libalpha
+    chmod 644 "${REMOTE_DIR}/libalpha-1.2.3.tar.gz"
+
+%environment
+    chmod 755 /home/user
+
+    # No HOME overriding; Apptainer will handle binding if configured.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author Your Name
+    Description Container for "libalpha" mirroring task – provides upstream artefact and required tooling (rsync, pytest).

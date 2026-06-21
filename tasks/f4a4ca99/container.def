@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update apt index and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        zip \
+        unzip \
+        xz-utils \
+        tar \
+        coreutils
+
+    # Make sure 'python' command is available
+    ln -s /usr/bin/python3 /usr/local/bin/python || true
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Prepare initial directories and dummy data for the exercise
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/source_images
+    mkdir -p /home/user/source_labels
+
+    # Create three JPG placeholder files (non-empty, different sizes)
+    yes "A" | head -c 81  > /home/user/source_images/cat.jpg
+    yes "B" | head -c 82  > /home/user/source_images/dog.jpg
+    yes "C" | head -c 83  > /home/user/source_images/bird.jpg
+
+    # Create three corresponding JSON label files
+    echo '{"label":"cat"}'  > /home/user/source_labels/cat.json
+    echo '{"label":"dog"}'  > /home/user/source_labels/dog.json
+    echo '{"label":"bird"}' > /home/user/source_labels/bird.json
+
+    # Set the required permissions (files 0644, dirs 0755)
+    chmod 0644 /home/user/source_images/*.jpg
+    chmod 0644 /home/user/source_labels/*.json
+    chmod 0755 /home/user/source_images /home/user/source_labels
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special required; keep default environment
+
+%runscript
+    echo "This container is set up for the ML data-prep task.  Use 'apptainer exec' to run commands."

@@ -1,0 +1,69 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author="Task Setup – Release Manager Staging Exercise"
+
+%post
+    set -e
+
+    # Update APT index and install Python & pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        curl
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare directory structure and seed the initial configuration files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/releases/apps/service_a
+    mkdir -p /home/user/releases/apps/service_b
+
+    # Initial deployment.yaml (NO staging block yet)
+    cat >/home/user/releases/apps/service_a/deployment.yaml <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-a
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: service-a
+    spec:
+      containers:
+        - name: service-a
+          image: registry.example.com/service-a:1.4.2
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+EOF
+
+    # Initial release.toml (NO [release.staging] table yet)
+    cat >/home/user/releases/apps/service_b/release.toml <<'EOF'
+[package]
+name = "service_b"
+version = "2.0.0"
+checksum = "abcdef123456"
+repository = "https://git.example.com/service_b.git"
+
+[dependencies]
+logger = "1.0"
+database = "3.2"
+EOF
+
+    # Ensure non-root users inside the container can read/write these files
+    chmod -R u+rwX,go+rX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Guarantee UTF-8 output for Python programs and pytest
+    export PYTHONIOENCODING="UTF-8"

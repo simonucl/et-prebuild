@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Maintainer "Apptainer prep for network_lab exercise"
+    Description "Base image with pytest installed and a writable /home/user directory; no exercise artefacts created."
+
+%post
+    set -e
+
+    # Update APT and install Python + Pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Ensure baseline home directory exists and is writable by any non-root user
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python and pip are on PATH
+    export PATH="$PATH:/usr/local/bin"
+
+%runscript
+    echo "Container for the network_lab exercise.  Invoke your commands or tests as needed."

@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest for the test harness
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial state required by the exercise
+    # ------------------------------------------------------------------
+    # Create the backups directory structure
+    mkdir -p /home/user/backups
+
+    # Create the backup file containing exactly the bytes "hello"
+    # (five bytes, no trailing newline)
+    printf 'hello' > /home/user/backups/project_backup.tar.gz
+
+    # Set permissive permissions so the non-root test user can read them
+    chmod 755 /home/user
+    chmod 755 /home/user/backups
+    chmod 644 /home/user/backups/project_backup.tar.gz
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Environment for checksum verification task with pytest installed"
+
+%environment
+    # Keep environment minimal; do not override HOME.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

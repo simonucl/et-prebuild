@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing Python/pip..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip
+
+    echo "Installing pytest for the evaluation suite..."
+    pip install --no-cache-dir pytest
+
+    echo "Creating base directory structure and log files..."
+    # Ensure /home and /home/user exist with writable permissions
+    mkdir -p /home/user/data_runs
+    chmod 777 /home/user   # allow the non-root runtime user to create new dirs/files
+
+    cat > /home/user/data_runs/run1.log << 'EOF'
+[2024-01-01 10:00:00] INFO Starting run
+[2024-01-01 10:01:00] ERROR Failed to open file
+[2024-01-01 10:02:00] WARNING Low memory
+[2024-01-01 10:03:00] ERROR Timeout occurred
+[2024-01-01 10:04:00] INFO Run finished
+EOF
+
+    cat > /home/user/data_runs/run2.log << 'EOF'
+[2024-02-01 11:00:00] INFO Starting run
+[2024-02-01 11:15:00] ERROR Invalid parameter
+[2024-02-01 11:30:00] INFO Run finished
+EOF
+
+    cat > /home/user/data_runs/run3.log << 'EOF'
+[2024-03-05 09:00:00] INFO Starting run
+[2024-03-05 09:05:00] WARNING Disk almost full
+[2024-03-05 09:10:00] INFO Still running
+[2024-03-05 09:15:00] ERROR Segmentation fault
+[2024-03-05 09:20:00] ERROR Failed to allocate memory
+[2024-03-05 09:25:00] ERROR Unknown exception
+[2024-03-05 09:30:00] INFO Run finished
+EOF
+
+    # Set sensible permissions: log files read-only, data_runs read-only,
+    # but runtime user can still create /home/user/analysis_results
+    chmod 755 /home/user/data_runs
+    chmod 644 /home/user/data_runs/run*.log
+
+    echo "Initial container setup complete."
+
+
+%environment
+    # Ensure python paths are sane
+    export PYTHONUNBUFFERED=1
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Container setup generated for experimental log summarisation task"
+
+%help
+    This Apptainer image contains the pre-populated log files in
+    /home/user/data_runs/ and pytest for automated grading.  Students will
+    create /home/user/analysis_results/error_summary.csv based on the logs.

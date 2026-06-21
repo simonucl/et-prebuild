@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Base utilities
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        gnupg \
+        python3 \
+        python3-pip
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Python testing framework
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create dedicated non-root user and directory skeleton
+    # ------------------------------------------------------------------
+    useradd -m -s /bin/bash user
+
+    # Secrets directory -------------------------------------------------
+    install -d -m 700 /home/user/secrets
+    cat > /home/user/secrets/db_credentials.txt <<'EOF'
+db_user=admin
+db_password=Sup3rS3cr3t
+EOF
+    chmod 600 /home/user/secrets/db_credentials.txt
+
+    # Incoming directory ------------------------------------------------
+    install -d -m 755 /home/user/incoming
+    printf "dummy patch content\n" > /home/user/incoming/patch_v1.tar.gz
+    chmod 644 /home/user/incoming/patch_v1.tar.gz
+
+    cat > /home/user/incoming/patch_v1.tar.gz.asc <<'EOF'
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+dGVzdCBzaWduYXR1cmUK
+=abcd
+-----END PGP SIGNATURE-----
+EOF
+    chmod 644 /home/user/incoming/patch_v1.tar.gz.asc
+
+    # Logs directory ----------------------------------------------------
+    install -d -m 755 /home/user/logs
+
+    # Ensure correct ownership -----------------------------------------
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # No environment overrides required
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

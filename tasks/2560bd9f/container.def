@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Make package management non-interactive
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Basic tooling
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create a normal user account that matches the typical host UID/GID
+    # so that files we prepare are writable by the caller inside the
+    # container.
+    # ------------------------------------------------------------------
+    if ! getent group 1000 >/dev/null; then
+        groupadd -g 1000 user
+    fi
+    if ! id -u 1000 >/dev/null 2>&1; then
+        useradd -m -u 1000 -g 1000 user
+    fi
+
+    # ------------------------------------------------------------------
+    # Prepare initial workspace content that the graded tasks rely on
+    # existing *before* the participant does any work.
+    # ------------------------------------------------------------------
+    SAMPLE_DIR="/home/user/sample_configs"
+    mkdir -p "${SAMPLE_DIR}"
+
+    cat > "${SAMPLE_DIR}/sshd_config" <<'EOF'
+# This is a sample sshd_config
+Port 22
+PermitRootLogin yes
+#PermitRootLogin prohibit-password
+PasswordAuthentication yes
+#PasswordAuthentication no
+Subsystem sftp /usr/lib/openssh/sftp-server
+EOF
+
+    # Permissions: readable by everyone, owned by the normal user.
+    chmod 0644 "${SAMPLE_DIR}/sshd_config"
+    chmod 0755 "${SAMPLE_DIR}"
+    chown -R 1000:1000 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard paths are available
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author "Container prepared for OpenSSH hardening exercise"

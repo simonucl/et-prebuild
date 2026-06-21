@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Non-interactive apt
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        curl
+
+    # Install pytest for the test-runner
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Populate starter dataset
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data
+
+    cat << 'EOF' > /home/user/data/raw_measurements.csv
+subject_id,temperature,heart_rate
+S1,36.6,72
+S2,37.1,75
+S3,36.9,70
+S4,37.3,80
+S5,36.8,68
+EOF
+
+    # Permissions: directory 755, files 644
+    chmod 755 /home/user/data
+    chmod 644 /home/user/data/raw_measurements.csv
+
+%environment
+    # Nothing special required; keep default $HOME binding.
+
+%labels
+    Author "Apptainer task setup"
+    Description "Environment with starter biomedical CSV data and pytest installed."
+
+%help
+    This Apptainer image provides the initial state for the biomedical data
+    manipulation task.  It contains:
+      • /home/user/data/raw_measurements.csv  – starter dataset
+    No derived artefacts are present; they must be created by the student
+    using awk/sed as described in the assignment.
+    Pytest is pre-installed so the automated tests can run.

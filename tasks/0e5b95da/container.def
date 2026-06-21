@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python/pip
+    apt-get update
+    apt-get install -y python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial workspace expected by the automated tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user
+    # Allow non-root users (the agent) to create files such as error_summary.txt
+    chmod 0777 /home/user
+
+    # Create ServerA log
+    cat > /home/user/serverA.log <<'EOF'
+2023-08-01 12:00:01 INFO Service started
+2023-08-01 12:10:15 ERROR Connection timeout
+2023-08-01 12:11:00 INFO Reconnected
+2023-08-01 12:20:05 ERROR Disk full
+2023-08-01 12:30:00 WARNING High memory usage
+EOF
+
+    # Create ServerB log
+    cat > /home/user/serverB.log <<'EOF'
+2023-08-01 12:05:00 INFO Service started
+2023-08-01 12:15:45 ERROR Connection refused
+2023-08-01 12:16:30 ERROR Connection refused
+2023-08-01 12:18:20 INFO Reconnected
+2023-08-01 12:25:55 ERROR Disk full
+EOF
+
+    # Ensure logs are readable by everyone
+    chmod 0644 /home/user/serverA.log /home/user/serverB.log
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard paths are available
+    export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:$PATH"

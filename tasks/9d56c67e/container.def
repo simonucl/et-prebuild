@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing prerequisites..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        patch \
+        diffutils \
+        ca-certificates
+
+    echo "Installing pytest..."
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    echo "Creating initial workspace..."
+    mkdir -p /home/user/vulnscan/patches
+
+    # Create services.conf (vulnerable)
+    cat >/home/user/vulnscan/services.conf <<'EOF'
+# Service configuration
+ssh: enabled
+telnet: enabled
+ftp: enabled
+http: enabled
+https: disabled
+snmp: enabled
+# End of file
+EOF
+
+    # Create services.conf.fixed (hardened reference)
+    cat >/home/user/vulnscan/services.conf.fixed <<'EOF'
+# Service configuration
+ssh: enabled
+telnet: disabled
+ftp: disabled
+http: enabled
+https: enabled
+snmp: disabled
+# End of file
+EOF
+
+    # Ensure the student can modify everything under /home/user/vulnscan
+    chmod -R a+rwX /home/user/vulnscan
+
+    echo "Container setup complete."
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special required; inherit host HOME.
+    export PYTHONUNBUFFERED=1
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author "Apptainer Task Builder"
+    Description "Environment for vulnscan patching exercise with pytest pre-installed."

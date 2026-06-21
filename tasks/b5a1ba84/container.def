@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic utilities and Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        ca-certificates \
+        tar \
+        gzip
+
+    # Install pytest for the grading suite
+    pip3 install --no-cache-dir pytest
+
+    # Create an unprivileged user `user` (UID 1000) for the agent
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 user
+    fi
+
+    # Set up the required directory tree and sample log files
+    install -d -m 0755 /home/user/mobile_ci/pipeline_reports
+    install -d -m 0755 /home/user/mobile_ci/archives
+
+    echo "Compilation completed successfully." > /home/user/mobile_ci/pipeline_reports/compile.log
+    echo "All 128 unit tests passed."         > /home/user/mobile_ci/pipeline_reports/unit_test.log
+    echo "Integration suite finished OK."     > /home/user/mobile_ci/pipeline_reports/integration_test.log
+
+    # Ensure the created files and directories are owned by the `user`
+    chown -R 1000:1000 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal PATH definition
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author task-preparer="Apptainer Assistant"
+    Description="Environment for mobile CI archiving task with pytest pre-installed."

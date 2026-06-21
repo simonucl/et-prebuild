@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install Python and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem layout for the task
+    # ------------------------------------------------------------------
+    # Base working directory for the non-root user expected by the tests
+    mkdir -p /home/user
+
+    # 1. Source data that must be archived later
+    mkdir -p /home/user/data_to_backup/docs
+    mkdir -p /home/user/data_to_backup/images
+    mkdir -p /home/user/data_to_backup/scripts
+
+    #   docs/report.txt
+    printf 'Quarterly\n' > /home/user/data_to_backup/docs/report.txt
+
+    #   images/photo*.jpg  (dummy JPEG markers with LF)
+    printf 'JPEG_DUMMY_DATA_1\n' > /home/user/data_to_backup/images/photo1.jpg
+    printf 'JPEG_DUMMY_DATA_2\n' > /home/user/data_to_backup/images/photo2.jpg
+
+    #   scripts/cleanup.sh
+    printf '#!/bin/bash\n'            >  /home/user/data_to_backup/scripts/cleanup.sh
+    printf 'echo cleanup\n'           >> /home/user/data_to_backup/scripts/cleanup.sh
+    chmod +x /home/user/data_to_backup/scripts/cleanup.sh
+
+    # 2. “Remote host” directory – must start out empty
+    mkdir -p /home/user/remote_host
+
+    # ------------------------------------------------------------------
+    # Permissions: ensure the runtime unprivileged user can write
+    # ------------------------------------------------------------------
+    chmod -R a+rX /home/user
+    chmod 777 /home/user
+    chmod 777 /home/user/remote_host
+    # Optionally set ownership to UID 1000 (typical for the “user” account)
+    chown -R 1000:1000 /home/user || true
+
+%environment
+    chmod 755 /home/user
+
+    # Keep PATH sensible; do NOT modify $HOME so that Apptainer can
+    # bind the host’s home directory if required.
+    export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:$PATH

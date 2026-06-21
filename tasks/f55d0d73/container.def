@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author example
+    Description "Base image for Provisioning Utility exercise – includes pytest and a clean /home/user workspace."
+
+%post
+    set -e
+
+    echo "Updating APT and installing Python tooling..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates \
+        git \
+        bash
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating non-root user 'user' with home directory /home/user..."
+    useradd -m -s /bin/bash user
+
+    # Ensure correct ownership
+    chown -R user:user /home/user
+
+    # Clean up apt caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Do not override HOME; Apptainer will bind the caller's HOME.
+    # Make sure Python and Pip are on PATH.
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export PYTHONUNBUFFERED=1
+
+%runscript
+    echo "This container is prepared for the Provisioning Utility exercise."
+    echo "Switch to the 'user' account to begin work, e.g.:"
+    echo "    su - user"
+    echo "Happy hacking!"
+
+%help
+    This Apptainer image provides a clean Ubuntu 22.04 environment with:
+      • A non-root user 'user' (home: /home/user)
+      • Python 3, pip and pytest pre-installed
+
+    The workspace under /home/user is empty except for the directory itself,
+    fulfilling the initial-state requirements of the automated grader.

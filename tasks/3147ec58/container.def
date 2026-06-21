@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author  Example
+    Description  Environment setup for the artifact-archiving task
+
+%post
+    set -eux
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory structure and experiment artefacts
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/experiments/run_01
+    mkdir -p /home/user/archives
+
+    # metrics.json  (exact content + single trailing newline)
+    cat >/home/user/experiments/run_01/metrics.json <<'EOF'
+{
+  "accuracy": 0.94,
+  "loss": 0.23
+}
+EOF
+
+    # model.bin  (single trailing newline)
+    echo 'MODEL_WEIGHTS' > /home/user/experiments/run_01/model.bin
+
+    # logs.txt  (exact content + single trailing newline)
+    cat >/home/user/experiments/run_01/logs.txt <<'EOF'
+Training started...
+Training completed successfully.
+EOF
+
+    # ------------------------------------------------------------------
+    # Permissions
+    # ------------------------------------------------------------------
+    # Make /home/user writable so the unprivileged learner can create files.
+    chmod -R a+rX /home/user
+    chmod -R a+w /home/user
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8

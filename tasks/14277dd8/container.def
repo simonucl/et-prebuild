@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Base OS packages
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        zip \
+        unzip \
+        tar \
+        gzip \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Python testing framework
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial file-system state expected by the test-suite
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/build_artifacts/libs
+    mkdir -p /home/user/build_artifacts/configs
+
+    # libs/
+    printf 'Alpha library binary mock v1.0\n' > /home/user/build_artifacts/libs/libalpha.txt
+    printf 'Beta library binary mock v1.0\n'  > /home/user/build_artifacts/libs/libbeta.txt
+
+    # configs/
+    printf '[app]\nname=DemoApp\nversion=1.0.0\n' > /home/user/build_artifacts/configs/app.conf
+
+    # README.md (NOTE: **no** trailing newline)
+    printf '# Demo Build Artifacts\nThese are mock artifacts for testing.' \
+        > /home/user/build_artifacts/README.md
+
+    # Ensure non-root users can read the artefacts
+    chmod -R a+rX /home/user
+
+%runscript
+    chmod 755 /home/user
+
+    exec /bin/bash "$@"

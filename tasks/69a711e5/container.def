@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python, pip, and pytest for testing
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Scaffold required project structure for the student.
+    # Only the /home/user/app directory and the .env.sample file
+    # should exist at image-start.  Nothing else requested by the
+    # assignment (e.g., .env, logs/, env_debug.log) is created here.
+    # ------------------------------------------------------------------
+
+    mkdir -p /home/user/app
+    chmod 755 /home/user/app
+
+    cat >/home/user/app/.env.sample <<'EOF'
+API_KEY=__REPLACE_ME__
+APP_ENV=__REPLACE_ME__
+LOG_LEVEL=__REPLACE_ME__
+SERVICE_PORT=__REPLACE_ME__
+EOF
+    chmod 644 /home/user/app/.env.sample
+
+%environment
+    # Keep the runtime environment minimal; no variables are set here.
+    true
+
+%runscript
+    echo "Container for environment-variable setup task."
+    echo "Invoke an interactive shell with:  apptainer shell <image>"
+    echo "or run tests with:               pytest -q"

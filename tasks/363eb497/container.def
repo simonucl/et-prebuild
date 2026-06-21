@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest for the test-runner
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        pip3 install --no-cache-dir pytest && \
+        apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # ----------------------------------------------------------------------------
+    # Prepare the initial workspace expected by the exercise
+    # ----------------------------------------------------------------------------
+    mkdir -p /home/user/pipeline
+
+    cat > /home/user/pipeline/app.log <<'EOF'
+[2023-11-10 10:01:02] INFO  Starting job
+[2023-11-10 10:01:03] ERROR [ERR1001] Failed to connect to DB
+[2023-11-10 10:01:04] WARN  Slow response
+[2023-11-10 10:01:05] ERROR [ERR1002] Timeout in service
+[2023-11-10 10:01:06] ERROR [ERR1001] Failed to connect to DB
+[2023-11-10 10:01:07] ERROR [ERR1003] Null pointer exception
+[2023-11-10 10:01:08] INFO  Job completed
+EOF
+
+    # Ensure correct permissions: owner rwx on directory, read-only log file.
+    chmod 755 /home/user
+    chmod 755 /home/user/pipeline
+    chmod 644 /home/user/pipeline/app.log
+
+    # Make sure the output file is absent at build time.
+    rm -f /home/user/pipeline/error_summary.log
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author        dev
+    Description   "Environment for the log-triage exercise (error summary task)"

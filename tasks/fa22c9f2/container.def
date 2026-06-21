@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial project skeleton expected by the exercise tests
+    # ------------------------------------------------------------------
+    PROJECT_ROOT="/home/user/project"
+    ASSETS_DIR="${PROJECT_ROOT}/assets"
+    CHECKSUMS_DIR="${PROJECT_ROOT}/checksums"
+
+    # Create directory hierarchy
+    mkdir -p "${ASSETS_DIR}" "${CHECKSUMS_DIR}"
+
+    # 1. Zero-byte placeholder JavaScript file
+    : > "${ASSETS_DIR}/blank.js"
+
+    # 2. Expected SHA-256 sums file (two spaces between hash and path)
+    echo "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  assets/blank.js" \
+        > "${CHECKSUMS_DIR}/sha256sums.txt"
+
+    # ------------------------------------------------------------------
+    # Set reasonable permissions so the unprivileged agent can work
+    # ------------------------------------------------------------------
+    chmod 755 /home /home/user
+    chmod 755 "${PROJECT_ROOT}" "${ASSETS_DIR}" "${CHECKSUMS_DIR}"
+    chmod 644 "${ASSETS_DIR}/blank.js" "${CHECKSUMS_DIR}/sha256sums.txt"
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal, non-invasive environment setup
+    export LC_ALL=C
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author="Apptainer Setup Script for Checksum Verification Exercise"
+
+%help
+    Container image pre-configured for the “checksum verification” task.
+    It contains:
+      • Project skeleton in /home/user/project
+      • pytest installed for grading

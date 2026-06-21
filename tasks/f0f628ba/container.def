@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grading suites
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state required for the assignment
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/status_columns
+
+    # status_column_1.txt  – deployment names
+    printf "deploy-httpd\ndeploy-nginx\ndeploy-redis\n" \
+        > /home/user/status_columns/status_column_1.txt
+
+    # status_column_2.txt  – rollout status
+    printf "running\nrunning\npending\n" \
+        > /home/user/status_columns/status_column_2.txt
+
+    # status_column_3.txt  – ready-pod ratio
+    printf "3/3\n2/2\n0/1\n" \
+        > /home/user/status_columns/status_column_3.txt
+
+    # status_column_4.txt  – age of the deployment
+    printf "10m\n5m\n12m\n" \
+        > /home/user/status_columns/status_column_4.txt
+
+    # Ensure correct permissions (readable by any unprivileged user)
+    chmod 755 /home/user
+    chmod 755 /home/user/status_columns
+    chmod 644 /home/user/status_columns/status_column_*.txt
+
+%environment
+    # Nothing special required; keep default environment.
+    export LC_ALL=C
+    export LANG=C
+
+%labels
+    Author Kubernetes-Status-Setup
+    Description "Base image for the Kubernetes status reports task – provides initial files and pytest"
+
+%runscript
+    echo "Container for Kubernetes status report assignment. Execute your shell and get to work!"

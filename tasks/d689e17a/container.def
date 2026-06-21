@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Seed the filesystem with the source artefacts required for the task.
+    # ---------------------------------------------------------------------
+    # Create directory structure
+    mkdir -p /home/user/experiments/run_01
+
+    # metrics.csv
+    cat > /home/user/experiments/run_01/metrics.csv << 'EOF'
+epoch,loss,accuracy
+1,0.80,0.71
+2,0.60,0.78
+3,0.45,0.82
+4,0.40,0.84
+5,0.38,0.85
+EOF
+    chmod 644 /home/user/experiments/run_01/metrics.csv
+
+    # mock_ps.txt
+    cat > /home/user/mock_ps.txt << 'EOF'
+PID USER %CPU %MEM COMMAND
+1234 user 12.3 1.1 python
+2345 user 2.1 15.2 chrome
+3456 user 0.5 10.0 java
+4567 user 50.0 0.3 gcc
+5678 user 0.7 5.5 node
+EOF
+    chmod 644 /home/user/mock_ps.txt
+
+    # Set directory permissions (not world-writable)
+    chmod 755 /home/user
+    chmod 755 /home/user/experiments
+    chmod 755 /home/user/experiments/run_01
+
+%environment
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Apptainer task scaffold"
+
+%help
+    This container provides the initial filesystem layout and tooling
+    (including pytest) required for the “diagnostic bundle” exercise.

@@ -1,0 +1,30 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author      db-reliability-setup
+    Description "Base container for PostgreSQL backup settings exercise"
+
+%post
+    set -e
+
+    # Update apt index and install Python & pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    # Install pytest for the grader and the learner
+    pip3 install --no-cache-dir pytest
+
+    # Create a non-root working directory for users (harmless if the host’s
+    # $HOME is later bind-mounted over it).  Do NOT create the exercise target
+    # paths; tests expect them to be absent.
+    mkdir -p /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip-installed binaries are on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"

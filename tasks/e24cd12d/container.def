@@ -1,0 +1,43 @@
+BootStrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index..."
+    apt-get update
+
+    echo "Installing required development tools and Python packages..."
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        git \
+        gcc \
+        build-essential \
+        python3 \
+        python3-pip \
+        coreutils \
+        ca-certificates \
+        curl
+
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating non-privileged user 'user' with home directory /home/user..."
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -s /bin/bash user
+    fi
+
+    # Ensure the directory exists and is writable by any non-root user that
+    # might run inside the container (e.g. the grading agent).
+    chmod 0777 /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip from the standard locations are prioritised
+    export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+    # Default to non-interactive installs inside the container if ever needed
+    export DEBIAN_FRONTEND=noninteractive

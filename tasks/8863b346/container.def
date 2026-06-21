@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python tooling
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3-pip
+
+    # Install pytest for the validation suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state required by the assignment
+    # ------------------------------------------------------------------
+    # 1. Create the cloud directory (world-writable so the non-root user
+    #    running inside the container can add further files/directories).
+    mkdir -p /home/user/cloud
+    chmod 0777 /home/user/cloud
+
+    # 2. Populate the inventory.csv with EXACT required content.
+    cat > /home/user/cloud/inventory.csv <<'EOF'
+ServiceName,OldServer,NewServer,Owner
+auth-api,vm-auth-01,vm-auth-02,becky
+billing-db,vm-db-08,vm-db-new,rahul
+frontend,vm-fe-03,vm-fe-blue,carla
+metrics,vm-mt-01,vm-mt-02,becky
+search,vm-sr-12,vm-sr-green,rahul
+EOF
+    chmod 0644 /home/user/cloud/inventory.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Keep locale simple and deterministic
+    export LC_ALL=C
+    export LANG=C
+
+%labels
+    Author CloudArchitect
+    Description "Base image with initial inventory and pytest installed for migration-plan exercise."
+
+%help
+    This container image provides the starting environment for the
+    “service-migration plan” task.  It includes:
+      • /home/user/cloud/inventory.csv  (pre-populated)
+      • pytest (via pip) for automated validation
+    Students will run inside the container without root privileges and
+    are expected to create additional artefacts in /home/user/cloud.

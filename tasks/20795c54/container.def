@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package list and install Python + pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip
+
+    # Install pytest (needed by the autograder)
+    pip3 install --no-cache-dir pytest
+
+    # Create the user and required directory structure
+    useradd -m -s /bin/bash user || true   # ignore if the user already exists
+    mkdir -p /home/user/appd
+    chown -R root:root /home/user          # ensure root owns the skeleton
+    chmod 0755 /home/user
+    chmod 0755 /home/user/appd
+
+    # Create the initial configuration file
+    cat > /home/user/appd/config.ini <<'EOF'
+[core]
+enabled=true
+secure=true
+timeout=30
+
+[analytics]
+enabled=true
+secure=false
+sample_rate=10
+
+[network]
+enabled=true
+secure=true
+port=8080
+
+[logging]
+enabled=true
+secure=false
+level=debug
+
+[beta]
+enabled=true
+secure=false
+experimental=true
+EOF
+
+    # Ensure the file permissions are world-readable (0644)
+    chmod 0644 /home/user/appd/config.ini
+
+%labels
+    chmod 755 /home/user
+
+    Author YourName
+    Description "Container for INI-file hardening task – initial state with config.ini and pytest installed"
+
+%help
+    This container provides the starting environment for the INI hardening challenge.
+    The file /home/user/appd/config.ini is pre-populated with the baseline content.
+    Students must perform the required hardening steps when solving the exercise.

@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing Python & pip..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating project directory structure..."
+    mkdir -p /home/user/capacity_planner
+
+    echo "Populating usage.csv..."
+    cat > /home/user/capacity_planner/usage.csv << 'EOF'
+service,port,avg_cpu,avg_mem_MB,avg_network_Mbps
+http,80,25,512,120
+https,443,30,600,150
+ssh,22,5,100,5
+postgres,5432,10,800,30
+redis,6379,8,200,20
+prometheus,9090,15,300,40
+EOF
+
+    echo "Populating baseline_firewall.rules..."
+    cat > /home/user/capacity_planner/baseline_firewall.rules << 'EOF'
+-A INPUT -p tcp --dport 22 -j ACCEPT
+-A INPUT -p tcp --dport 80 -j ACCEPT
+-A INPUT -p tcp --dport 443 -j ACCEPT
+-A INPUT -j DROP
+EOF
+
+    echo "Setting appropriate permissions..."
+    chmod 755 /home/user
+    chmod 755 /home/user/capacity_planner
+    chmod 644 /home/user/capacity_planner/usage.csv
+    chmod 644 /home/user/capacity_planner/baseline_firewall.rules
+
+    echo "Cleaning up apt cache..."
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure Python and pip are in PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    echo "Container for the Capacity Planner task."
+    echo "Run 'pytest' inside the container to execute the test suite."
+
+%help
+    This Apptainer container sets up the initial environment for the
+    Capacity Planner task. It includes:
+      • The project directory /home/user/capacity_planner
+      • Pre-populated files: usage.csv and baseline_firewall.rules
+      • Python 3 with pytest installed for running the provided tests.

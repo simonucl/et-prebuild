@@ -1,0 +1,30 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the forthcoming test harness
+    pip3 install --no-cache-dir pytest
+
+    # Prepare a writable home directory for the unprivileged user that will
+    # execute the exercise.  DO NOT create the task-specific paths so tests
+    # can assert their absence.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Prepend /usr/local/bin where pip installs executables.
+    export PATH=/usr/local/bin:$PATH
+
+%labels
+    Maintainer="container-builder"
+    Description="Base image for localhost-resolution configuration-management exercise."

@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo ">> Updating APT package index and installing Python/pip ..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    echo ">> Installing pytest for the evaluation test-suite ..."
+    pip3 install --no-cache-dir pytest
+
+    echo ">> Preparing initial project directory tree and source files ..."
+    # Directory structure
+    mkdir -p /home/user/projects/webapp/src/utils
+
+    # app.py
+    cat > /home/user/projects/webapp/src/app.py <<'EOF'
+print('Hello World')
+EOF
+
+    # config.py
+    cat > /home/user/projects/webapp/src/config.py <<'EOF'
+DEBUG = True
+EOF
+
+    # utils/helpers.py
+    cat > /home/user/projects/webapp/src/utils/helpers.py <<'EOF'
+def add(a, b):
+    return a + b
+EOF
+
+    # Ensure non-root users (the student agent) can access everything
+    chmod -R a+rwX /home/user
+
+    echo ">> Image set-up finished."
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure user-installed Python utilities are found first
+    export PATH="$PATH:/home/user/.local/bin"
+
+%labels
+    Author "Generated for the Python-file catalogue exercise"
+    Description "Ubuntu 22.04 base with pytest installed and initial webapp source tree present."

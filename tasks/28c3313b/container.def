@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------ #
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------ #
+
+    # Create required directories
+    mkdir -p /home/user/datasets
+
+    # Create the raw_records.log file with exact required content
+    cat > /home/user/datasets/raw_records.log <<'EOF'
+ABC123 SUCCESS Data loaded
+DEF456 FAILURE Data missing
+XYZ789 SUCCESS Completed
+abc111 SUCCESS lowercase
+123ABC SUCCESS misplaced
+LMN000 SUCCESS component
+NOP999 FAULT unexpected
+QRS321 SUCCESS processed
+TUV654 DEFER waiting
+GHI777 SUCCESS final
+EOF
+
+    # Set appropriate permissions
+    chmod 755 /home/user
+    chmod 755 /home/user/datasets
+    chmod 644 /home/user/datasets/raw_records.log
+
+%labels
+    Author      container-builder
+    Description Environment for log filtering task with pytest installed.
+
+%help
+This container provides the starting point for the log-filtering task.
+It supplies:
+  • /home/user/datasets/raw_records.log with the exact required content.
+  • pytest installed for automated testing.
+No /home/user/clean_data directory exists so the student can create it as part
+of the solution.

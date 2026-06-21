@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the task
+    # ------------------------------------------------------------------
+    # 1. Create /home/user/logs and populate the credential log
+    mkdir -p /home/user/logs
+    cat > /home/user/logs/credential_events_20240115.log <<'EOF'
+2024-01-15T14:45:30Z,alice,OLD_KEY
+2024-01-15T14:50:42Z,bob,OLD_KEY
+2024-01-15T14:59:59Z,alice,NEW_KEY
+2024-01-15T15:12:04Z,alice,OLD_KEY
+2024-01-15T15:30:10Z,carol,NEW_KEY
+2024-01-15T16:45:19Z,bob,OLD_KEY
+2024-01-15T16:50:02Z,carol,NEW_KEY
+2024-01-15T17:01:54Z,alice,OLD_KEY
+2024-01-15T17:15:00Z,carol,NEW_KEY
+EOF
+    chmod 755 /home/user/logs
+    chmod 644 /home/user/logs/credential_events_20240115.log
+
+    # 2. Ensure /home/user/rotation_report is absent
+    if [ -e /home/user/rotation_report ]; then
+        rm -rf /home/user/rotation_report
+    fi
+
+%environment
+    export LC_ALL=C.UTF-8
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Container prepared for SSH key rotation verification exercise."

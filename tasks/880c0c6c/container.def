@@ -1,0 +1,73 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Base packages and Python tooling
+    # ------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tzdata
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Seed initial workspace expected by the grader
+    # ------------------------------------------------------------------
+    # Create directories
+    mkdir -p /home/user/docs/drafts
+    chmod 777 /home/user
+    chmod 777 /home/user/docs
+    chmod 777 /home/user/docs/drafts
+
+    # ------------------------------------------------------------------
+    # Draft Markdown files
+    # ------------------------------------------------------------------
+    cat > /home/user/docs/drafts/intro.md <<'EOF'
+# Introduction
+This project aims to demonstrate simple text-processing techniques.
+
+TODO: Add background
+More to come. TBD
+EOF
+
+    cat > /home/user/docs/drafts/setup.md <<'EOF'
+# Setup
+Follow these steps to prepare the environment.
+
+TODO: Describe installation
+Configuration TBD
+EOF
+
+    cat > /home/user/docs/drafts/usage.md <<'EOF'
+# Usage
+Here we'll cover usage scenarios.
+
+TODO: Provide examples
+Edge cases TBD
+Another TODO: finalize images
+EOF
+
+    # Ensure files are writable by the future container user and readable by all
+    chmod 666 /home/user/docs/drafts/*.md
+
+%environment
+    chmod 755 /home/user
+
+    # No special environment variables required; keep defaults
+
+%labels
+    Author="Auto-generated for Markdown clean-up task"
+    Description="Container pre-seeded with draft Markdown files and pytest installed"
+
+%help
+    This Apptainer image provides the initial state for the Markdown
+    clean-up exercise. It contains:
+      • /home/user/docs/drafts/{intro,setup,usage}.md
+      • pytest pre-installed for the autograder.

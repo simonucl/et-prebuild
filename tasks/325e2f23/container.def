@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install prerequisites
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        locales
+
+    # Generate the UTF-8 locale required by the exercise
+    locale-gen en_US.UTF-8
+
+    # Install pytest for the assessment framework
+    pip3 install --no-cache-dir pytest
+
+    # Prepare an accessible workspace for the learner.
+    # Create /home/user with open permissions so the (non-root) learner can
+    # freely create the required sub-directories and files.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Pre-create /home/user/profile with permissive rights as well.
+    mkdir -p /home/user/profile
+    chmod 0777 /home/user/profile
+
+    # Leave /home/user/profile/logs and the target file uncreated so that the
+    # initial-state tests confirm a clean environment.
+    #
+    # Clean APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are in PATH for the learner
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

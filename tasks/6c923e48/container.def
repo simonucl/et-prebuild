@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #------------------------------------------------------------------
+    # 1. Install the software needed for both the learner and the tests
+    #------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        diffutils
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # pytest is required by the automated grading harness
+    pip3 install --no-cache-dir pytest
+
+    #------------------------------------------------------------------
+    # 2. Create the initial filesystem state for the exercise
+    #------------------------------------------------------------------
+    # Ensure the base directory exists and is accessible
+    mkdir -p /home/user/backup
+    mkdir -p /home/user/updates
+
+    # Old snapshot
+    cat > /home/user/backup/disk_usage_report_old.txt <<'EOF'
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1       40G   30G  8G   79% /
+/dev/sdb1       100G  60G  35G  65% /data
+tmpfs           2.0G  0    2.0G  0% /dev/shm
+EOF
+
+    # New snapshot
+    cat > /home/user/backup/disk_usage_report_new.txt <<'EOF'
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1       40G   28G  10G  72% /
+/dev/sdb1       100G  55G  40G  60% /data
+tmpfs           2.0G  0    2.0G  0% /dev/shm
+EOF
+
+    #------------------------------------------------------------------
+    # 3. Permissions
+    #------------------------------------------------------------------
+    # Make sure the learner (non-root at runtime) can work with the data.
+    chmod 755 /home/user
+    chmod 755 /home/user/backup
+    chmod 777 /home/user/updates         # writable directory for new artefact
+    chmod 644 /home/user/backup/disk_usage_report_old.txt
+    chmod 644 /home/user/backup/disk_usage_report_new.txt
+
+%labels
+    Author    Apptainer Prep Bot
+    Purpose   Initial state for “disk usage diff” exercise

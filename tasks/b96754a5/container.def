@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create required directory structure
+    mkdir -p /home/user/legacy_services/hardened
+    mkdir -p /home/user/hardening
+
+    # Populate legacy configuration files
+    cat > /home/user/legacy_services/nginx.conf.old <<'EOF'
+user www-data;
+worker_processes auto;
+server_tokens on;
+ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+EOF
+
+    cat > /home/user/legacy_services/sshd_config.old <<'EOF'
+# SSH Daemon Configuration
+PermitRootLogin yes
+PasswordAuthentication yes
+EOF
+
+    cat > /home/user/legacy_services/httpd.conf.old <<'EOF'
+# Apache HTTPD Configuration
+ServerSignature On
+TraceEnable On
+EOF
+
+    # Ensure correct permissions (world-readable, writable by owner)
+    chmod -R u+rwX,go+rX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python is in PATH for convenience
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author hardening-task
+    Description "Initial state for legacy service hardening exercise"
+
+%help
+    This container sets up the initial filesystem and tools
+    needed for the “legacy service hardening” exercise.

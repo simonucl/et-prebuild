@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author diagnostics-prep
+    Description "Base image for the Network-Glitches Diagnostic Bundle exercise"
+
+%environment
+    # Ensure all standard binary locations are on the PATH
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%post
+    set -e
+
+    echo "Updating APT package lists …"
+    apt-get update -y
+
+    echo "Installing required runtime tools and Python/pytest …"
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        iputils-ping \
+        traceroute \
+        dnsutils \
+        python3 \
+        python3-pip
+
+    # Install the latest pytest via pip (more recent than distro package)
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating writable /home/user directory …"
+    mkdir -p /home/user
+    # Make sure any unprivileged user running inside the container can write there
+    chmod 0777 /home/user
+
+    echo "Cleaning up APT caches …"
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    chmod 755 /home/user
+
+    # Default action when the container is executed with no arguments
+    exec /bin/bash "$@"
+
+%help
+    This container image provides all prerequisites (ping, traceroute, dig and
+    pytest) for the “network-glitches diagnostic bundle” exercise.
+    Students will create their artefacts under /home/user during evaluation.

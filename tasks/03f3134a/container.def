@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package list and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test suite
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Create initial filesystem expected by the automated tests
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/repos/meta
+
+    # core-tools.meta
+    cat > /home/user/repos/meta/core-tools.meta <<'EOF'
+a100 core-tools 1.0.0 2048 1111111111111111111111111111111111111111111111111111111111111111
+a101 core-tools 1.1.0 1000 2222222222222222222222222222222222222222222222222222222222222222
+a102 core-tools 2.0.0 4096 3333333333333333333333333333333333333333333333333333333333333333
+EOF
+
+    # core-libs.meta
+    cat > /home/user/repos/meta/core-libs.meta <<'EOF'
+b200 core-libs 1.0.0 5120 4444444444444444444444444444444444444444444444444444444444444444
+b201 core-libs 1.2.0 500 5555555555555555555555555555555555555555555555555555555555555555
+EOF
+
+    # experimental.meta
+    cat > /home/user/repos/meta/experimental.meta <<'EOF'
+x300 experimental 0.1.0 2048 6666666666666666666666666666666666666666666666666666666666666666
+EOF
+
+    # Ensure appropriate permissions (readable by non-root users)
+    chmod -R a+rX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure 'python' command exists for convenience
+    if [ ! -e /usr/bin/python ] && [ -e /usr/bin/python3 ]; then
+        alias python=python3
+    fi
+
+%runscript
+    exec "$@"
+
+%help
+    This container provides the initial filesystem and Python/pytest
+    environment required for the “artifact-manager” assignment.

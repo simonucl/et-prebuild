@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+  Author      ExampleCourse
+  Description Container for the “performance benchmark logging” exercise
+  Version     1.0
+
+%post
+  set -e
+
+  # Update package lists and install required utilities
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      python3 \
+      python3-pip \
+      iputils-ping \
+      procps
+
+  # Install pytest for the grader
+  pip3 install --no-cache-dir pytest
+
+  # Prepare the home directory used in the assignment
+  mkdir -p /home/user
+  # Make sure any non-root user can write there during grading
+  chmod 0777 /home/user
+
+  # Clean up APT caches to keep the image small
+  apt-get clean
+  rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+  export LC_ALL=C.UTF-8
+  export LANG=C.UTF-8
+  export PYTHONIOENCODING=utf-8
+  # Leave $HOME untouched so Apptainer will bind the host’s home automatically
+  export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin"
+
+%runscript
+  echo "Container for the performance benchmark logging exercise."
+  echo "Open a shell inside the container to complete the assignment."

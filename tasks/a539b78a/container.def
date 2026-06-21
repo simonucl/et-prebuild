@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Prepare initial on-disk state required by the assignment
+    # -----------------------------------------------------------------
+    # Directory layout
+    mkdir -p /home/user/backups/daily
+    mkdir -p /home/user/baselines
+
+    # Create the two empty backup files
+    : > /home/user/backups/daily/db.dump
+    : > /home/user/backups/daily/config.tar.gz
+
+    # Create the SHA-256 baseline file with the required formatting
+    cat > /home/user/baselines/daily.sha256 <<'EOF'
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  db.dump
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  config.tar.gz
+EOF
+
+    # Permissions: allow the (non-root) runtime user to write /home/user
+    chmod a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Use Python 3 as default
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%help
+    Container for the "daily backup verification" task.
+    It provides:
+      • pytest (pre-installed)
+      • The expected initial directory tree and files under /home/user
+      • A writable /home/user so the student script can create verification.log

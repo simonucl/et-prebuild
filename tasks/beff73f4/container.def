@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update APT and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        git \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    # Install pytest for the evaluation harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the required Git repository at /home/user/demo_repo
+    # ------------------------------------------------------------------
+    mkdir -p /home/user
+    chmod 0777 /home/user        # ensure the runtime user can write here
+
+    REPO=/home/user/demo_repo
+    mkdir -p "${REPO}"
+    cd "${REPO}"
+
+    # Create directory structure and files
+    mkdir -p scripts src
+
+    # README.md
+    printf "Demo repository for testing.\n" > README.md
+
+    # scripts/run.sh
+    printf "#!/usr/bin/env bash\n\necho \"Running\"\n" > scripts/run.sh
+    chmod +x scripts/run.sh
+
+    # src/main.py
+    cat > src/main.py <<'PY'
+def main():
+    print("Hello World")
+
+
+if __name__ == "__main__":
+    main()
+PY
+
+    # Initialize Git repository and commit the files
+    git init -q
+    git config user.email "builder@example.com"
+    git config user.name "Builder"
+    git add README.md scripts/run.sh src/main.py
+    git commit -qm "Initial commit"
+
+    # Make sure everything is world-readable
+    chmod -R a+rX /home/user/demo_repo
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export PATH=$PATH:/usr/local/bin

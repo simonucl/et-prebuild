@@ -1,0 +1,89 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package lists and installing required packages..."
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        jq \
+        parallel \
+        ca-certificates
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating directory structure for backups and schemas..."
+    mkdir -p /home/user/backups
+    mkdir -p /home/user/schemas
+
+    echo "Populating JSON backup payloads..."
+    cat > /home/user/backups/finance.json <<'EOF'
+{
+  "id": "finance",
+  "last_backup": "2024-01-15T10:31:52Z",
+  "data": {
+    "records": 15234,
+    "checksum": "8f14e45fceea167a5a36dedd4bea2543"
+  }
+}
+EOF
+
+    cat > /home/user/backups/hr.json <<'EOF'
+{
+  "id": "hr",
+  "last_backup": "2024-01-15T10:35:10Z",
+  "data": {
+    "records": 8921,
+    "checksum": "e3afed0047b08059d0fada10f400c1e5"
+  }
+}
+EOF
+
+    cat > /home/user/backups/it.json <<'EOF'
+{
+  "id": "it",
+  "last_backup": "2024-01-15T10:37:03Z",
+  "data": {
+    "records": 43210,
+    "checksum": "1679091c5a880faf6fb5e6087eb1b2dc"
+  }
+}
+EOF
+
+    echo "Populating JSON schema files..."
+    cat > /home/user/schemas/finance_schema.json <<'EOF'
+{ "required": ["id", "last_backup", "data"] }
+EOF
+
+    cat > /home/user/schemas/hr_schema.json <<'EOF'
+{ "required": ["id", "last_backup", "data"] }
+EOF
+
+    cat > /home/user/schemas/it_schema.json <<'EOF'
+{ "required": ["id", "last_backup", "data"] }
+EOF
+
+    echo "Setting permissions..."
+    chmod 755 /home/user
+    chmod -R 755 /home/user/backups /home/user/schemas
+    chmod -R 644 /home/user/backups/*.json /home/user/schemas/*.json
+
+    echo "Cleaning up apt cache..."
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    Author Backup-Operator-Task
+
+%help
+    This container provides the initial environment required for the
+    “Validate restored JSON backups against their schemas” task.
+    It contains:
+      • Three sample JSON backup payloads in /home/user/backups
+      • Three corresponding simple schema files in /home/user/schemas
+      • jq and GNU parallel for convenience
+      • pytest pre-installed for automated grading

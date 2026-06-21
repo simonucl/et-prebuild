@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial application directory structure and config file
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/app/config
+
+    # Write the pristine settings.ini with the ORIGINAL (old) secrets.
+    cat > /home/user/app/config/settings.ini <<'EOF'
+[database]
+user = app_user
+password = oldDBpwd123
+
+[api]
+key = OLDAPIKEY0987654321
+
+[general]
+debug = false
+EOF
+
+    # ------------------------------------------------------------------
+    # Permissions: allow the (non-root) runtime user to modify the files
+    # ------------------------------------------------------------------
+    chmod -R 777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is accessible via the usual command
+    export PYTHONUNBUFFERED=1
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

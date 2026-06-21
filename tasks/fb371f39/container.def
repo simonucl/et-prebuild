@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python tooling for pytest
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare a writable home for the non-root user that will run inside
+    # the container.  Tests require /home/user and a pre-existing ~/.bashrc
+    # ------------------------------------------------------------------
+    mkdir -p /home/user
+    chmod 777 /home/user            # world-writable so any host UID can use it
+
+    # Create an empty .bashrc if it does not exist
+    if [ ! -f /home/user/.bashrc ]; then
+        touch /home/user/.bashrc
+    fi
+    chmod 666 /home/user/.bashrc    # world-writable for the same reason
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python user scripts are on PATH
+    export PATH="$PATH:/root/.local/bin"
+    # Keep the user’s HOME intact; do not override it.
+
+%runscript
+    # Default command when the container is executed without arguments
+    exec /bin/bash "$@"

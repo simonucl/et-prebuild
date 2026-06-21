@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tooling
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the “time-zone & locale” task
+    # ------------------------------------------------------------------
+    # Create the required directory hierarchy
+    mkdir -p /home/user/charlie
+    mkdir -p /home/user/diana
+    mkdir -p /home/user/site_admin
+
+    # Create empty, writable ~/.bashrc files for each user
+    : > /home/user/charlie/.bashrc
+    : > /home/user/diana/.bashrc
+
+    # Ensure everything under /home/user is writable by any non-privileged user
+    chmod -R a+rwx /home/user
+
+    # Clean up apt caches to keep image size small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure pip-installed executables are reachable
+    export PATH="/usr/local/bin:$PATH"
+
+%labels
+    Author TimeLocaleTask
+    Description "Initial container state for the time-zone & locale configuration task"
+    Version "1.0"

@@ -1,0 +1,35 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip
+
+    # Install pytest for the test suites
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state required by the exercise
+    # ------------------------------------------------------------------
+    # Create /home/user with liberal permissions so the non-root learner
+    # running in the container can freely manipulate its contents.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Place the initial outline file with the exact required content.
+    printf '# System Architecture\nInitial outline.\n' > /home/user/architecture_outline.md
+    chmod 0644 /home/user/architecture_outline.md
+
+%environment
+    chmod 755 /home/user
+
+    # No overrides necessary. The container will inherit the caller's
+    # environment, including HOME, but the tests reference explicit paths.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    # Start an interactive shell by default.
+    exec bash -l

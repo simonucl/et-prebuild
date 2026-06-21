@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic non-interactive apt configuration (avoid tzdata prompts)
+    # ------------------------------------------------------------------
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package index and install required packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        locales \
+        tzdata
+
+    # ------------------------------------------------------------------
+    # Python testing framework
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Ensure the reference time-zone file is exactly as expected
+    # ------------------------------------------------------------------
+    echo "Etc/UTC" > /etc/timezone
+
+    # ------------------------------------------------------------------
+    # Generate the en_US.UTF-8 locale that the learner will need
+    # ------------------------------------------------------------------
+    sed -i 's/^# *\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen
+    locale-gen en_US.UTF-8
+
+    # ------------------------------------------------------------------
+    # Create an unprivileged user that the grader & learner will use
+    # ------------------------------------------------------------------
+    if ! id -u user >/dev/null 2>&1; then
+        groupadd -g 1000 user
+        useradd  -m -u 1000 -g 1000 -s /bin/bash user
+    fi
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal PATH adjustment; do not override $HOME.
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author="Apptainer Task Prep Bot"
+    Description="Base image for tz/locale diagnostics exercise with pytest pre-installed"
+
+%runscript
+    exec /bin/bash "$@"

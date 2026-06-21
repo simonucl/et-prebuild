@@ -1,0 +1,31 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the required directory structure and payload file
+    mkdir -p /home/user/sample_data
+
+    # Create a 1-byte file containing only the character 'a' (no newline)
+    printf 'a' > /home/user/sample_data/testfile.txt
+
+    # Set permissions
+    chmod 0644 /home/user/sample_data/testfile.txt
+    chmod 0755 /home/user/sample_data
+    # Make /home/user writable so the non-root runtime user can create /logs later
+    chmod 0777 /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author "QA Setup"
+    Description "Environment for checksum-generation exercise with pytest pre-installed."

@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # System packages
+    # ------------------------------------------------------------------
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Python tooling
+    # ------------------------------------------------------------------
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem for the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/api_samples
+    chmod 755 /home/user
+    chmod 755 /home/user/api_samples
+
+    # Create response1.json with the exact canonical representation
+    cat > /home/user/api_samples/response1.json <<'EOF'
+{
+  "id": 101,
+  "status": "success",
+  "elapsed_ms": 123,
+  "payload": {
+    "result": "OK"
+  }
+}
+EOF
+
+    # Create response2.json with the exact canonical representation
+    cat > /home/user/api_samples/response2.json <<'EOF'
+{
+  "id": 102,
+  "status": "error",
+  "elapsed_ms": 456,
+  "payload": {
+    "result": "FAIL"
+  }
+}
+EOF
+
+    # Ensure predictable permissions
+    chmod 644 /home/user/api_samples/response1.json /home/user/api_samples/response2.json
+
+%environment
+    # Default to Python 3
+    export PYTHONIOENCODING=utf-8
+
+%labels
+    Author Integration-Dev Exercise
+    Description Container providing the initial state for the “offline mock-API” task.
+
+%help
+    This Apptainer image sets up the initial directory layout and files
+    required for the “offline mock-API” integration-developer exercise.
+    Only pytest is pre-installed for the test harness.

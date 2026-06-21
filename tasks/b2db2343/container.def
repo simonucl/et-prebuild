@@ -1,0 +1,83 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # -- Basic tooling --------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # -- Prepare initial filesystem state for the exercise --------------------
+    # Create a writable home for the unprivileged runtime user
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Releases directory and canonical HTML pages
+    mkdir -p /home/user/releases
+
+    cat > /home/user/releases/auth-service.html <<'EOF'
+<!DOCTYPE html>
+<html>
+<head><title>Auth Service Releases</title></head>
+<body>
+    <h1>Auth Service</h1>
+    <div class="latest-release">
+        <span class="version">v1.8.3</span>
+        <span class="released">2023-07-18</span>
+    </div>
+    <div class="latest-release">
+        <span class="version">v1.8.2</span>
+        <span class="released">2023-06-02</span>
+    </div>
+</body>
+</html>
+EOF
+
+    cat > /home/user/releases/payment-service.html <<'EOF'
+<!DOCTYPE html>
+<html>
+<head><title>Payment Service Releases</title></head>
+<body>
+    <h1>Payment Service</h1>
+    <div class="latest-release">
+        <span class="version">v3.2.0</span>
+        <span class="released">2023-07-20</span>
+    </div>
+    <div class="latest-release">
+        <span class="version">v3.1.4</span>
+        <span class="released">2023-05-15</span>
+    </div>
+</body>
+</html>
+EOF
+
+    cat > /home/user/releases/notification-service.html <<'EOF'
+<!DOCTYPE html>
+<html>
+<head><title>Notification Service Releases</title></head>
+<body>
+    <h1>Notification Service</h1>
+    <div class="latest-release">
+        <span class="version">v2.0.5</span>
+        <span class="released">2023-07-21</span>
+    </div>
+    <div class="latest-release">
+        <span class="version">v2.0.4</span>
+        <span class="released">2023-06-30</span>
+    </div>
+</body>
+</html>
+EOF
+
+    chmod -R a+r /home/user/releases
+    # -------------------------------------------------------------------------
+
+%labels
+    chmod 755 /home/user
+
+    Author example
+    Description Container for release-scraping task – provides canonical HTML sources and pytest.

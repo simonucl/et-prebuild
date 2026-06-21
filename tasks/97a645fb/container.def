@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python tooling for pytest
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3-pip python3-setuptools
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem required by the exercise
+    # ------------------------------------------------------------------
+    # 1. Create /home/user/scripts with the correct permissions
+    install -d -m 0755 /home/user/scripts
+
+    # 2. Create /home/user/scripts/backup.sh with placeholder contents
+    cat > /home/user/scripts/backup.sh <<'EOF'
+#!/bin/bash
+# Simple backup placeholder
+echo "Backup running..."
+exit 0
+EOF
+
+    # 3. Ensure the script is executable (mode 0755)
+    chmod 0755 /home/user/scripts/backup.sh
+
+%environment
+    chmod 755 /home/user
+
+    # Do not override HOME; default Apptainer behavior is preserved
+    export PATH="/usr/local/bin:/usr/bin:/bin"
+
+%runscript
+    echo "Container for link-creation exercise is ready."
+    echo "Run your commands or tests as needed."
+
+%help
+    This container provides the initial state for the link-creation exercise.
+    It contains:
+      • /home/user/scripts/backup.sh (executable placeholder script)
+    The student is expected to create /home/user/bin, a symbolic link, and a log
+    file as described in the task. Pytest is installed for automated grading.

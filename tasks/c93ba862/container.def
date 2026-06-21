@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # ---------------------------------------------------------------------
+    # Basic OS preparation
+    # ---------------------------------------------------------------------
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Create the initial filesystem layout expected by the automated tests
+    # ---------------------------------------------------------------------
+
+    # 1. Base user directory tree
+    mkdir -p /home/user/logs
+    mkdir -p /home/user/.config/app
+
+    # 2. Application log with exact, newline-terminated content
+    cat <<'EOF' > /home/user/logs/app-2023-09-01.log
+2023-09-01T08:15:27Z INFO download user=asmith file=document.pdf size=15234 ip=10.0.0.8
+2023-09-01T09:01:11Z INFO rotateKey user=jdoe oldKey=abc123 ip=10.0.0.5
+2023-09-01T09:05:14Z WARN cpu usage high
+2023-09-01T10:22:47Z INFO rotateKey user=asmith oldKey=def456 ip=10.0.0.8
+2023-09-01T11:45:22Z INFO rotateKey user=bwayne oldKey=ghi789 ip=10.0.0.9
+2023-09-01T12:04:55Z INFO logout user=jdoe ip=10.0.0.5
+EOF
+
+    # 3. Security audit log – single starter line
+    cat <<'EOF' > /home/user/logs/security_audit.log
+2023-09-01:Audit start
+EOF
+
+    # 4. Initial application configuration (original, un-rotated key)
+    cat <<'EOF' > /home/user/.config/app/config.yml
+apiEndpoint: "https://api.example.com/v1/"
+apiKey: "abc123"
+timeout: 30
+EOF
+
+    # ---------------------------------------------------------------------
+    # Permissions – readable by any user inside the container
+    # ---------------------------------------------------------------------
+    chmod 755 /home/user
+    chmod -R 755 /home/user/logs
+    chmod -R 755 /home/user/.config
+    chmod 644 /home/user/logs/*.log
+    chmod 644 /home/user/.config/app/config.yml
+
+%environment
+    # No HOME override; rely on Apptainer defaults
+    export LC_ALL=C.UTF-8
+    export PYTHONDONTWRITEBYTECODE=1

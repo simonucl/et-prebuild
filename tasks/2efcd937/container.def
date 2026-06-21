@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author backup-integrity-setup
+    Description "Initial state for backup-integrity engineer task"
+
+%post
+    set -e
+
+    ## Install required software
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    ## Install pytest (used by the automated grader)
+    python3 -m pip install --no-cache-dir --upgrade pip pytest
+
+    ## Create directory structure for the task
+    mkdir -p /home/user/backup/raw
+
+    ## Populate the raw checksum CSV file expected by the tests
+    cat > /home/user/backup/raw/file_checksums.csv <<'EOF'
+abc123 /backups/2023-09-01/home/user/docs/report.docx
+def456 /backups/2023-09-01/home/user/docs/budget.xlsx
+ghi789 /backups/2023-09-01/home/user/docs/plan.pdf
+abc123 /backups/2023-10-01/home/user/docs/report.docx
+def456 /backups/2023-10-01/home/user/docs/budget.xlsx
+jkl012 /backups/2023-10-01/home/user/docs/meeting_minutes.docx
+mno345 /backups/2023-11-01/home/user/docs/notes.txt
+abc123 /backups/2023-11-01/home/user/docs/report.docx
+def456 /backups/2023-11-01/home/user/docs/budget.xlsx
+xyz999 /backups/2023-11-01/home/user/docs/image.png
+EOF
+
+    ## Ensure sensible permissions (read-only file; directories writable by user)
+    chmod 755 /home/user /home/user/backup /home/user/backup/raw
+    chmod 644 /home/user/backup/raw/file_checksums.csv
+
+%environment
+    # No HOME override — keep Apptainer defaults.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

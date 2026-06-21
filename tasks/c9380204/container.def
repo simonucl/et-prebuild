@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    apt-get update -y && \
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            python3-setuptools \
+            python3-wheel && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # Create the initial directory structure and seed file
+    mkdir -p /home/user/build
+
+    cat >/home/user/build/inventory.csv <<'EOF'
+artifact,version,sha256
+core-lib,1.2.3,abc123def456
+ui-module,2.0.0-rc1,789abc012def
+cli-tool,0.9.8,fedcba987654
+EOF
+
+    # Set permissions: directory writable by future non-root user, file read-only
+    chmod 777 /home/user/build
+    chmod 755 /home/user
+    chmod 644 /home/user/build/inventory.csv
+
+%environment
+    # Nothing to override; keep default HOME binding.
+
+%runscript
+    # Default action: open a shell
+    exec /bin/bash "$@"
+
+%labels
+    Maintainer="Apptainer task setup"
+    Description="Environment prepared for inventory conversion exercise"

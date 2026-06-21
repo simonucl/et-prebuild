@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author pipeline-task-prep
+    Description "Environment for CI/CD validation task with jq and pytest pre-installed"
+
+%post
+    set -e
+
+    # Update APT index and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        jq \
+        ca-certificates
+
+    # Install pytest for the evaluation framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial workspace expected by the tests
+    # ------------------------------------------------------------------
+    # Create workspace directory structure
+    mkdir -p /home/user/pipelines
+
+    # Create the required JSON file with all necessary keys
+    cat > /home/user/pipelines/build-info.json <<'EOF'
+{
+  "build_id": "1024",
+  "commit_sha": "9fceb02d131adf4d4f5aebd3233c2b5da4b8c4c6",
+  "artifact_url": "https://ci.example.com/artifacts/1024/app.tar.gz",
+  "status": "success"
+}
+EOF
+
+    # Create accompanying README file (content irrelevant for task)
+    echo "Placeholder README for CI/CD pipelines workspace." \
+        > /home/user/pipelines/README.txt
+
+    # Set sensible permissions so the unprivileged runtime user can read the files
+    chmod 755 /home/user
+    chmod -R 755 /home/user/pipelines
+    chmod 644 /home/user/pipelines/build-info.json /home/user/pipelines/README.txt
+
+    # Attempt to hand ownership to the typical first UID/GID on host; ignore if not present
+    chown -R 1000:1000 /home/user || true
+
+    # Clean up APT caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure pip-installed binaries and jq are on PATH (already are, but kept for clarity)
+    export PATH=$PATH:/usr/local/bin
+
+%runscript
+    echo "Container for CI/CD build-info validation task."

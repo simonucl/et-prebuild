@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Set up initial workspace for the “mobile-CI error summary” task
+    # ------------------------------------------------------------------
+    # Ensure /home/user exists
+    mkdir -p /home/user
+
+    # Create the mobile_CI workspace and seed it with the reference log
+    mkdir -p /home/user/mobile_ci
+
+    cat > /home/user/mobile_ci/build.log <<'EOF'
+2023-07-11 09:14:22 INFO: Starting build for app module
+2023-07-11 09:14:24 WARN: Deprecated API usage in Gradle script
+2023-07-11 09:14:26 ERROR: Could not locate keystore file 'release.jks'
+2023-07-11 09:14:29 ERROR: Missing SDK platform 'android-30'
+2023-07-11 09:14:31 INFO: Downloading dependencies
+2023-07-11 09:14:45 ERROR: Unable to resolve dependency 'com.google.firebase:firebase-analytics'
+2023-07-11 09:14:47 ERROR: Lint found fatal errors in the release build
+2023-07-11 09:14:48 INFO: Attempting to continue despite errors
+2023-07-11 09:14:50 ERROR: Build failed due to earlier errors
+2023-07-11 09:14:52 INFO: Build process finished (took 30 sec)
+EOF
+
+    # Permissions:
+    #  - Directory must be writable by the unprivileged user so they can
+    #    create error_summary.txt.
+    #  - Log file only needs read permission.
+    chmod 0777 /home/user/mobile_ci
+    chmod 0644 /home/user/mobile_ci/build.log
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%labels
+    Author="task-preparer"
+    Description="Environment for the Mobile-CI error-summary task with pytest pre-installed."

@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    apt-get update && apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the “permission-frequency” task
+    # ------------------------------------------------------------------
+    # Create the base directory structure
+    mkdir -p /home/user/audit_dir/logs
+
+    # Populate the expected regular files
+    echo "sample configuration"              > /home/user/audit_dir/config.cfg
+    printf '#!/bin/bash\necho "Hello world"\n' > /home/user/audit_dir/run.sh
+    echo "temporary log data"                > /home/user/audit_dir/temp.log
+    echo "public text file"                  > /home/user/audit_dir/public.txt
+    echo "error log entry"                   > /home/user/audit_dir/logs/error.log
+
+    # Set the required permissions
+    chmod 644 /home/user/audit_dir/config.cfg
+    chmod 755 /home/user/audit_dir/run.sh
+    chmod 666 /home/user/audit_dir/temp.log
+    chmod 666 /home/user/audit_dir/public.txt
+    chmod 644 /home/user/audit_dir/logs/error.log
+
+    # Make /home/user writable by the runtime (non-root) user
+    chmod 777 /home/user
+
+%runscript
+    echo "Container for the permission-frequency task."
+    echo "Invoke your commands inside an interactive shell:"
+    echo "  apptainer exec <image>.sif /bin/bash"
+    exec /bin/bash
+
+%help
+    This container image provides the initial filesystem state and Python
+    tooling (pytest) required for the “permission-frequency” exercise.
+
+%labels
+    Author task-preparation-script

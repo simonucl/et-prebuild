@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ---------------------------------------------------------------------
+    # Prepare initial filesystem state required by the tests
+    # ---------------------------------------------------------------------
+    mkdir -p /home/user/api_test/logs
+
+    # Create requests.log (exactly 38 bytes)
+    printf 'GET /users\nPOST /users\nGET /users/123\n' \
+        > /home/user/api_test/logs/requests.log
+
+    # Create responses.log (exactly 26 bytes)
+    printf '200 OK\n201 Created\n200 OK\n' \
+        > /home/user/api_test/logs/responses.log
+
+    # Ensure everything is world-readable (no root-only permissions)
+    chmod -R a+rX /home/user
+
+%runscript
+    chmod 755 /home/user
+
+    echo "Container for API log archiving task.  Start an interactive shell with:"
+    echo "    apptainer shell <container>"
+    exec "${@:-/bin/bash}"
+
+%labels
+    Author      example
+    Description Container providing the initial state for the API log archiving task.
+    Version     1.0

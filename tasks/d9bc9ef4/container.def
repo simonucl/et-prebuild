@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%environment
+    # Do not override HOME; keep defaults.
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    ## Install Python and pytest
+    apt-get update -qq
+    apt-get install -y --no-install-recommends python3 python3-pip tar gzip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ## Create initial directory structure and seed data
+    RAW_DIR="/home/user/finops/raw_cost_data"
+    mkdir -p "${RAW_DIR}"
+
+    ## january.csv (38 bytes)
+    cat > "${RAW_DIR}/january.csv" <<'EOF'
+Date,Cost
+Compute,23.45
+Storage,12.00
+EOF
+
+    ## february.csv (38 bytes)
+    cat > "${RAW_DIR}/february.csv" <<'EOF'
+Date,Cost
+Compute,25.10
+Storage,11.50
+EOF
+
+    ## Set sensible permissions
+    chmod 755 /home /home/user || true
+    chmod -R 755 /home/user/finops
+
+%labels
+    chmod 755 /home/user
+
+    Author FinOps Backup Exercise

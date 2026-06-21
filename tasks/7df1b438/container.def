@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package index and install required OS packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        iputils-ping \
+        python3-pip \
+        ca-certificates \
+        python3-setuptools \
+        python3-wheel
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create writable workspace for the student
+    mkdir -p /home/user
+    chmod 0777 /home/user    # Allow the non-root runtime user to write here
+
+    # Clean up APT cache to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard paths are available
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author="Exercise Maintainer"
+    Description="Starter image for the network-diagnostics exercise with ping and pytest pre-installed."
+
+%help
+    This container supplies the minimal tools needed for the “network-diagnostics”
+    task.  It includes:
+      • iputils-ping for unprivileged ICMP probes
+      • pytest for automated grading
+
+    The directory /home/user is pre-created and writable; no task-specific
+    artefacts are present so the initial state is clean.

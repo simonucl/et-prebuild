@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic tooling
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        --no-install-recommends
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Ensure a non-root “user” account with UID/GID 1000 is present
+    # (matches the typical host UID used by the test harness)
+    # ------------------------------------------------------------------
+    if ! getent group 1000 >/dev/null 2>&1; then
+        groupadd -g 1000 user || true
+    fi
+    if ! id -u 1000 >/dev/null 2>&1; then
+        useradd -m -u 1000 -g 1000 user || true
+    fi
+
+    # ------------------------------------------------------------------
+    # Prepare initial data set under /home/user/data/
+    # ------------------------------------------------------------------
+    # Directory skeleton
+    install -d -m 700 /home/user/data/raw
+    install -d -m 700 /home/user/data/reports
+
+    # Top-level directory must also be 700
+    chmod 700 /home/user/data
+
+    # Regular files with exact contents
+    printf "alpha\n"          > /home/user/data/raw/file_a.txt
+    printf "beta\n"           > /home/user/data/raw/file_b.txt
+    printf "summary report\n" > /home/user/data/reports/summary.txt
+
+    # Correct permission bits
+    chmod 600 /home/user/data/raw/file_a.txt
+    chmod 600 /home/user/data/raw/file_b.txt
+    chmod 600 /home/user/data/reports/summary.txt
+
+    # Ownership to the non-root user
+    chown -R 1000:1000 /home/user
+
+    # ------------------------------------------------------------------
+    # Clean up
+    # ------------------------------------------------------------------
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Put user-level Python packages (if any) ahead of system path
+    export PATH="/home/user/.local/bin:$PATH"
+
+%runscript
+    exec "$@"

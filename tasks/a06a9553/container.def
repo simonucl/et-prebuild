@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update and install necessary packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel \
+        coreutils
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create a non-root user `user` with UID/GID 1000
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g 1000 user
+
+    # Build the required directory structure
+    mkdir -p /home/user/storage_sandbox/videos
+    mkdir -p /home/user/storage_sandbox/docs
+
+    # Create the five regular files with the exact sizes specified
+    truncate -s 10485760 /home/user/storage_sandbox/videos/movie.mp4
+    truncate -s 7340032  /home/user/storage_sandbox/docs/archive.zip
+    truncate -s 5555555  /home/user/storage_sandbox/big_iso.iso
+    truncate -s 2097152  /home/user/storage_sandbox/videos/short.mov
+    truncate -s 1024     /home/user/storage_sandbox/docs/notes.txt
+
+    # Ensure the `user` owns their home directory and its contents
+    chown -R 1000:1000 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Do not override $HOME; just ensure Python is on the PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    # Default runscript simply starts a shell as the non-root user
+    exec su - user "$@"

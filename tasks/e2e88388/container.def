@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install dependencies
+    # ------------------------------------------------------------------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        ca-certificates \
+        curl \
+        gnupg \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Upgrade pip and install pytest for the grader
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Create the initial repository structure expected by the tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/app/service-a
+    mkdir -p /home/user/app/service-b
+
+    # service-a Dockerfile
+    cat >/home/user/app/service-a/Dockerfile <<'EOF'
+FROM python:3.10-slim
+COPY . /app
+RUN pip install -r requirements.txt
+EOF
+
+    # service-b Dockerfile
+    cat >/home/user/app/service-b/Dockerfile <<'EOF'
+FROM node:18
+ADD . /usr/src/app
+RUN npm install
+EOF
+
+    # ------------------------------------------------------------------
+    # 3. Set permissions so that the (non-root) runtime user can create
+    #    additional files/directories under /home/user
+    # ------------------------------------------------------------------
+    chmod -R a+rX /home/user
+    chmod 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is discoverable
+    export PATH="/usr/local/bin:$PATH"
+
+%labels
+    Author container-security-solution
+    Description "Environment pre-populated with micro-service repo and pytest."

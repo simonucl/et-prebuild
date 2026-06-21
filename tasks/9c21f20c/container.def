@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # ------------------------------------------------------------
+    # 1. Install Python tooling (python3 + pip) and pytest
+    # ------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        python3-venv
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------
+    # 2. Create non-privileged user `user` with home /home/user
+    # ------------------------------------------------------------
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g 1000 -s /bin/bash user
+
+    # Ensure correct permissions on the home directory
+    chmod 755 /home/user
+
+    # ------------------------------------------------------------
+    # 3. (Optional) Prepare an empty firewall directory.
+    #    Do NOT create the exercise artefacts themselves.
+    # ------------------------------------------------------------
+    mkdir -p /home/user/firewall
+    chown -R 1000:1000 /home/user/firewall
+    chmod 755 /home/user/firewall
+
+%environment
+    # Keep HOME as provided by Apptainer; just ensure standard PATH
+    export PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+%labels
+    Author "Apptainer Build Script"
+    Description "Environment for ExampleCorp firewall-draft exercise with pytest installed."

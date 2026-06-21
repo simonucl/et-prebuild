@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial workspace expected by the exercise
+    # ------------------------------------------------------------------
+    USER_HOME="/home/user"
+
+    # Create the directory skeleton
+    mkdir -p "${USER_HOME}"/artifacts
+    mkdir -p "${USER_HOME}"/releases
+    mkdir -p "${USER_HOME}"/deployments    # parent only; daily dir MUST **not** exist
+
+    # Make sure the student (non-root uid at runtime) can work here
+    chmod 0777 "${USER_HOME}"
+    chmod 0777 "${USER_HOME}"/deployments
+
+    # ------------------------------------------------------------------
+    # Create artefact files with exact dummy contents (37 bytes each)
+    # ------------------------------------------------------------------
+    printf 'DUMMY CONTENT FOR app1 version 1.2.3\n' \
+        > "${USER_HOME}/artifacts/app1_v1.2.3.tar.gz"
+
+    printf 'DUMMY CONTENT FOR app2 version 0.9.8\n' \
+        > "${USER_HOME}/artifacts/app2_v0.9.8.tar.gz"
+
+    printf 'DUMMY CONTENT FOR app3 version 3.4.5\n' \
+        > "${USER_HOME}/artifacts/app3_v3.4.5.tar.gz"
+
+    # ------------------------------------------------------------------
+    # Create the release CSV for 2023-10-15
+    # ------------------------------------------------------------------
+    RELEASE_CSV="${USER_HOME}/releases/release_2023-10-15.csv"
+
+    printf 'app,version,artifact_file\n'                                           >  "${RELEASE_CSV}"
+    printf 'app1,1.2.3,%s/app1_v1.2.3.tar.gz\n' "${USER_HOME}/artifacts"           >> "${RELEASE_CSV}"
+    chmod 755 /home/user
+
+    printf 'app2,0.9.8,%s/app2_v0.9.8.tar.gz\n' "${USER_HOME}/artifacts"           >> "${RELEASE_CSV}"
+
+%environment
+    # Nothing specific required; rely on default PATH/Python settings
+    export PYTHONUNBUFFERED=1
+
+%runscript
+    echo "Container for release-manager exercise. Open a shell with:"
+    echo "  apptainer exec <container.sif> /bin/bash"

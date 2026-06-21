@@ -1,0 +1,30 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grader and the student
+    pip3 install --no-cache-dir pytest
+
+    # Ensure the writable home directory exists for the student
+    mkdir -p /home/user
+    chmod 777 /home/user   # world-writable so the unprivileged user can write
+
+    # Clean up APT cache to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Standard PATH
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author="Apptainer Task Preparer"
+    Description="Container for firewall rule manifest exercise with pytest installed."

@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author observability-benchmark
+    Description Base image for latency-panel micro-benchmark task
+
+%post
+    set -e
+
+    # Ensure essential packages are present
+    apt-get update
+    # python3 is already in ubuntu:22.04 but make sure python3-pip is installed
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the evaluation framework
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected home directory skeleton
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Clean up apt caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Preserve the default HOME handling by Apptainer.
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%runscript
+    echo "Container for latency-panel micro-benchmark task."
+    echo "Run your benchmark script inside this container."

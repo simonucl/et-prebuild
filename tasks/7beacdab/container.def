@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        tzdata
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create a non-root user that the container runtime will map to.
+    # UID/GID 1000 is the conventional first user on most systems.
+    # ------------------------------------------------------------------
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g 1000 -s /bin/bash user
+
+    # ------------------------------------------------------------------
+    # Set up the initial project directory structure exactly as required.
+    # ------------------------------------------------------------------
+    PROJECT_DIR=/home/user/project
+    mkdir -p "${PROJECT_DIR}/src"
+
+    # README.md
+    printf 'Demo project for packaging\n' > "${PROJECT_DIR}/README.md"
+
+    # src/main.py
+    printf 'print("Hello, packaged world!")\n' > "${PROJECT_DIR}/src/main.py"
+
+    # Ensure correct ownership so the non-root user can modify files
+    chown -R 1000:1000 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure "python" points to python3 for convenience
+    export PATH=/usr/local/bin:/usr/bin:/bin
+    if [ -x /usr/bin/python3 ] && [ ! -e /usr/bin/python ]; then
+        ln -s /usr/bin/python3 /usr/bin/python
+    fi
+
+%labels
+    Author AI-Generated
+    Description Container for packaging workflow task – includes toy project and pytest

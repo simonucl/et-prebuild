@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author DeployTaskSetup
+    Description "Initial state for data-pipeline rollout exercise"
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # -------------------------------------------------------------------------
+    # Prepare filesystem required by the task
+    # -------------------------------------------------------------------------
+    mkdir -p /home/user/data-pipeline/releases/v1.9
+    mkdir -p /home/user/data-pipeline/releases/v2.0
+
+    # Version marker files (must end with newline)
+    printf '1.9\n' > /home/user/data-pipeline/releases/v1.9/VERSION
+    printf '2.0\n' > /home/user/data-pipeline/releases/v2.0/VERSION
+
+    # Symlink that initially points to the old release
+    ln -s /home/user/data-pipeline/releases/v1.9 /home/user/data-pipeline/current
+
+    # Roll-out log with only the header line
+    printf 'timestamp,from,to,status\n' > /home/user/rollout.log
+
+    # Make everything under /home/user writable so the unprivileged agent
+    # can perform the required updates during testing.
+    chmod -R a+rwx /home/user
+
+%runscript
+    chmod 755 /home/user
+
+    # Default runscript: just execute what’s given
+    exec "$@"

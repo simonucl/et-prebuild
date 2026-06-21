@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        curl \
+        jq \
+        tar \
+        gzip \
+    && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the later test-runner environment
+    pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the assignment/tests
+    # ------------------------------------------------------------------
+    # Create the data directory and populate the two required files
+    mkdir -p /home/user/data
+
+    # file_a.txt  (content: "Alpha\n")
+    printf 'Alpha\n' > /home/user/data/file_a.txt
+
+    # file_b.txt  (content: "Beta\n")
+    printf 'Beta\n' > /home/user/data/file_b.txt
+
+    # Ensure permissive permissions so the runtime (non-root) user
+    # has full access to everything under /home/user.
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author backup-training-setup
+
+%help
+    Container image that provides the initial state for the backup-automation
+    exercise:
+      • /home/user/data/file_a.txt   (contains "Alpha\\n")
+      • /home/user/data/file_b.txt   (contains "Beta\\n")
+    No /home/user/backups directory is present; the student’s script will
+    create it and the resulting artefacts. Pytest is pre-installed for the
+    automated checks.

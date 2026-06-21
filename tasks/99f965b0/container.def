@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling for test execution
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create required directory structure and initial CSV file
+    mkdir -p /home/user/security
+
+    cat > /home/user/security/services.csv <<'EOF'
+service,status
+cups,disable
+ssh,enable
+avahi-daemon,disable
+bluetooth,disable
+ntp,enable
+EOF
+
+    # Set correct permissions
+    chmod 0644 /home/user/security/services.csv
+    chmod 0755 /home/user/security
+
+%labels
+    chmod 755 /home/user
+
+    Author "container-builder"
+    Description "Environment for the 'security hardening' task with initial CSV data and pytest installed."
+
+%environment
+    # Ensure Python is in PATH
+    export PATH="$PATH:/usr/local/bin"
+
+%runscript
+    echo "Container built for the security hardening task. Execute your commands manually."

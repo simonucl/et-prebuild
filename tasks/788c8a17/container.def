@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install Python and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Prepare initial filesystem state for the exercise
+    #    Everything lives under /home/user
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/webapp/config
+    mkdir -p /home/user/monitor
+
+    # settings.yaml (initial content)
+    cat > /home/user/webapp/config/settings.yaml <<'YAML'
+version: 1.0
+debug: false
+database:
+  host: localhost
+  port: 5432
+YAML
+
+    # service.toml (initial content)
+    cat > /home/user/monitor/service.toml <<'TOML'
+[server]
+port = 9000
+
+[logging]
+level = "debug"
+TOML
+
+    # ------------------------------------------------------------------
+    # 3. Relax permissions so the non-root runtime user can modify files
+    # ------------------------------------------------------------------
+    chmod -R a+rwx /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author ChatGPT
+    Description Initial state for configuration-update task (YAML & TOML)
+
+%help
+    This container sets up the starting environment for the configuration
+    file editing task.  It installs Python/pytest for test execution and
+    places the required files under /home/user exactly as described in the
+    task specification.

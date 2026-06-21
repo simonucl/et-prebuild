@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #------------------------------------------------------------------
+    # Install Python and pytest
+    #------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    python3 -m pip install --no-cache-dir pytest
+
+    #------------------------------------------------------------------
+    # Prepare initial workspace expected by the exercise and tests
+    #------------------------------------------------------------------
+    mkdir -p /home/user/project/api_service
+
+    # Create the pristine config.ini with exact, byte-for-byte content
+    cat > /home/user/project/api_service/config.ini <<'EOF'
+[Database]
+host=localhost
+port=5432
+user=dbuser
+password=secret
+
+[API]
+base_url=https://api.example.com
+timeout=30
+retries=3
+
+[Caching]
+enabled=true
+ttl=600
+EOF
+
+    # Ensure permissive permissions so the unprivileged agent can modify files
+    chmod -R a+rwX /home/user/project
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default HOME binding; just ensure Python and pip are on PATH
+    export PATH="$PATH:~/.local/bin"
+
+%runscript
+    # Default command when the container is executed without arguments
+    exec bash

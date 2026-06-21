@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # 1. Install Python, pip and pytest
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3 python3-pip locales && \
+        python3 -m pip install --no-cache-dir pytest && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # 2. Create the required directory structure and regression report
+    mkdir -p /home/user/reports
+
+    cat > /home/user/reports/test_report.txt <<'EOF'
+TC-0001 : PASS : 1120
+TC-0002 : FAIL : 2075
+TC-0003 : PASS : 998
+TC-0004 : PASS : 1311
+TC-0005 : FAIL : 1567
+TC-0006 : PASS : 1044
+TC-0007 : FAIL : 1452
+TC-0008 : PASS : 1005
+TC-0009 : PASS : 1113
+TC-0010 : PASS : 1250
+EOF
+
+    # 3. Ensure permissions allow non-root users to read/write inside /home/user
+    chmod -R a+rX,u+w,go+w /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal locale so Python/pytest don’t warn about missing locale
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python & pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    # 1. Create the backup directory structure in /home/user
+    mkdir -p /home/user/db_backups
+
+    # 2. Create the three empty backup files
+    touch /home/user/db_backups/backup_2023-07-01.sql.gz
+    touch /home/user/db_backups/backup_2023-07-02.sql.gz
+    touch /home/user/db_backups/backup_2023-07-03.sql.gz
+
+    # 3. Create (or reset) the 'latest' symlink to point to the 2023-07-02 backup
+    ln -sf backup_2023-07-02.sql.gz /home/user/db_backups/latest
+
+    # 4. Ensure the required permissions
+    chmod 755 /home/user
+    chmod 755 /home/user/db_backups
+    chmod 644 /home/user/db_backups/backup_2023-07-*.sql.gz
+
+    # 5. Make sure the log file does NOT exist in the initial state
+    rm -f /home/user/db_backups/link_update.log
+
+%environment
+    # Ensure Python and pip are easily accessible
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author youn
+
+%help
+    This container provides the initial state for the "database backup
+    symlink update" task. It includes:
+      • /home/user/db_backups/ with three zero-byte .sql.gz files
+      • 'latest' symlink pointing to backup_2023-07-02.sql.gz
+      • pytest installed for grading

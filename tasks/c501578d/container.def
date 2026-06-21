@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # ----------  System packages  ----------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ----------  Directory layout  ----------
+    # Create the workspace and configuration directory
+    mkdir -p /home/user/api_configs
+
+    # ----------  Configuration files  ----------
+    cat > /home/user/api_configs/dev.json <<'JSON'
+{
+  "base_url": "https://dev.example.internal/api",
+  "token": "dev-token"
+}
+JSON
+
+    cat > /home/user/api_configs/staging.json <<'JSON'
+{
+  "base_url": "https://staging.example.internal/api",
+  "token": "staging-token"
+}
+JSON
+
+    cat > /home/user/api_configs/prod.json <<'JSON'
+{
+  "base_url": "https://api.example.com",
+  "token": "prod-token"
+}
+JSON
+
+    # ----------  Permissions  ----------
+    # Directory should be 0755; files 0644
+    chmod 0755 /home/user/api_configs
+    chmod 0644 /home/user/api_configs/*.json
+
+    # Ensure /home/user exists, has correct perms, and is owned by UID 1000
+    chmod 0755 /home/user
+    chown -R 1000:1000 /home/user || true
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%runscript
+    echo "Apptainer image for the symlink staging configuration task."
+    echo "Start an interactive shell with: apptainer exec $0 /bin/bash"

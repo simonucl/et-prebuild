@@ -1,0 +1,32 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python, venv support and pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-venv \
+        python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # Create writable workspace directories for the student
+    mkdir -p /home/user/services/auth-service
+    mkdir -p /home/user/services/setup_logs
+
+    # Ensure the student (non-root runtime user) can write here
+    chmod -R 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep environment minimal; do not override HOME
+    export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/sbin:/bin"
+
+%runscript
+    # Default runscript just executes the passed command
+    exec "$@"

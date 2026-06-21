@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial workspace expected by the grading tests
+    # ------------------------------------------------------------------
+    # Directory hierarchy
+    mkdir -p /home/user/build-tools/android/v33
+    mkdir -p /home/user/build-tools/android/v34
+
+    # Symlink that initially points to v33
+    ln -sfn /home/user/build-tools/android/v33 /home/user/build-tools/android/current
+
+    # Set permissions (0755 for directories)
+    chmod 755 /home/user
+    chmod 755 /home/user/build-tools
+    chmod 755 /home/user/build-tools/android
+    chmod 755 /home/user/build-tools/android/v33
+    chmod 755 /home/user/build-tools/android/v34
+
+    # Ensure no pre-existing log file
+    rm -f /home/user/build-tools/link_update.log || true
+
+    # Clean up apt caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+
+%runscript
+    echo "Container for Android build-tools symlink task. Use bash to explore."

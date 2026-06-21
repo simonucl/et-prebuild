@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt index and installing required packages..."
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        curl
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest via pip..."
+    python3 -m pip install --no-cache-dir pytest
+
+    echo "Creating directory structure under /home/user..."
+    mkdir -p /home/user/mock_api
+    mkdir -p /home/user/data
+
+    echo "Seeding mock API payload..."
+    cat << 'EOF' > /home/user/mock_api/posts.json
+{
+  "posts": [
+    { "id": 101, "title": "Build pipelines" },
+    { "id": 102, "title": "Test ETL" },
+    { "id": 103, "title": "Deploy to prod" }
+  ]
+}
+EOF
+
+    echo "Setting permissions..."
+    chmod 755 /home/user
+    chmod 755 /home/user/mock_api
+    chmod 755 /home/user/data
+    chmod 644 /home/user/mock_api/posts.json
+
+%environment
+    # Ensure python and pip are on PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+
+%labels
+    Maintainer="Apptainer Task Builder"
+    Description="Environment for ETL curl exercise with pytest pre-installed."
+
+%runscript
+    echo "Container for ETL curl exercise."
+    echo "Run your commands inside this shell."
+    exec /bin/bash "$@"

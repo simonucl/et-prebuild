@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    #--------------------------------------------------
+    # 1. Install Python tooling + pytest for the tests
+    #--------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #--------------------------------------------------
+    # 2. Prepare initial filesystem state
+    #    /home/user/credentials
+    #--------------------------------------------------
+    # Create the user directory tree
+    mkdir -p /home/user/credentials
+
+    # Ensure sensible permissions so the invoking (non-root) user
+    # can read/write as needed during the task.
+    chmod 0755 /home
+    chmod 0755 /home/user
+    chmod 0755 /home/user/credentials
+
+    # Original (un-rotated) credential file
+    cat >/home/user/credentials/app_secrets_2023-09-15.txt <<'EOF'
+legacy_client_id=deadbeef
+legacy_client_secret=deadcafe
+legacy_rotated_on=2023-09-15T12:00:00Z
+EOF
+    chmod 0644 /home/user/credentials/app_secrets_2023-09-15.txt
+
+%labels
+    chmod 755 /home/user
+
+    Author="Security Engineering Prep"
+    Description="Container providing the initial state for the credential-rotation task. Includes pytest for automated grading."
+
+%help
+This Apptainer image sets up the starting environment for the
+“credential-rotation” exercise.  Only the original credential file exists;
+no rotation artefacts are present.  Pytest is installed so the grader can
+run its checks.

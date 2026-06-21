@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python + pip
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the checker suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial exercise data
+    # ------------------------------------------------------------------
+    # Create the required directory structure
+    mkdir -p /home/user/forensics
+
+    # Make the forensics directory writable by non-root users so that the
+    # student can create cron_audit.log later.
+    chmod 0777 /home/user/forensics
+
+    # Populate the compromised crontab file with the exact contents
+    printf '*/5 * * * * /home/user/scripts/backup.sh\n0 3 * * * /home/user/scripts/cleanup.sh\n@reboot /home/user/scripts/bitcoin_miner.sh\n' \
+        > /home/user/forensics/compromised.cron
+
+    # Ensure correct permissions on the crontab file (world-readable, not writable)
+    chmod 0644 /home/user/forensics/compromised.cron
+
+%labels
+    chmod 755 /home/user
+
+    Author          example
+    Description     "Environment for compromised crontab forensic analysis exercise"
+
+%help
+This Apptainer image sets up the initial filesystem state for the
+“compromised crontab” incident-response task and includes pytest so that
+automated tests can validate both the initial and final states.

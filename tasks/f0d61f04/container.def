@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip python3-setuptools ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # Create a non-root user `user`
+    if ! id -u user >/dev/null 2>&1; then
+        groupadd -g 1000 user
+        useradd -m -d /home/user -u 1000 -g user user
+    fi
+
+    # Prepare initial benchmark logs
+    mkdir -p /home/user/samples
+
+    echo 'exec_time_ms=250' > /home/user/samples/webserver.log
+    echo 'exec_time_ms=75'  > /home/user/samples/cache.log
+    echo 'exec_time_ms=184' > /home/user/samples/db.log
+
+    # Set permissions
+    chown -R user:user /home/user
+    chmod 755 /home/user
+    chmod 755 /home/user/samples
+    chmod 644 /home/user/samples/*.log
+
+%labels
+    Author Performance-Tuning Exercise

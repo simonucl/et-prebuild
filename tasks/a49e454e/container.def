@@ -1,0 +1,63 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT and install Python & Pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the filesystem layout that the grading tests expect
+    # ------------------------------------------------------------------
+    # Base directory for the simulated user
+    mkdir -p /home/user
+
+    # Project directory tree
+    mkdir -p /home/user/project/src
+    mkdir -p /home/user/project/docs
+    mkdir -p /home/user/project/tmp
+
+    # ------------------------------------------------------------------
+    # Non-“.bak” files (to be kept)
+    # ------------------------------------------------------------------
+    echo 'int main() { return 0; }'          > /home/user/project/src/main.c
+    echo 'void util() {}'                    > /home/user/project/src/util.c
+    echo '# Project documentation'           > /home/user/project/docs/readme.md
+    echo 'Some temporary notes'              > /home/user/project/tmp/notes.txt
+    echo 'old tmp file'                      > /home/user/project/tmp/old.tmp
+
+    # ------------------------------------------------------------------
+    # “*.bak” backup files (to be deleted by the student)
+    # ------------------------------------------------------------------
+    echo 'backup of main.c'                  > /home/user/project/src/main.c.bak
+    echo 'backup of util.c'                  > /home/user/project/src/util.c.bak
+    echo 'backup of readme.md'               > /home/user/project/docs/readme.md.bak
+    echo 'backup of notes.txt'               > /home/user/project/tmp/notes.txt.bak
+
+    # ------------------------------------------------------------------
+    # Permissions
+    # ------------------------------------------------------------------
+    # Make the entire /home/user tree world-writable so the (non-root)
+    # grader/agent can freely create and delete files.
+    chmod -R 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # No special environment variables are required for this task.
+    :
+
+%labels
+    Author    example@example.com
+    Task      "find | xargs" cleanup challenge
+
+%help
+    This container sets up a small project directory under /home/user/project
+    containing four “*.bak” files that must be removed by the student using a
+    single “find | xargs” command, while logging the deleted paths. Pytest is
+    pre-installed so the grading tests can run.

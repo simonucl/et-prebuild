@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial task files
+    # ------------------------------------------------------------------
+    # Create writable home directory for the unprivileged runtime user
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Create the pre-existing access-log file with exact required content
+    cat >/home/user/server_access.log <<'EOF'
+server1
+server2
+server1
+server3
+server2
+server2
+server1
+server4
+server3
+EOF
+    chmod 0644 /home/user/server_access.log
+
+%environment
+    chmod 755 /home/user
+
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+
+%labels
+    Author "Generated for coding task – access-log rotation setup"

@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial exercise data
+    # ------------------------------------------------------------------
+    # Directory structure
+    mkdir -p /home/user/migration
+
+    # Populate the log file with the required 12 lines
+    cat > /home/user/migration/service_endpoints.log <<'EOF'
+api-us.example.com
+api-eu.example.com
+api-us.example.com
+api-us.example.com
+auth.example.com
+api-eu.example.com
+cdn.example.com
+auth.example.com
+auth.example.com
+cdn.example.com
+cdn.example.com
+cdn.example.com
+EOF
+
+    # Permissions (default umask 022 → 0644 for files, 0755 for dirs)
+    chmod 0755 /home/user
+    chmod 0755 /home/user/migration
+    chmod 0644 /home/user/migration/service_endpoints.log
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C
+    export LANG=C
+
+%runscript
+    # Default runscript: simply exec passed commands
+    exec "$@"

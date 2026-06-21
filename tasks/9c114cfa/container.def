@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+
+    # Install pytest for the subsequent test phase
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the automated tests
+    # ------------------------------------------------------------------
+
+    # Create user home and data directories
+    mkdir -p /home/user/data
+    chmod 755 /home/user
+    chmod 755 /home/user/data
+
+    # ------------------------------------------------------------------
+    # Populate CSV files with exact required contents
+    # ------------------------------------------------------------------
+
+    cat > /home/user/data/sales_q1.csv <<'EOF'
+id,region,sales,week
+1,North,200,1
+2,South,180,1
+3,East,220,1
+4,West,210,1
+5,North,205,2
+6,South,190,2
+7,East,230,2
+8,West,215,2
+9,North,210,3
+10,South,195,3
+EOF
+
+    cat > /home/user/data/sales_q2.csv <<'EOF'
+id,region,sales,week
+11,East,225,4
+12,West,220,4
+13,North,215,5
+14,South,200,5
+15,East,235,6
+16,West,225,6
+17,North,220,7
+EOF
+
+    # Ensure appropriate permissions
+    chmod 644 /home/user/data/sales_q1.csv /home/user/data/sales_q2.csv
+
+%environment
+    # Keep environment minimal; do not override HOME
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for CSV benchmarking task."
+    echo "Inspect /home/user/data for the provided datasets."

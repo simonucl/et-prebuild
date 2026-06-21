@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Basic tools and Python environment
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # Create a regular user with UID 1000 (matches typical host UID)
+    if ! id -u 1000 >/dev/null 2>&1; then
+        groupadd -g 1000 user
+        useradd -m -u 1000 -g 1000 -s /bin/bash user
+    fi
+
+    # Guarantee the home directory exists and is writable
+    mkdir -p /home/user
+    chown 1000:1000 /home/user
+    chmod 755 /home/user
+
+%environment
+    # Keep whatever HOME the runtime assigns; no override needed.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for the firewall-monitoring exercise."
+    echo "Use the interactive shell to work on the assignment."
+    exec /bin/bash
+
+%labels
+    Author firewall-monitoring-template
+    Description "Base image for the firewall monitoring exercise — pytest preinstalled, user environment prepared."

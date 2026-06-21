@@ -1,0 +1,27 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python, venv support, and pip
+    apt-get update && \
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            python3 \
+            python3-venv \
+            python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest so the grader can run its test suite
+    pip3 install --no-cache-dir pytest
+
+    # Prepare writable home directory expected by the tests
+    mkdir -p /home/user/artifact-curator
+    chmod -R 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C
+    export LANG=C
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

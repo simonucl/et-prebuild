@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author cloud-cost-init
+    Version 1.0
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the FinOps optimisation task
+    # ------------------------------------------------------------------
+    PROJECT_DIR=/home/user/projects/cloud-cost-optimizer
+    CFG_DIR="${PROJECT_DIR}/config"
+    LOG_DIR="${PROJECT_DIR}/logs"
+
+    mkdir -p "${CFG_DIR}"
+    mkdir -p "${LOG_DIR}"
+
+    # Initial thresholds.yml
+    cat > "${CFG_DIR}/thresholds.yml" <<'EOF'
+aws:
+  monthly_budget: 7000
+  alert_at_percent: 90
+azure:
+  monthly_budget: 5000
+  alert_at_percent: 90
+gcp:
+  monthly_budget: 4000
+  alert_at_percent: 90
+EOF
+
+    # Initial alerts.toml
+    cat > "${CFG_DIR}/alerts.toml" <<'EOF'
+[email]
+recipients = ["finops@example.com","cloudteam@example.com"]
+EOF
+
+    # Ensure non-root container users can read & write
+    chmod -R a+rwX /home/user/projects
+
+%environment
+    chmod 755 /home/user
+
+    # Keep standard paths; do not override $HOME
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"

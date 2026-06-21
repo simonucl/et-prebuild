@@ -1,0 +1,32 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author  AutomationTask
+    Description "Base image for Python virtual-environment automation exercise"
+
+%post
+    set -e
+
+    # Update package lists and install required system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-venv \
+        python3-pip \
+        ca-certificates
+
+    # Upgrade pip and install pytest for the test harness
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # Ensure the expected home directory exists
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    exec /bin/bash "$@"

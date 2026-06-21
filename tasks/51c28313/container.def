@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author      AutomatedContainerPrep
+    Description Base image for QA-symlink exercise – provides Python and pytest and guarantees a writable /home/user.
+
+%post
+    set -e
+
+    # Update APT metadata and install Python + pip.
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the forthcoming test suites.
+    pip3 install --no-cache-dir pytest
+
+    # Ensure that /home/user exists and is writable by any unprivileged user who
+    # will run inside the container.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Minimise image size.
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure the location where pip installs executables is in the PATH.
+    export PATH="/usr/local/bin:${PATH}"
+
+%runscript
+    # Default runscript: just execute whatever the caller supplied.
+    exec "$@"
+
+%help
+    This container supplies a pristine Ubuntu 22.04 userland with Python 3 and
+    pytest installed, plus an empty, world-writable /home/user directory required
+    by the QA-symlink assignment’s initial-state tests.

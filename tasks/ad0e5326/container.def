@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/work_in_progress
+
+    # overview.md
+    cat > /home/user/work_in_progress/overview.md <<'EOF'
+# Project Overview
+This document provides an overview of the project.
+TODO: expand details.
+EOF
+
+    # install.md
+    cat > /home/user/work_in_progress/install.md <<'EOF'
+# Installation Guide
+Follow these steps to install the application.
+Step 1: ...
+TODO: add screenshots.
+EOF
+
+    # faq.md
+    cat > /home/user/work_in_progress/faq.md <<'EOF'
+# FAQ
+Frequently asked questions will go here.
+EOF
+
+    # Ensure non-root users can interact with the files/directories
+    chmod -R a+rwX /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author    task-preparer
+    Description "Container providing the initial state for the Markdown publication staging task."

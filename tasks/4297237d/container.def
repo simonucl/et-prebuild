@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author build-bot
+    Description "Environment for SSH key-pair creation assignment (pytest pre-checks only)."
+
+%post
+    set -e
+
+    # Update package lists
+    apt-get update
+
+    # Install required packages:
+    #   • openssh-client -> provides `ssh-keygen`
+    #   • python3-pip    -> install pytest
+    #   • ca-certificates, gcc, build-essential kept minimal for pip wheel building if needed
+    apt-get install -y --no-install-recommends \
+        openssh-client \
+        python3-pip
+
+    # Clean up apt cache to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the dedicated non-privileged account expected by the tests
+    # ------------------------------------------------------------------
+    # Use UID/GID 1000 (conventional first user on Ubuntu).  If these IDs
+    # are already taken inside the base image, the commands will be
+    # skipped gracefully.
+    if ! getent group 1000 >/dev/null 2>&1; then
+        groupadd -g 1000 user
+    fi
+
+    if ! id -u 1000 >/dev/null 2>&1; then
+        useradd -m -u 1000 -g 1000 -s /bin/bash user
+    fi
+
+    # Ensure the /home/user directory exists and is *not* world-writable
+    chmod 0755 /home/user
+
+    # Add ~/.local/bin to PATH for the created user (useful if they install
+    # additional Python packages during interactive sessions).
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> /home/user/.bashrc
+
+%environment
+    chmod 755 /home/user
+
+    # Keep PATH modifications minimal; do not override HOME.
+    export PATH="/home/user/.local/bin:$PATH"
+
+%runscript
+    # Default runscript just execs whatever the caller passed.
+    exec "$@"
+
+%test
+    echo "Container built successfully. Basic sanity checks:"
+    id
+    which ssh-keygen
+    python3 -m pytest --version

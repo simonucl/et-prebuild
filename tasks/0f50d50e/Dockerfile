@@ -1,0 +1,37 @@
+FROM ubuntu:22.04
+
+# Author: Log-Analysis Task Scaffold
+# Version: 1.0
+
+RUN set -e && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /home/user/logs
+
+RUN cat > /home/user/logs/access.log <<'EOF'
+10.0.0.1 - - [01/Jan/2023:10:00:01 +0000] "GET /index.html HTTP/1.1" 200 1024
+10.0.0.2 - - [01/Jan/2023:10:00:02 +0000] "POST /login HTTP/1.1" 302 512
+10.0.0.1 - - [01/Jan/2023:10:00:03 +0000] "GET /about HTTP/1.1" 200 2048
+10.0.0.3 - - [01/Jan/2023:10:00:04 +0000] "GET /index.html HTTP/1.1" 404 256
+10.0.0.2 - - [01/Jan/2023:10:00:05 +0000] "GET /dashboard HTTP/1.1" 200 3072
+10.0.0.4 - - [01/Jan/2023:10:00:06 +0000] "GET /index.html HTTP/1.1" 500 128
+10.0.0.1 - - [01/Jan/2023:10:00:07 +0000] "GET /contact HTTP/1.1" 200 1024
+10.0.0.2 - - [01/Jan/2023:10:00:08 +0000] "GET /profile HTTP/1.1" 404 256
+10.0.0.3 - - [01/Jan/2023:10:00:09 +0000] "POST /upload HTTP/1.1" 201 512
+10.0.0.1 - - [01/Jan/2023:10:00:10 +0000] "GET /index.html HTTP/1.1" 200 1024
+10.0.0.4 - - [01/Jan/2023:10:00:11 +0000] "GET /error HTTP/1.1" 500 128
+10.0.0.2 - - [01/Jan/2023:10:00:12 +0000] "GET /dashboard HTTP/1.1" 200 3072
+10.0.0.2 - - [01/Jan/2023:10:00:13 +0000] "GET /logout HTTP/1.1" 200 1024
+10.0.0.3 - - [01/Jan/2023:10:00:14 +0000] "GET /index.html HTTP/1.1" 200 1024
+10.0.0.1 - - [01/Jan/2023:10:00:15 +0000] "GET /cart HTTP/1.1" 500 256
+EOF
+
+RUN chmod 755 /home/user && \
+    chmod 755 /home/user/logs && \
+    chmod 644 /home/user/logs/access.log
+
+ENV HOME=/home/user

@@ -1,0 +1,89 @@
+FROM ubuntu:22.04
+
+# Help:
+# This image sets up the required directory structure, Python server script,
+# and permissions report for the API audit task. pytest is pre-installed
+# so an automated grader can run its validation suite.
+
+LABEL Author="AI Generated"
+LABEL Purpose="Initial state for API audit exercise"
+
+RUN set -e && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        curl && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir pytest
+
+RUN mkdir -p /home/user/api_audit
+
+RUN cat > /home/user/api_audit/restricted_server.py <<'PY'
+import http.server
+import json
+import socketserver
+
+class RestrictedHandler(http.server.SimpleHTTPRequestHandler):
+    """HTTP handler with two hard-coded endpoints enforcing simple ACLs."""
+
+    def _send_json(self, code: int, payload: dict) -> None:
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        body = json.dumps(payload).encode()
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body)
+
+    # ------------------------------------------------------------------
+    # Verb handlers
+    # ------------------------------------------------------------------
+    def do_GET(self):
+        if self.path == "/public":
+            self._send_json(200, {"status": "public"})
+        elif self.path == "/admin":
+            self._send_json(403, {"error": "forbidden"})
+        else:
+            super().do_GET()
+
+    def do_HEAD(self):
+        if self.path == "/public":
+            self._send_json(200, {"status": "public"})
+        elif self.path == "/admin":
+            self._send_json(403, {"error": "forbidden"})
+        else:
+            super().do_HEAD()
+
+def run(host: str = "127.0.0.1", port: int = 9000):
+    """Launch the restricted server."""
+    with socketserver.TCPServer((host, port), RestrictedHandler) as httpd:
+        print(f"Serving on http://{host}:{port}")
+        httpd.serve_forever()
+
+if __name__ == "__main__":
+    run()
+PY
+
+RUN chmod 644 /home/user/api_audit/restricted_server.py
+
+RUN cat > /home/user/api_audit/permissions_report.log <<'EOF'
+GET /public 200
+GET /admin 403
+GET /missing 404
+HEAD /public 200
+HEAD /admin 403
+SUMMARY total_tested=5 pass_count=5
+EOF
+
+RUN chmod 644 /home/user/api_audit/permissions_report.log
+
+# Original runscript content:
+# chmod 755 /home/user
+# echo "This container is prepared for the API audit exercise."
+# echo "To launch the reference server, run:"
+# echo "  python3 /home/user/api_audit/restricted_server.py"
+
+CMD ["/bin/bash"]

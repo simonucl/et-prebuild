@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic utilities and Python tooling
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        tar \
+        gzip \
+        ca-certificates \
+        coreutils && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test-harness
+    pip3 install --no-cache-dir pytest
+
+    # Create dedicated non-privileged user
+    adduser --disabled-password --gecos "" user
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state required by the assignment
+    # ------------------------------------------------------------------
+    # Directory skeleton
+    mkdir -p /home/user/data/projects
+    mkdir -p /home/user/data/reports
+    mkdir -p /home/user/archives
+    mkdir -p /home/user/backup_logs
+
+    # Data files with exact, spec-mandated content
+    printf "Project README\n"               > /home/user/data/projects/readme.txt
+    printf 'print("Hello World")\n'         > /home/user/data/projects/code.py
+    printf "Quarterly report Q1\n"          > /home/user/data/reports/report1.txt
+
+    # Permissions:
+    #  - make everything belong to the new 'user'
+    #  - ensure read access for everyone, and write access where the agent must write
+    chown -R user:user /home/user
+    chmod 755 /home/user
+    chmod -R 755 /home/user/data
+    chmod 644 /home/user/data/projects/readme.txt
+    chmod 644 /home/user/data/projects/code.py
+    chmod 644 /home/user/data/reports/report1.txt
+    chmod 777 /home/user/archives
+    chmod 777 /home/user/backup_logs
+
+%labels
+    Author backup-task-container-setup
+
+%runscript
+    echo "Container for backup-task ready. Launch your commands."

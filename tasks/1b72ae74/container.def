@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package list and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the evaluation framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial workspace expected by the tests
+    # ------------------------------------------------------------------
+    # Create translations directory
+    mkdir -p /home/user/project/translations
+
+    # English master file
+    cat > /home/user/project/translations/app_en.ini <<'EOF'
+[General]
+welcome=Welcome
+exit=Exit
+
+[Errors]
+file_not_found=File not found
+permission_denied=Permission denied
+EOF
+
+    # Spanish file (intentionally missing some keys)
+    cat > /home/user/project/translations/app_es.ini <<'EOF'
+[General]
+welcome=Bienvenido
+
+[Errors]
+file_not_found=Archivo no encontrado
+EOF
+
+    # Ensure the directory tree is writable by the non-root user who will
+    # run the tasks inside the container.
+    chmod -R a+rwX /home/user/project
+
+%labels
+    chmod 755 /home/user
+
+    Author="Apptainer Task Preparation"
+
+%help
+    This image is pre-configured for the localization update task.
+    It contains the required initial INI files under
+    /home/user/project/translations and has pytest installed for
+    automated evaluation.

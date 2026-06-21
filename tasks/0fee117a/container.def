@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest for the test-suite
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the automated tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/backup/certs
+    mkdir -p /home/user/certs
+
+    # Ensure directory permissions are world-readable/traversable
+    chmod 755 /home/user /home/user/backup /home/user/backup/certs /home/user/certs
+
+    # Create the three backup certificate files with exact contents
+    cat >/home/user/backup/certs/rootCA.pem <<'EOF'
+-----BEGIN CERTIFICATE-----
+root-ca-placeholder
+-----END CERTIFICATE-----
+EOF
+
+    cat >/home/user/backup/certs/intermediateCA.pem <<'EOF'
+-----BEGIN CERTIFICATE-----
+intermediate-ca-placeholder
+-----END CERTIFICATE-----
+EOF
+
+    cat >/home/user/backup/certs/server.pem <<'EOF'
+-----BEGIN CERTIFICATE-----
+server-cert-placeholder
+-----END CERTIFICATE-----
+EOF
+
+    # Set required file permissions (world-readable 0644)
+    chmod 644 /home/user/backup/certs/*.pem
+
+    # The /home/user/certs/ directory must start empty of *.pem files;
+    # nothing further to do here.
+
+%environment
+    # Ensure Python and pip binaries are easily found
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+
+%runscript
+    echo "Container ready for the TLS certificate restore exercise."
+    echo "Run your restore script inside this container, then execute pytest to validate."

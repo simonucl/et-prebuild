@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling required for the grader
+    apt-get update && \
+        apt-get install -y --no-install-recommends python3-pip && \
+        pip3 install --no-cache-dir pytest && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the assignment
+    # ------------------------------------------------------------------
+    # Ensure the base user directory exists
+    mkdir -p /home/user
+
+    # Create the directory that holds the INI configuration file
+    mkdir -p /home/user/api_configs
+
+    # Populate the INI file with the predefined service configurations
+    cat > /home/user/api_configs/services.ini <<'EOF'
+[UserService]
+endpoint = https://api.example.com/users
+token = abc123token
+timeout = 30
+
+[OrderService]
+endpoint = https://api.example.com/orders
+token = 987zyxTOKEN
+timeout = 45
+
+[InventoryService]
+endpoint = https://api.example.com/inventory
+token = invTOK456
+timeout = 60
+EOF
+
+    # ------------------------------------------------------------------
+    # Set sane file permissions so the unprivileged agent can read them
+    # ------------------------------------------------------------------
+    chmod 0755 /home/user
+    chmod 0755 /home/user/api_configs
+    chmod 0644 /home/user/api_configs/services.ini
+
+%labels
+    chmod 755 /home/user
+
+    Author agent_setup
+
+%help
+    This container provides the initial filesystem state for the
+    API-summary parsing task. It includes pytest for grading and an
+    INI configuration file located at /home/user/api_configs/services.ini.

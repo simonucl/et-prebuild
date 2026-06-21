@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the automated tests
+    # ------------------------------------------------------------------
+    # Create the /home/user directory hierarchy
+    mkdir -p /home/user
+
+    # Populate /home/user/config_changes.log with the canonical content
+    cat > /home/user/config_changes.log <<'EOF'
+2024-06-01 10:15:23 HOST=web01 USER=root ACTION=CREATE TYPE=FILE PATH=/etc/nginx/nginx.conf
+2024-06-01 10:17:05 HOST=web01 USER=root ACTION=MODIFY TYPE=PERMISSION CMD=chmod 644 /etc/nginx/nginx.conf
+2024-06-01 10:20:10 HOST=db01 USER=admin ACTION=MODIFY TYPE=CONTENT CMD=vim /etc/mysql/my.cnf
+2024-06-01 10:21:22 HOST=web01 USER=root ACTION=MODIFY TYPE=PERMISSION CMD=chown root:root /etc/nginx/nginx.conf
+2024-06-01 10:23:45 HOST=web01 USER=root ACTION=DELETE TYPE=FILE PATH=/tmp/test.tmp
+2024-06-01 10:25:50 HOST=db01 USER=admin ACTION=MODIFY TYPE=PERMISSION CMD=chmod 600 /etc/mysql/my.cnf
+EOF
+
+    # Ensure world-readable permissions so any unprivileged user can read it
+    chmod 644 /home/user/config_changes.log
+
+%environment
+    chmod 755 /home/user
+
+    # Keep PATH simple; do not override $HOME so that Apptainer can bind host HOME if desired
+    export PATH=/usr/local/bin:/usr/bin:/bin

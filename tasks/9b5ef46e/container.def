@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install Python tooling and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        python3-setuptools
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Prepare initial filesystem state expected by the tests
+    # ------------------------------------------------------------------
+    # Make sure the base /home/user path exists and is *writable* by any
+    # non-root user who will run the container.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Create the build directory layout
+    mkdir -p /home/user/build/bin
+
+    # ------------------------------------------------------------------
+    # 3. Provide the three fixed build artifacts
+    #    (exact contents & permissions are critical for the tests)
+    # ------------------------------------------------------------------
+    printf 'alpha build artifact v1.0\n' > /home/user/build/bin/tool_alpha
+    printf 'beta build artifact v1.0\n'  > /home/user/build/bin/tool_beta
+    printf 'gamma build artifact v1.0\n' > /home/user/build/bin/tool_gamma
+
+    chmod 0644 /home/user/build/bin/tool_alpha \
+               /home/user/build/bin/tool_beta  \
+               /home/user/build/bin/tool_gamma
+
+%environment
+    chmod 755 /home/user
+
+    # Preserve the caller’s HOME; just ensure standard paths are available.
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author "Apptainer Task Setup – ChatGPT"

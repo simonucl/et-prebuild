@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install Python tooling needed for the grader
+    # ------------------------------------------------------------------
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Prepare the initial IoT-fleet workspace
+    # ------------------------------------------------------------------
+    BASE="/home/user/iot_fleet"
+
+    # Directory tree
+    mkdir -p "${BASE}/firmware_packages"
+    mkdir -p "${BASE}/devices_info"
+    mkdir -p "${BASE}/deployment_logs"
+
+    # ------------------------------------------------------------------
+    # 2a. Firmware package placeholders (must be non-empty)
+    # ------------------------------------------------------------------
+    echo "dummy firmware sensorA v1.2"  > "${BASE}/firmware_packages/sensorA_v1.2.fw"
+    echo "dummy firmware sensorA v3.1"  > "${BASE}/firmware_packages/sensorA_v3.1.fw"
+    echo "dummy firmware camB v2.9"     > "${BASE}/firmware_packages/camB_v2.9.fw"
+    echo "dummy firmware camB v3.0"     > "${BASE}/firmware_packages/camB_v3.0.fw"
+    echo "dummy firmware gateway v2.5"  > "${BASE}/firmware_packages/gateway_v2.5.fw"
+    echo "dummy firmware gateway v3.2"  > "${BASE}/firmware_packages/gateway_v3.2.fw"
+
+    # ------------------------------------------------------------------
+    # 2b. Device JSON files with sizes matching the specification
+    # ------------------------------------------------------------------
+    # >1024 bytes  (~1500)
+    yes '{"dummy":"sensorA"}'   | head -c 1500 > "${BASE}/devices_info/sensorA.json"
+    # <=1024 bytes (~800)
+    yes '{"dummy":"camB"}'      | head -c 800  > "${BASE}/devices_info/camB.json"
+    # >1024 bytes  (~2048)
+    yes '{"dummy":"gateway"}'   | head -c 2048 > "${BASE}/devices_info/gateway.json"
+    # >1024 bytes  (~3000)
+    yes '{"dummy":"edgeHub"}'   | head -c 3000 > "${BASE}/devices_info/edgeHub.json"
+
+    # ------------------------------------------------------------------
+    # 3. Relax permissions so the (non-root) agent can modify the tree
+    # ------------------------------------------------------------------
+    chmod -R a+rwx /home/user/iot_fleet
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special required; keep default environment.
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author IoT-Fleet exercise preparer
+    Description Base image containing the initial state for the “IoT fleet” maintenance task.
+
+%help
+    This Apptainer image provides the starting filesystem layout and files
+    for the IoT-fleet batch-deployment exercise.

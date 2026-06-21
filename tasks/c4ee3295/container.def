@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # -------------------------------------------------------------------------
+    # 1. Install Python and pytest (needed by the automated checker)
+    # -------------------------------------------------------------------------
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -qq
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # -------------------------------------------------------------------------
+    # 2. Set up the required initial filesystem state
+    #    /home/user/logs directory and /home/user/logs/app.log file
+    # -------------------------------------------------------------------------
+    mkdir -p /home/user/logs
+    chmod 0777 /home/user/logs        # Allow the runtime user to create files
+
+    cat > /home/user/logs/app.log <<'EOF'
+2023-08-15 13:45:12,123 INFO  Request from 10.0.0.1 processed in 120ms
+2023-08-15 14:00:03,001 ERROR Database connection failed for user app
+2023-08-15 14:12:55,789 WARN  Cache miss for key user_42
+2023-08-15 14:22:11,456 ERROR Timeout while calling external API
+2023-08-15 14:45:00,999 FATAL Unhandled exception in payment service
+2023-08-15 15:00:00,000 INFO  Scheduled job started
+2023-08-14 14:30:32,222 ERROR Previous day error.
+EOF
+
+    chmod 0644 /home/user/logs/app.log
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure python is in PATH (Ubuntu already does, but be explicit)
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author "Apptainer Task Setup"
+    Description "Environment for log filtering task with pytest pre-installed"
+
+%runscript
+    echo "This container provides the initial state for the log filtering task."
+    echo "Please execute your solution commands inside an interactive shell:"
+    echo "    apptainer exec <image.sif> /bin/bash"

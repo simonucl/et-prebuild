@@ -1,0 +1,40 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating apt and installing Python & pip..."
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Creating initial log directory structure..."
+    # Ensure /home and /home/user exist
+    mkdir -p /home/user/logs
+
+    # Create two regular log files with dummy content
+    echo "Log for 2023-12-30" > /home/user/logs/app-2023-12-30.log
+    echo "Log for 2023-12-31" > /home/user/logs/app-2023-12-31.log
+
+    # Create the outdated symlink
+    cd /home/user/logs
+    ln -sf app-2023-12-30.log latest.log
+    cd /
+
+    # Make everything in /home/user writable by the non-root user that
+    # will run inside the container
+    chmod -R a+rwx /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Preserve a sane PATH including pip install location
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+    export HOME="/home/user"
+
+%runscript
+    # Default action when container is executed
+    exec /bin/bash

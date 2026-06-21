@@ -1,0 +1,28 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python tooling
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends python3-pip python3-setuptools && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the automated checker
+    pip3 install --no-cache-dir pytest
+
+    # Prepare writable home directory for the non-root agent
+    mkdir -p /home/user
+    chmod 777 /home/user     # allow the unprivileged agent to write here
+
+    # Provide an initial .bashrc without the management block
+    if [ ! -f /home/user/.bashrc ]; then
+        printf '# ~/.bashrc\n' > /home/user/.bashrc
+    fi
+    chmod 666 /home/user/.bashrc  # make it writable by any user
+
+%labels
+    chmod 755 /home/user
+
+    Author env-management-task container

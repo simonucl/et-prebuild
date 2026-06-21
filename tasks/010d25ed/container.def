@@ -1,0 +1,28 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install python / pip.
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the test-runner and student.
+    pip3 install --no-cache-dir pytest
+
+    # Ensure a writable home directory for the student exists.
+    # Create the ‘user’ account if it is not already present.
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -d /home/user -s /bin/bash user
+    fi
+
+    # Make sure the directory exists with sensible permissions.
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+%labels
+    Author          "Apptainer build system"
+    Description     "Environment for firewall-script exercise with pytest installed."

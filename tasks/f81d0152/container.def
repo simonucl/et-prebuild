@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT index and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        procps \
+        coreutils
+
+    # Install pytest for the test-runner
+    python3 -m pip install --no-cache-dir --upgrade pip setuptools
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial state for the “support-tool” project
+    # ------------------------------------------------------------------
+
+    # Create the directory tree
+    mkdir -p /home/user/support-tool
+
+    # Create VERSION with the original version string
+    printf '0.9.7\n' > /home/user/support-tool/VERSION
+
+    # Create the initial CHANGELOG.md with the required three lines
+    cat > /home/user/support-tool/CHANGELOG.md <<'EOF'
+# Changelog
+## [Unreleased]
+
+EOF
+
+    # Ensure the files and directories are writable by any user
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special required; keep the user’s $HOME intact
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

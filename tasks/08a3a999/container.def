@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python, pip, pytest, and sqlite3 (handy for the student)
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Stage the read-only source CSV files exactly as described.
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/source_data
+
+    cat > /home/user/source_data/servers.csv <<'EOF'
+id,hostname,status
+1,web-01,up
+2,db-01,up
+3,cache-01,down
+EOF
+
+    cat > /home/user/source_data/events.csv <<'EOF'
+id,server_id,timestamp,description
+101,1,2023-01-12 10:15:00,Deployment
+102,3,2023-01-12 10:16:00,Cache restart
+103,3,2023-01-12 11:00:00,Cache down
+104,3,2023-01-12 11:05:00,Cache still down
+105,2,2023-01-12 11:10:00,DB maintenance
+106,1,2023-01-12 12:00:00,Deployment complete
+EOF
+
+    # Ensure the staged data are world-readable and directories are accessible
+    chmod 755 /home/user
+    chmod 755 /home/user/source_data
+    chmod 644 /home/user/source_data/*.csv
+
+%environment
+    # Keep PATH simple and predictable
+    export PATH="/usr/local/bin:/usr/bin:/bin"
+
+%runscript
+    # Default runscript: just exec whatever the caller provided
+    exec "$@"

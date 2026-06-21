@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install dependencies
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        jq \
+        python3-pip
+
+    # Install pytest for the test-suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the dedicated non-root user that will own the working files
+    # ------------------------------------------------------------------
+    useradd -m -s /bin/bash user
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory structure and JSON seed files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/iot_config
+
+    # device_config.json (pretty-printed, trailing newline preserved)
+    cat > /home/user/iot_config/device_config.json <<'JSON'
+[
+  {"id":"dev-001", "status":"active", "ip":"192.168.1.10"},
+  {"id":"dev-002", "status":"pending"},
+  {"id":"dev-003", "status":"active", "ip":"192.168.1.12"},
+  {"id":"dev-004", "status":"inactive", "ip":"192.168.1.13"},
+  {"id":"dev-005", "status":"pending"}
+]
+JSON
+
+    # device_schema.json (single line, trailing newline preserved)
+    cat > /home/user/iot_config/device_schema.json <<'JSON'
+{"required": ["id", "status", "ip"]}
+JSON
+
+    # ------------------------------------------------------------------
+    # Permissions: directory 700, files 600, owned by 'user'
+    # ------------------------------------------------------------------
+    chown -R user:user /home/user
+    chmod 700 /home/user/iot_config
+    chmod 600 /home/user/iot_config/device_config.json
+    chmod 600 /home/user/iot_config/device_schema.json
+
+    # Clean up apt caches to keep the image slim
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Keep PATH simple; do not override HOME
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%runscript
+    # Default runscript prints a brief help message
+    echo "Container for IoT validation task. Launch an interactive shell or execute commands directly."

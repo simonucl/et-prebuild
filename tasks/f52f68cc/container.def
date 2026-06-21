@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Create unprivileged user `user`
+    groupadd -g 1000 user
+    useradd -m -u 1000 -g user user
+
+    # Create required directory structure
+    mkdir -p /home/user/data
+    mkdir -p /home/user/output
+
+    # Populate the CSV file with the exact required contents
+    cat > /home/user/data/usage.csv <<'EOF'
+host,timestamp,cpu,memory
+host1,2023-01-01T00:00:00Z,57,40
+host1,2023-01-01T01:00:00Z,63,43
+host1,2023-01-01T02:00:00Z,50,38
+host2,2023-01-01T00:00:00Z,80,70
+host2,2023-01-01T01:00:00Z,75,68
+host2,2023-01-01T02:00:00Z,82,71
+host3,2023-01-01T00:00:00Z,20,30
+host3,2023-01-01T01:00:00Z,25,28
+host3,2023-01-01T02:00:00Z,22,29
+EOF
+
+    # Set ownership and permissions
+    chown -R user:user /home/user
+    chmod 0755 /home/user
+    chmod 0755 /home/user/data
+    chmod 0755 /home/user/output
+    chmod 0644 /home/user/data/usage.csv
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%runscript
+    exec /bin/bash "$@"

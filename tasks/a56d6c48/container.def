@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tools and Python + Pytest
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        file \
+        locales && \
+    rm -rf /var/lib/apt/lists/*
+
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory structure and ISO-8859-1 seed file
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/logs
+
+    # Create the log file in UTF-8 first …
+    cat > /home/user/logs/session_utf8_temp.log <<'EOF'
+2023-05-01 12:00:00 INFO  User São logged in
+2023-05-01 12:02:13 ERROR Failed to load Balcón image
+2023-05-01 12:03:45 WARN  Disk almost full
+2023-05-01 12:05:10 ERROR Señor account locked
+2023-05-01 12:07:55 ERROR Timeout on payment gateway
+EOF
+
+    # … then convert it to ISO-8859-1 exactly as the task requires.
+    iconv -f UTF-8 -t ISO-8859-1 \
+        /home/user/logs/session_utf8_temp.log \
+        -o /home/user/logs/session_iso8859.log
+    rm /home/user/logs/session_utf8_temp.log
+
+    # Ensure everyone can write to /home/user so the agent (non-root)
+    # can create additional files/directories there.
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%labels
+    Author      Log-Analysis-Task Preparer
+    Description Container with initial state for the ISO-8859-1 → UTF-8 log conversion task.
+
+%runscript
+    echo "Container for log-conversion task. Run your solution commands here."

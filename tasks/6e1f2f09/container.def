@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required packages
+    apt-get update
+    # iputils-ping is needed for the agent’s script; pytest for grading.
+    apt-get install -y --no-install-recommends \
+        python3-pip iputils-ping
+
+    # Install pytest via pip (system-wide, no user interaction)
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the grader
+    # ------------------------------------------------------------------
+    # Create dedicated user and its home directory (if it doesn’t exist)
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -d /home/user user
+    fi
+
+    # Ensure /home/user exists with correct ownership
+    mkdir -p /home/user
+    chown -R user:user /home/user
+
+    # Create /home/user/targets.txt with exact required contents
+    printf '127.0.0.1\nlocalhost\n198.51.100.1\n' > /home/user/targets.txt
+
+    # Secure default permissions
+    chmod 644 /home/user/targets.txt
+
+    # Clean up apt cache to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Make locally installed Python tools easily reachable
+    export PATH=/home/user/.local/bin:$PATH
+
+%labels
+    Maintainer network-automation-task
+    Description Initial container for connectivity assessment exercise

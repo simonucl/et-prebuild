@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    #!/bin/bash
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial exercise state under /home/user/configs
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/configs
+
+    # Previous version of the config
+    cat > /home/user/configs/httpd.conf.prev <<'EOF'
+# Apache HTTPD previous config
+ServerRoot "/etc/httpd"
+Listen 80
+Include conf.modules.d/*.conf
+User apache
+Group apache
+EOF
+
+    # Current version of the config
+    cat > /home/user/configs/httpd.conf.curr <<'EOF'
+# Apache HTTPD current config
+ServerRoot "/etc/httpd"
+Listen 80
+Listen 8080
+Include conf.modules.d/*.conf
+User apache
+Group apache
+EOF
+
+    # Permissions:
+    # - Directory writable so the (non-root) agent can create added_lines.log
+    # - Config files read-only (writable by root only, readable by everyone)
+    chmod 0777 /home/user/configs
+    chmod 0644 /home/user/configs/httpd.conf.prev /home/user/configs/httpd.conf.curr
+    chmod 0755 /home/user  || true  # ensure traverse permission even if it already exists
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export LC_ALL=C.UTF-8
+    export PYTHONUNBUFFERED=1

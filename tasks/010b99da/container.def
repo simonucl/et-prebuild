@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python & pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the required filesystem layout and compose file.
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/projects/metrics
+
+    cat >/home/user/projects/metrics/docker-compose.yml <<'EOF'
+version: '3'
+services:
+  prometheus:
+    image: prom/prometheus:latest
+  grafana:
+    image: grafana/grafana:latest
+EOF
+
+    # Ensure sensible permissions (readable by unprivileged runtime user)
+    chmod 755 /home/user /home/user/projects /home/user/projects/metrics
+    chmod 644 /home/user/projects/metrics/docker-compose.yml
+
+    # Clean up to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure the location where pip installs executables is in PATH
+    export PATH="/usr/local/bin:$PATH"
+
+%labels
+    Author="ChatGPT"
+    Description="Environment for quick-check services task with pytest installed"
+
+%help
+    This Apptainer image contains:
+      * pytest (pre-installed for automated grading)
+      * A pre-built docker-compose.yml at
+        /home/user/projects/metrics/docker-compose.yml
+    The student’s task is to generate defined_services.log as specified.

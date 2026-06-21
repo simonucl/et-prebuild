@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python plus auxiliary tools
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python-is-python3 \
+        ca-certificates
+
+    # Install pytest for the test-suite that will be executed inside the container
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected home directory for the forthcoming student session
+    mkdir -p /home/user
+    chmod 755 /home/user
+    # Attempt to chown to UID 1000 (typical non-root user); ignore if it fails
+    chown -R 1000:1000 /home/user || true
+
+    # Clean up apt caches to keep image size small
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure standard paths are available
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    # Default entrypoint simply opens an interactive shell
+    exec /bin/bash "$@"
+
+%labels
+    Author Release-Check Exercise
+    Description Base image for DNS sanity-check task (pytest pre-installed)

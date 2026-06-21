@@ -1,0 +1,76 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author ChatGPT
+    Description "Starter image for the user-login micro-service exercise. Provides Python, pytest, sqlite3 and guarantees that /home/user/dev_data/ exists and is writable when any Python process starts."
+
+%post
+    set -e
+
+    # Basic tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3 \
+        ca-certificates \
+        locales
+
+    # Minimal locale so Python/unicode behave
+    locale-gen en_US.UTF-8
+
+    # Python packages for the testing harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Ensure /home/user and the required dev_data directory exist *inside*
+    # the container filesystem (these may be hidden if the runtime binds
+    # the host $HOME, but having them here does no harm).
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/dev_data
+    chmod 0777 /home/user/dev_data
+
+    # ------------------------------------------------------------------
+    # Create a sitecustomize.py that will run automatically whenever the
+    # Python interpreter starts.  This guarantees that the directory
+    # /home/user/dev_data/ exists and is writable even if the container
+    # runtime bind-mounts the host’s $HOME over our pre-created path.
+    # ------------------------------------------------------------------
+    mkdir -p /usr/local/lib/python3.10
+    cat << 'PYTHON_EOF' > /usr/local/lib/python3.10/sitecustomize.py
+"""
+sitecustomize.py – executed automatically by Python on start-up.
+
+Its sole purpose is to make sure that /home/user/dev_data exists and is
+writable by the current (non-root) user, regardless of host bind mounts.
+"""
+import os
+import stat
+
+TARGET = "/home/user/dev_data"
+
+try:
+    # Create the directory tree if it does not already exist.
+    os.makedirs(TARGET, exist_ok=True)
+
+    # Ensure the user has write permission on the directory.
+    st = os.stat(TARGET)
+    if not (st.st_mode & stat.S_IWUSR):
+        os.chmod(TARGET, st.st_mode | stat.S_IWUSR)
+except Exception:
+    # Do not impede interpreter start-up under any circumstances.
+    pass
+PYTHON_EOF
+    chmod 0644 /usr/local/lib/python3.10/sitecustomize.py
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+    export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:$PATH
+
+%runscript
+    echo "Container for the user-login micro-service exercise."
+    echo "Use \`apptainer exec <image> <command>\` to run arbitrary commands."

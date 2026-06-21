@@ -1,0 +1,82 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install required utilities
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        jq \
+        python3-pip
+
+    # Install pytest for the automated test-runner
+    pip3 install --no-cache-dir pytest
+
+    # --------------------------------------------------
+    # Create directory structure and populate fixture data
+    # --------------------------------------------------
+    mkdir -p /home/user/data/schema
+    mkdir -p /home/user/data/audit
+    mkdir -p /home/user/audit_results
+
+    # Make sure the regular (non-root) runtime user can write under /home/user
+    chmod 1777 /home/user
+    chmod -R a+rwX /home/user/audit_results
+
+    # ------------------------
+    # Write schema file
+    # ------------------------
+    cat > /home/user/data/schema/system_config.schema.json << 'EOF'
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["hostname", "os_version", "patch_level", "encryption_enabled"],
+  "properties": {
+    "hostname":           { "type": "string"  },
+    "os_version":         { "type": "string"  },
+    "patch_level":        { "type": "integer" },
+    "encryption_enabled": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}
+EOF
+
+    # ------------------------
+    # Write audit JSON files
+    # ------------------------
+    cat > /home/user/data/audit/system1.json << 'EOF'
+{
+  "hostname": "webserver01",
+  "os_version": "Ubuntu 20.04",
+  "patch_level": 5,
+  "encryption_enabled": true
+}
+EOF
+
+    cat > /home/user/data/audit/system2.json << 'EOF'
+{
+  "hostname": "dbserver02",
+  "os_version": "CentOS 8"
+}
+EOF
+
+    cat > /home/user/data/audit/system3.json << 'EOF'
+{
+  "hostname": 12345,
+  "os_version": "Debian 10",
+  "patch_level": 7,
+  "encryption_enabled": true
+}
+EOF
+
+    # Ensure all users can read the data files
+    chmod -R a+r /home/user/data
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special required, but ensure Python and local bin are in PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author compliance-setup
+    Description "Container image prepopulated with schema and audit JSON files for compliance task"

@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package index and install required tools
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        dnsutils       # provides `dig`, useful for the assignment
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # -----------------------------------------------------------------
+    # Prepare initial filesystem state for the student
+    # -----------------------------------------------------------------
+    # Create user home and logs directory (world-writable so the unprivileged
+    # runtime user can create new files there).
+    mkdir -p /home/user/logs
+    chmod 0777 /home/user/logs
+
+    # Create the pre-populated Apache access log with exact content.
+    cat > /home/user/logs/local_access.log <<'EOF'
+127.0.0.1 - - [10/Sep/2023:12:00:00 +0000] "GET /index.html HTTP/1.1" 200 1024
+127.0.0.1 - - [10/Sep/2023:12:00:05 +0000] "POST /login HTTP/1.1" 302 512
+127.0.0.1 - - [10/Sep/2023:12:00:10 +0000] "GET /dashboard HTTP/1.1" 200 2048
+EOF
+
+    # Ensure correct permissions: readable by everyone, but immutable content.
+    chmod 0644 /home/user/logs/local_access.log
+
+    # Make sure the output CSV does NOT exist at build time.
+    rm -f /home/user/logs/local_ip_hostname_mapping.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Keep HOME untouched; only add helpful defaults.
+    export PATH=$PATH:/usr/local/bin
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    # Default command when container is executed without arguments.
+    /bin/bash

@@ -1,0 +1,32 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package index and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        build-essential
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the default working directory expected by the grader and make it writable
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up apt caches to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author Incident-Snapshot-Task
+    Description Container prepared for the “30-second high-frequency snapshot” exercise. Pytest installed; no incident_001 artifacts present.
+
+%runscript
+    echo "Container for incident snapshot task. Use an interactive shell or execute your scripts as needed."

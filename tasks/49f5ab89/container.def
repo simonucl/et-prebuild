@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ## Install required packages
+    apt-get update
+    apt-get -y install --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    ## Add non-root user “user”
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g 1000 user
+
+    ## Create the required directory structure
+    DEPLOY_BASE=/home/user/deployment
+    mkdir -p "${DEPLOY_BASE}/config/current"
+    mkdir -p "${DEPLOY_BASE}/config/new"
+    mkdir -p "${DEPLOY_BASE}/logs"
+    mkdir -p "${DEPLOY_BASE}/scripts"
+
+    ## Populate configuration files
+    echo 'version=1.0' > "${DEPLOY_BASE}/config/current/app.conf"
+    echo 'version=1.0' > "${DEPLOY_BASE}/config/current/db.conf"
+    echo 'version=1.0' > "${DEPLOY_BASE}/config/current/cache.conf"
+
+    echo 'version=2.0' > "${DEPLOY_BASE}/config/new/app.conf"
+    echo 'version=2.0' > "${DEPLOY_BASE}/config/new/db.conf"
+    echo 'version=2.0' > "${DEPLOY_BASE}/config/new/cache.conf"
+
+    ## Ensure “user” owns everything under /home/user
+    chown -R 1000:1000 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Do not override $HOME; leave it to Apptainer’s defaults.
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for deployment-script exercise. Use bash to start an interactive shell."
+
+%labels
+    Author="OpenAI ChatGPT"
+    Description="Base image for deployment-script automation task with pytest pre-installed."

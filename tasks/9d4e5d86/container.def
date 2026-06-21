@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package lists and install python3-pip so we can add pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+
+    # Install pytest for the automated grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial exercise state expected by the tests
+    # ------------------------------------------------------------------
+    # 1. Create the user's home and the project directory with one file.
+    mkdir -p /home/user/project
+
+    # Add a non-empty sample file so the backup has something to pack.
+    echo "Sample content for the monitoring-platform backup proof-of-concept." \
+        > /home/user/project/sample.txt
+
+    # 2. Ensure permissions allow the non-root runtime user to work there.
+    #    The exact UID/GID at runtime is unknown, so make the directory
+    #    universally writable while keeping reasonable read/execute bits.
+    chmod 0777 /home/user
+    chmod -R a+rX /home/user/project
+    # (Do NOT create /home/user/backup here; it must be absent initially.)
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%labels
+    chmod 755 /home/user
+
+    Author backup-proof-of-concept-preparer
+    Description "Container providing initial state for backup PoC exercise"
+
+%help
+This Apptainer image contains:
+  • /home/user/project      with a sample.txt file
+  • NO /home/user/backup    directory yet (must be created by the learner)
+
+Pytest is installed so the automated grader can run its tests.

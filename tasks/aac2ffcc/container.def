@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author backup-engineer-task
+    Description "Environment for backup verification task with initial dataset"
+
+%post
+    set -e
+
+    echo "Updating package index and installing required packages..."
+    apt-get update -y
+    # Install Python and pip
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Create an unprivileged user 'user'
+    echo "Creating user 'user'..."
+    adduser --disabled-password --gecos "" user
+
+    # Set up the project_data directory with required files
+    echo "Creating /home/user/project_data with initial files..."
+    install -d -m 0755 /home/user/project_data
+
+    # data1.txt
+    printf "The quick brown fox jumps over the lazy dog\n" > /home/user/project_data/data1.txt
+    # data2.txt
+    printf "Sphinx of black quartz, judge my vow\n" > /home/user/project_data/data2.txt
+    # config.cfg
+    printf "mode=production\n" > /home/user/project_data/config.cfg
+
+    # Ensure permissions and ownership
+    chmod 0644 /home/user/project_data/data1.txt /home/user/project_data/data2.txt /home/user/project_data/config.cfg
+    chown -R user:user /home/user
+
+    # Install pytest for the grader
+    echo "Installing pytest..."
+    pip3 install --no-cache-dir pytest
+
+    # Clean up apt cache to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python uses the correct interpreter
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for backup task. Switch to the 'user' account to begin."
+    echo "Example:  sudo apptainer exec --writable-tmpfs <image>.sif bash"
+    echo "(Inside the container, you will already be the invoking host user.)"

@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author Incident-FS-Prep
+    Description "Base image for the Incident directory hardening & permission audit exercise."
+
+%post
+    #!/bin/bash
+    set -e
+
+    echo "Updating package lists and installing Python tooling..."
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    echo "Installing pytest..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating non-root user 'user' (uid 1000)..."
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -u 1000 -s /bin/bash user
+    fi
+
+    echo "Setting up initial incident directory structure..."
+    INCIDENT_DIR=/home/user/incident_reports
+    mkdir -p "${INCIDENT_DIR}"
+
+    # Create the single placeholder report file.
+    printf 'PLACEHOLDER: do not modify\n' > "${INCIDENT_DIR}/report_2023_11_15.txt"
+
+    # Initial required permissions:
+    chmod 0755 "${INCIDENT_DIR}"
+    chmod 0644 "${INCIDENT_DIR}/report_2023_11_15.txt"
+
+    # Ensure the 'user' account owns everything under /home/user so that
+    # the agent (running as the invoking host UID, typically 1000) can
+    # freely modify permissions and create new files.
+    chown -R user:user /home/user
+
+    echo "Container build complete."
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%runscript
+    # Default runscript just execs whatever is passed.
+    exec "$@"

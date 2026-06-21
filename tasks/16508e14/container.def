@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required system packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        make \
+        tar \
+        gzip \
+        ca-certificates
+
+    # Install pytest for the checker
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create an unprivileged user that the grading agent will use
+    # ------------------------------------------------------------------
+    # Use UID/GID 1000 which is the conventional first non-root user.
+    groupadd -g 1000 user || true
+    useradd  -m -u 1000 -g 1000 -s /bin/bash user || true
+
+    # Ensure the home directory exists and is writable
+    mkdir -p /home/user
+    chown -R 1000:1000 /home/user
+
+    # Clean up APT caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Do NOT override $HOME; Apptainer will bind the host HOME automatically.
+    export PYTHONUNBUFFERED=1
+    export PIP_DISABLE_PIP_VERSION_CHECK=1
+    export PATH=/home/user/.local/bin:$PATH
+
+%runscript
+    # Default action: drop into the requested command or an interactive shell
+    exec "$@"
+
+%labels
+    Author backup_demo_container
+    Description "Base image for the backup demo task with pytest installed."
+
+%help
+    This container provides a minimal Ubuntu 22.04 environment with
+    Python, pytest, make, and standard compression utilities installed.
+    A non-root user “user” (UID/GID 1000) with home directory /home/user
+    is pre-created to allow the grading agent to operate without
+    elevated privileges.

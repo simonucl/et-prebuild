@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest for the checker
+    apt-get update && \
+        apt-get install -y --no-install-recommends \
+            python3-pip \
+            python3-setuptools \
+            python3-wheel \
+            ca-certificates && \
+        rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial experiment state expected by the automatic tests
+    # ------------------------------------------------------------------
+    # Create the directory tree (except for the artifacts directory)
+    mkdir -p /home/user/experiments/quadratic_coeffs
+
+    # Create the coefficients file with the required single line
+    printf "2 -8 3\n" > /home/user/experiments/quadratic_coeffs/coefficients.txt
+
+    # Set permissive read/execute permissions so the non-root runtime user can access them
+    chmod 755 /home/user
+    chmod -R 755 /home/user/experiments
+    chmod 644 /home/user/experiments/quadratic_coeffs/coefficients.txt
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author MLOps-Quadratic-Setup
+    Description "Environment for quadratic optimisation artifact exercise (includes pytest)"

@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author text-encoding-regression-suite-prep
+
+%post
+    set -e
+
+    # Update package lists and install required utilities
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        locales \
+        libc-bin
+
+    # Verify that `iconv` is available
+    command -v iconv
+
+    # Install pytest for the grader
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # Create a writable home directory for the runtime user
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up APT caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export PYTHONUNBUFFERED=1

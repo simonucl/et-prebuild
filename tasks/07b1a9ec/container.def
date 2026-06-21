@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author YourName
+    Description "Base image for FinOps profile exercise – Ubuntu 22.04 with pytest pre-installed."
+
+%post
+    set -e
+
+    # Update package lists
+    apt-get update -y
+
+    # Install required packages
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        locales
+
+    # Generate the en_US.UTF-8 locale (needed later by the learner)
+    sed -Ei 's/^# (en_US.UTF-8 UTF-8)/\1/' /etc/locale.gen
+    locale-gen
+
+    # Install pytest for the automated grading suite
+    pip3 install --no-cache-dir pytest
+
+    # Create writable home directory for the unprivileged runtime user
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Basic cleanup
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Keep PATH sane and include user-level Python packages if added later.
+    export PATH="$PATH:/home/user/.local/bin"
+
+%runscript
+    exec "$@"
+
+%help
+    This container is prepared for the FinOps profile exercise.
+    It contains:
+      • Ubuntu 22.04 base system
+      • Python 3 and pytest (for automated assessment)
+    The /home/user directory is pre-created and writable.

@@ -1,0 +1,59 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # -------------------------------------------------
+    # Base utilities and Python tooling for pytest
+    # -------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        rsync \
+        ca-certificates
+
+    pip3 install --no-cache-dir pytest
+
+    # -------------------------------------------------
+    # Required directory hierarchy and initial data
+    # -------------------------------------------------
+    # Create the user home directory tree
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # 1. Source directory with two report files
+    mkdir -p /home/user/compliance_reports
+    chmod 755 /home/user/compliance_reports
+
+    printf 'Quarter 1 compliance results – draft\n' > /home/user/compliance_reports/report_Q1.txt
+    printf 'Quarter 2 compliance results – draft\n' > /home/user/compliance_reports/report_Q2.txt
+    chmod 644 /home/user/compliance_reports/report_Q1.txt
+    chmod 644 /home/user/compliance_reports/report_Q2.txt
+
+    # 2. Destination directory (must start empty)
+    mkdir -p /home/user/remote_mount/compliance_staging
+    chmod 755 /home/user/remote_mount
+    chmod 755 /home/user/remote_mount/compliance_staging
+
+    # 3. Do NOT create /home/user/compliance_audit_logs/ yet;
+    #    it must be absent when the tests for the initial state run.
+
+    # Clean up apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure standard system paths are present
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author="Your Name"
+    Description="Environment for the compliance rsync exercise with pytest pre-installed."
+
+%help
+    This container provides the starting filesystem state and the tools
+    (rsync, Python, pytest) necessary for completing the compliance-report
+    synchronisation task.

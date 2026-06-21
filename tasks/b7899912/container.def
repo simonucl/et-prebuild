@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package list and install required software
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        jq \
+        ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the validation suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial data expected by the assignment/test framework
+    # ------------------------------------------------------------------
+    # Create the directory structure
+    mkdir -p /home/user/data
+
+    # Create the CSV file with exact required contents
+    cat > /home/user/data/metrics.csv <<'EOF'
+server,cpu,memory
+web-01,65,70
+app-02,88,91
+db-01,92,80
+cache-01,55,40
+web-02,83,95
+EOF
+
+    # Ensure the top-level /home/user directory is writable by
+    # the unprivileged user that will run the container.
+    chmod 0777 /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author="Auto-generated definition for monitoring alert task"
+
+%help
+    This container provides the initial state for a monitoring-alert
+    assignment.  It already contains:
+      • /home/user/data/metrics.csv with predefined rows.
+      • Python 3 and pytest for running the verification suite.
+      • jq (and standard coreutils) in case the student prefers CLI tools.
+    Students are expected to generate /home/user/alerts/high_usage.json
+    and /home/user/alerts/process.log according to the task description.

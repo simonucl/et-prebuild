@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic Python tooling for the agent and tests
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # --------------------------------------------------------------------- #
+    # Prepare initial filesystem state expected by the tests                #
+    # --------------------------------------------------------------------- #
+    mkdir -p /home/user/artifactmgr
+
+    # repos.yaml (YAML 1.2, 2-space indentation, trailing newline required)
+    cat > /home/user/artifactmgr/repos.yaml <<'EOF'
+repositories:
+  - name: core-libs
+    url: https://artifacts.example.com/core-libs
+    type: maven
+  - name: dev-tools
+    url: https://artifacts.example.com/dev-tools
+    type: npm
+  - name: graphics
+    url: https://artifacts.example.com/graphics
+    type: docker
+EOF
+
+    # settings.toml (TOML v1.0.0, trailing newline required)
+    cat > /home/user/artifactmgr/settings.toml <<'EOF'
+[repository."core-libs"]
+autopublish = true
+
+[repository."dev-tools"]
+autopublish = false
+
+[repository."graphics"]
+autopublish = true
+EOF
+
+    # Ensure the non-root user will be able to modify these files later
+    chmod -R a+rwX /home/user/artifactmgr
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure user-installed Python tools are on PATH
+    export PATH="$HOME/.local/bin:$PATH"

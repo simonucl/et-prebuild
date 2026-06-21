@@ -1,0 +1,32 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pip.
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the grader.
+    pip3 install --no-cache-dir pytest
+
+    # Create the required home directory for the student.
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Ensure the target file does NOT already exist with final contents.
+    rm -f /home/user/.psqlrc
+
+    # Clean up apt caches to keep the image small.
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    exec /bin/bash
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Container for SQL psqlrc configuration task with pytest installed."

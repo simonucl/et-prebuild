@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install runtime dependencies.
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        jq \
+        ca-certificates
+
+    # Install pytest for the test-harness.
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Provision the directory structure expected by the assignment.
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/bin
+    mkdir -p /home/user/solver_tests
+    mkdir -p /home/user/solver_logs
+    chmod 755 /home/user/bin /home/user/solver_tests /home/user/solver_logs
+
+    # ------------------------------------------------------------------
+    # Create the mock optimization solver shim.
+    # Behaviour: reads stdin (ignored) and prints the canonical JSON line.
+    # ------------------------------------------------------------------
+    cat > /home/user/bin/mock_opt_solver << 'EOF'
+#!/usr/bin/env python3
+import sys, json
+# Consume all input (ignored for this mock solver).
+_ = sys.stdin.read()
+# Emit the fixed JSON response expected by the test-suite.
+print(json.dumps({"objective": 123.45, "status": "OPTIMAL"}))
+EOF
+    chmod 755 /home/user/bin/mock_opt_solver
+
+%environment
+    # Prepend the custom bin directory so the solver is on PATH.
+    export PATH="/home/user/bin:$PATH"
+
+%labels
+    Author       "Apptainer build script for optimization-solver exercise"
+    Description  "Provides initial environment, mock solver shim, and pytest"

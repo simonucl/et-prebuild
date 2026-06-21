@@ -1,0 +1,43 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        make \
+        tar \
+        gzip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial workspace expected by the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/release/app
+
+    # VERSION file with exact content "1.0.0\n"
+    printf '1.0.0\n' > /home/user/release/VERSION
+
+    # Placeholder application source
+    printf 'print("Hello, World!")\n' > /home/user/release/app/main.py
+
+    # Adjust permissions so that the non-root runtime user can modify files
+    chmod -R a+rX /home/user
+    chmod -R a+w  /home/user/release
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard paths are available
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Release Manager Exercise Container"

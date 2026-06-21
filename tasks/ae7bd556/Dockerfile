@@ -1,0 +1,50 @@
+FROM ubuntu:22.04
+
+# Install Python and pytest
+RUN set -e && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates && \
+    pip3 install --no-cache-dir pytest
+
+# Prepare initial filesystem state for the migration exercise
+RUN mkdir -p /home/user/cloud_configs
+
+# Legacy NGINX configuration (with single trailing newline)
+RUN cat > /home/user/cloud_configs/nginx.yaml <<'EOF'
+apiVersion: v1
+kind: Service
+metadata:
+  name: old-nginx
+spec:
+  type: ClusterIP
+  selector:
+    app: nginx
+  ports:
+    - port: 80
+      targetPort: 80
+EOF
+
+# Legacy Redis configuration (with single trailing newline)
+RUN cat > /home/user/cloud_configs/redis.toml <<'EOF'
+[service]
+name = "old-redis"
+port = 6379
+replicas = 1
+
+[service.resources]
+memory = "256Mi"
+cpu = "250m"
+EOF
+
+# Ensure the future (non-root) agent can read/write everything under /home/user
+RUN chmod -R a+rwX /home/user
+
+# Environment variables
+ENV LC_ALL=C.UTF-8
+ENV PYTHONIOENCODING=utf-8
+
+# Labels
+LABEL maintainer="ChatGPT – Apptainer build for migration task"

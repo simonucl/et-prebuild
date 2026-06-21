@@ -1,0 +1,63 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ---------- 1. OS packages ----------
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ---------- 2. Python tooling ----------
+    pip3 install --no-cache-dir pytest
+
+    # ---------- 3. Create non-root user ----------
+    useradd -m -s /bin/bash user
+
+    # ---------- 4. Prepare directory structure ----------
+    mkdir -p /home/user/data/primary
+    mkdir -p /home/user/data/backup
+
+    # ---------- 5. Populate snapshot files ----------
+    cat > /home/user/data/primary/data_snapshot_20230914.tsv <<'EOF'
+id	filename	sha256	bytes	mtime
+1	img001.jpg	d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2	204800	2023-09-14T08:30:00Z
+2	document.pdf	afafafafafafafafafafafafafafafafafafafafafafafafafafafafafafafaf	102400	2023-09-14T08:31:00Z
+3	db_backup.sql.bz2	bbb111bbb111bbb111bbb111bbb111bbb111bbb111bbb111bbb111bbb111bbb1	512000	2023-09-14T08:32:00Z
+4	logs.tar.gz	cccc222cccc222cccc222cccc222cccc222cccc222cccc222cccc222cccc222c	307200	2023-09-14T08:35:00Z
+EOF
+
+    cat > /home/user/data/backup/data_snapshot_20230914.tsv <<'EOF'
+id	filename	sha256	bytes	mtime
+1	img001.jpg	d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2	204800	2023-09-14T08:30:01Z
+2	document.pdf	afafafafafafafafafafafafafafafafafafafafafafafafafafafafafafafaf	102400	2023-09-14T08:31:03Z
+3	db_backup.sql.bz2	zzz333zzz333zzz333zzz333zzz333zzz333zzz333zzz333zzz333zzz333z	512000	2023-09-14T08:32:05Z
+4	logs.tar.gz	cccc222cccc222cccc222cccc222cccc222cccc222cccc222cccc222cccc222c	307200	2023-09-14T08:35:07Z
+EOF
+
+    # ---------- 6. Permissions ----------
+    chmod 644 /home/user/data/primary/data_snapshot_20230914.tsv
+    chmod 644 /home/user/data/backup/data_snapshot_20230914.tsv
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python & user path are available
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    # Default action: open a shell
+    exec /bin/bash
+
+%help
+This container supplies the initial filesystem state for the “Generate an
+integrity-verification report by cutting and pasting specific columns” task.
+
+Key points:
+• Provides the two pre-populated snapshot TSV files under /home/user/data/.
+• Includes Python 3 and pytest for automated grading.

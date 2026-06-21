@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    #!/bin/bash
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install Python tooling and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2. Create the required directory structure and files
+    # ------------------------------------------------------------------
+    LOG_DIR="/home/user/iot_deploy/logs"
+    mkdir -p "${LOG_DIR}"
+
+    cat > "${LOG_DIR}/sensor.log" <<'EOF'
+2023-07-01T10:00:00Z INFO device123 TEMP=75.2 HUM=40
+2023-07-01T10:05:00Z ERROR device123 TEMP=82.5 HUM=42
+2023-07-01T10:10:00Z WARN device456 TEMP=60.1 HUM=50
+2023-07-01T10:15:00Z ERROR device789 TEMP=90.0 HUM=35
+2023-07-01T10:20:00Z INFO device123 TEMP=78.3 HUM=45
+2023-07-01T10:25:00Z ERROR device456 TEMP=87.4 HUM=47
+2023-07-01T10:30:00Z INFO device789 TEMP=72.0 HUM=38
+EOF
+
+    # ------------------------------------------------------------------
+    # 3. Permissions: directory 755, file 644, owned by uid 1000 if it exists
+    # ------------------------------------------------------------------
+    chmod 755 "${LOG_DIR}"
+    chmod 644 "${LOG_DIR}/sensor.log"
+
+    # Give ownership to UID 1000 (the typical unprivileged user); this
+    # allows the runtime user to write in the directory while keeping the
+    # required permission bits.
+    if id -u 1000 >/dev/null 2>&1; then
+        chown -R 1000:1000 /home/user/iot_deploy
+    fi
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure that user-installed Python tools are on PATH
+    export PATH="/home/user/.local/bin:$PATH"
+
+%labels
+    Author Edge-Computing-Task-Setup
+    Description "Apptainer image providing initial state and pytest for IoT log-filtering exercise"

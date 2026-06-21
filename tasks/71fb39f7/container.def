@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # ------------------------------------------------------------------
+    # Basic utilities and Python tooling
+    # ------------------------------------------------------------------
+    apt-get update -y && \
+        apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            rsync && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test-runner
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the golden source tree in /home/user/source_env
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/source_env/data
+
+    # app.py
+    cat > /home/user/source_env/app.py <<'EOF'
+print("Hello QA")
+EOF
+
+    # README.md
+    echo 'Example project for rsync test' > /home/user/source_env/README.md
+
+    # requirements.txt
+    cat > /home/user/source_env/requirements.txt <<'EOF'
+flask==2.0.2
+pytest==7.4.0
+EOF
+
+    # data/sample.json
+    echo '{ "value": 42 }' > /home/user/source_env/data/sample.json
+
+    # ------------------------------------------------------------------
+    # Ensure the student can create new items under /home/user
+    # ------------------------------------------------------------------
+    chmod 0777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # No need to override HOME; keep default binding behaviour.
+
+%runscript
+    exec "$@"

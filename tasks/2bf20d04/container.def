@@ -1,0 +1,29 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python along with pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip
+
+    pip3 install --no-cache-dir pytest
+
+    # Create required directories and helper script
+    mkdir -p /home/user/deploy
+    cat >/home/user/deploy/update_app.sh <<'EOF'
+#!/bin/bash
+echo "Updating application..."
+EOF
+    chmod +x /home/user/deploy/update_app.sh
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are on PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for scheduling task prepared."

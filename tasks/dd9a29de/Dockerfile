@@ -1,0 +1,91 @@
+FROM ubuntu:22.04
+
+# Base packages and Python tooling for pytest
+RUN apt-get update -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip && \
+    pip3 install --no-cache-dir pytest
+
+# Create dedicated non-root user "user" (uid/gid 1000) with home dir
+RUN groupadd -g 1000 user && \
+    useradd -m -u 1000 -g 1000 -s /bin/bash user && \
+    chmod 755 /home/user
+
+# Prepare initial filesystem state for the assignment
+RUN mkdir -p /home/user/raw_logs && \
+    chown 1000:1000 /home/user/raw_logs && \
+    chmod 755 /home/user/raw_logs
+
+# Create the ping_results.log with exact required contents
+RUN cat > /home/user/raw_logs/ping_results.log <<'EOF'
+PING google.com (172.217.164.110) 56(84) bytes of data.
+64 bytes from 172.217.164.110: icmp_seq=1 ttl=115 time=14.3 ms
+64 bytes from 172.217.164.110: icmp_seq=2 ttl=115 time=15.8 ms
+64 bytes from 172.217.164.110: icmp_seq=3 ttl=115 time=16.1 ms
+64 bytes from 172.217.164.110: icmp_seq=4 ttl=115 time=15.7 ms
+
+--- 172.217.164.110 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3005ms
+rtt min/avg/max/mdev = 14.123/15.456/17.890/1.234 ms
+
+
+PING cloudflare.com (104.16.123.96) 56(84) bytes of data.
+64 bytes from 104.16.123.96: icmp_seq=1 ttl=59 time=22.4 ms
+64 bytes from 104.16.123.96: icmp_seq=2 ttl=59 time=23.1 ms
+64 bytes from 104.16.123.96: icmp_seq=3 ttl=59 time=22.8 ms
+64 bytes from 104.16.123.96: icmp_seq=4 ttl=59 time=22.5 ms
+
+--- 104.16.123.96 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 4005ms
+rtt min/avg/max/mdev = 21.978/22.678/23.145/0.421 ms
+
+
+PING fileserver (10.0.0.5) 56(84) bytes of data.
+64 bytes from 10.0.0.5: icmp_seq=1 ttl=64 time=82.1 ms
+64 bytes from 10.0.0.5: icmp_seq=2 ttl=64 time=85.4 ms
+64 bytes from 10.0.0.5: icmp_seq=3 ttl=64 time=88.2 ms
+
+--- 10.0.0.5 ping statistics ---
+4 packets transmitted, 3 received, 25% packet loss, time 4007ms
+rtt min/avg/max/mdev = 80.567/85.234/89.105/3.456 ms
+
+
+PING remote_site (203.0.113.25) 56(84) bytes of data.
+64 bytes from 203.0.113.25: icmp_seq=2 ttl=46 time=109.9 ms
+64 bytes from 203.0.113.25: icmp_seq=4 ttl=46 time=110.8 ms
+
+--- 203.0.113.25 ping statistics ---
+4 packets transmitted, 2 received, 50% packet loss, time 3998ms
+rtt min/avg/max/mdev = 109.255/110.345/110.831/0.788 ms
+
+
+PING ipv6_google (2001:4860:4860::8888) 56(84) bytes of data.
+64 bytes from 2001:4860:4860::8888: icmp_seq=1 ttl=115 time=27.1 ms
+64 bytes from 2001:4860:4860::8888: icmp_seq=2 ttl=115 time=28.4 ms
+64 bytes from 2001:4860:4860::8888: icmp_seq=3 ttl=115 time=27.9 ms
+64 bytes from 2001:4860:4860::8888: icmp_seq=4 ttl=115 time=27.3 ms
+
+--- 2001:4860:4860::8888 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 4006ms
+rtt min/avg/max/mdev = 26.987/27.890/28.431/0.517 ms
+EOF
+
+RUN chown 1000:1000 /home/user/raw_logs/ping_results.log && \
+    chmod 644 /home/user/raw_logs/ping_results.log
+
+# Ensure no /home/user/output directory yet (tests require absence)
+RUN rm -rf /home/user/output || true
+
+# Environment variables
+ENV PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+# Labels
+LABEL Author="network-eng-task"
+LABEL Description="Container with initial state for ping log parsing assignment"
+
+# Set working directory
+WORKDIR /home/user
+
+# Default command
+CMD ["bash", "-c", "echo 'Container for parsing-ping assignment.' && echo 'Switch to the user account (uid 1000) to work:' && echo '    sudo -u user -i'"]

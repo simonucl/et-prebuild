@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ----------------------------------------------------------------------------
+    # Create the initial filesystem state expected by the tests
+    # ----------------------------------------------------------------------------
+    BASE="/home/user"
+    AUTH_LOG_DIR="${BASE}/services/auth/logs"
+    INV_LOG_DIR="${BASE}/services/inventory/logs"
+
+    # Create directories
+    mkdir -p "${AUTH_LOG_DIR}"
+    mkdir -p "${INV_LOG_DIR}"
+
+    # Populate auth log
+    cat > "${AUTH_LOG_DIR}/request.log" << 'EOF'
+1609459201000 15
+1609459202000 10
+1609459203000 20
+1609459204000 5
+1609459205000 15
+EOF
+
+    # Populate inventory log
+    cat > "${INV_LOG_DIR}/request.log" << 'EOF'
+1609459201100 30
+1609459202100 25
+1609459203100 35
+1609459204100 40
+EOF
+
+    # Ensure future non-root users can create /home/user/perf_summary.log
+    chmod -R 777 "${BASE}"
+
+%runscript
+    chmod 755 /home/user
+
+    echo "Container for latency-summary task. Use bash to begin."
+
+%help
+    This Apptainer image provides the initial filesystem and dependencies
+    for the latency log summarization task.
+    Directories and log files are pre-seeded in /home/user/services/.
+    pytest is installed for automated grading.

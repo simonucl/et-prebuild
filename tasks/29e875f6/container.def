@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python tooling and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the “world-writable sweep” task
+    # ------------------------------------------------------------------
+
+    # Ensure base home directory exists
+    mkdir -p /home/user
+    chmod 0755 /home/user
+
+    # Create audit_data tree
+    mkdir -p /home/user/audit_data/subdir
+    chmod 0755 /home/user/audit_data
+    chmod 0755 /home/user/audit_data/subdir
+
+    # secure.txt – 512 bytes, 0644
+    truncate -s 512 /home/user/audit_data/secure.txt
+    chmod 0644 /home/user/audit_data/secure.txt
+
+    # public.log – 2048 bytes, 0666 (world-writable)
+    truncate -s 2048 /home/user/audit_data/public.log
+    chmod 0666 /home/user/audit_data/public.log
+
+    # notes – 256 bytes, 0600
+    truncate -s 256 /home/user/audit_data/notes
+    chmod 0600 /home/user/audit_data/notes
+
+    # subdir/expose.sh – 1024 bytes, 0777 (world-writable & executable)
+    truncate -s 1024 /home/user/audit_data/subdir/expose.sh
+    chmod 0777 /home/user/audit_data/subdir/expose.sh
+
+    # Clean package lists to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Keep Python output unbuffered for clearer logs
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author="Compliance Sweep Exercise Setup"

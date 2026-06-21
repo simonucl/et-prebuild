@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        python3-distutils \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading suite
+    pip3 install --no-cache-dir pytest
+
+    ###################################################################
+    # Prepare the filesystem layout required by the exercise
+    ###################################################################
+
+    # Create the base user directory.  Make it world-writable so that
+    # whatever UID launches the container can create sub-directories
+    # and files underneath /home/user without permission issues.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Create the finops_data environment structure
+    mkdir -p /home/user/finops_data/dev
+    mkdir -p /home/user/finops_data/prod
+    mkdir -p /home/user/finops_data/staging
+
+    # Generate the sample files with the exact byte sizes requested
+    dd if=/dev/zero bs=1 count=4321  of=/home/user/finops_data/dev/tmp.log     2>/dev/null
+    dd if=/dev/zero bs=1 count=12345 of=/home/user/finops_data/prod/data1.bin  2>/dev/null
+    dd if=/dev/zero bs=1 count=6789  of=/home/user/finops_data/staging/readme.txt 2>/dev/null
+
+    # Ensure world-read permissions so the non-root runtime user can
+    # inspect the files; write permission is not strictly necessary
+    # for finops_data, only for /home/user itself.
+    chmod -R a+rX /home/user/finops_data
+
+    # IMPORTANT: Do NOT create /home/user/cloud_costs or the snapshot file.
+    # The student is expected to create them during the exercise.
+
+%labels
+    chmod 755 /home/user
+
+    Author          FinOps Container Builder
+    Description     Environment for FinOps disk-usage snapshot exercise. Pytest pre-populated.
+
+%runscript
+    echo "Container built for the FinOps disk-usage snapshot exercise."
+    echo "Run your commands inside the container to complete the task."

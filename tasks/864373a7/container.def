@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #------------------------------------------------------------------
+    # 1. Install Python tooling (pytest is required for the test-suite)
+    #------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    #------------------------------------------------------------------
+    # 2. Create the initial repository layout expected by the tests
+    #------------------------------------------------------------------
+    # Base directories
+    mkdir -p /home/user/repo/releases
+    mkdir -p /home/user/repo/stable
+
+    # Dummy binary files
+    echo "dummy binary 4.7.0" > /home/user/repo/releases/binary_4.7.0.bin
+    echo "dummy binary 4.8.1" > /home/user/repo/releases/binary_4.8.1.bin
+    chmod 644 /home/user/repo/releases/binary_4.7.0.bin
+    chmod 644 /home/user/repo/releases/binary_4.8.1.bin
+
+    # Out-of-date symlink that points to the old version
+    ln -sf ../releases/binary_4.7.0.bin /home/user/repo/stable/binary.bin
+
+    #------------------------------------------------------------------
+    # 3. Permissions — allow non-root users to modify the repo contents
+    #------------------------------------------------------------------
+    chmod -R a+rX /home/user/repo
+    chmod 777 /home/user/repo
+    chmod 777 /home/user/repo/stable
+    chmod 777 /home/user/repo/releases
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C
+    export LANG=C
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author: task-prep
+    Description: Initial state for the binary-curator exercise (pytest pre-installed)

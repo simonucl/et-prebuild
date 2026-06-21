@@ -1,0 +1,90 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare directory structure and Kubernetes manifest files
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/manifests
+
+    # Ensure correct directory permissions
+    chmod 755 /home/user
+    chmod 755 /home/user/manifests
+
+    # nginx-deployment.yaml
+    cat > /home/user/manifests/nginx-deployment.yaml <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.19
+        ports:
+        - containerPort: 80
+EOF
+
+    # nginx-service.yaml
+    cat > /home/user/manifests/nginx-service.yaml <<'EOF'
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  type: ClusterIP
+  selector:
+    app: nginx
+  ports:
+  - port: 80
+    targetPort: 80
+EOF
+
+    # nginx-ingress.yaml
+    cat > /home/user/manifests/nginx-ingress.yaml <<'EOF'
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-ingress
+spec:
+  rules:
+  - host: example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-service
+            port:
+              number: 80
+EOF
+
+    # Set file permissions
+    chmod 644 /home/user/manifests/*.yaml
+
+%environment
+    # Preserve standard environment; no HOME override needed
+    export PYTHONIOENCODING="utf-8"

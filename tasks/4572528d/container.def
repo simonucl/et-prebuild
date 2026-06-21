@@ -1,0 +1,81 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Basic tooling
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the autograder
+    pip3 install --no-cache-dir pytest
+
+    ####################################################################
+    # Create the deterministic benchmark harness and input manifests
+    ####################################################################
+
+    # Directory structure
+    mkdir -p /home/user/k8s_operator/manifests
+    mkdir -p /home/user/benchmark_scripts
+
+    # Manifest: deployment.yaml
+    cat <<'EOF' > /home/user/k8s_operator/manifests/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-deployment
+spec: {}
+EOF
+
+    # Manifest: service.yaml
+    cat <<'EOF' > /home/user/k8s_operator/manifests/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-service
+spec: {}
+EOF
+
+    # Manifest: configmap.yaml
+    cat <<'EOF' > /home/user/k8s_operator/manifests/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-config
+data: {}
+EOF
+
+    # Deterministic harness script
+    cat <<'EOF' > /home/user/benchmark_scripts/apply_manifest.sh
+#!/usr/bin/env bash
+# Very small deterministic harness for the benchmarking exercise.
+case "$(basename "$1")" in
+  deployment.yaml)
+    echo "Applied deployment.yaml in 12ms"
+    ;;
+  service.yaml)
+    echo "Applied service.yaml in 8ms"
+    ;;
+  configmap.yaml)
+    echo "Applied configmap.yaml in 5ms"
+    ;;
+  *)
+    echo "Unknown manifest" >&2
+    exit 1
+    ;;
+esac
+EOF
+    chmod 0755 /home/user/benchmark_scripts/apply_manifest.sh
+
+    # Make sure the student (non-root runtime user) can write inside /home/user
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # No special environment variables are required.
+    :
+
+%labels
+    Author  = performance-sre
+    Purpose = Deterministic Kubernetes operator benchmark starter image

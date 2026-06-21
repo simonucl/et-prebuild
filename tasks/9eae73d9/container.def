@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3 python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the automatic checker
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem layout for the exercise
+    # ------------------------------------------------------------------
+    # Base directory for the exercise
+    EXERCISE_ROOT="/home/user/site_admin"
+
+    # Create the directory structure
+    mkdir -p "${EXERCISE_ROOT}/users"
+
+    # 1. new_hires.csv with header only
+    printf 'username,uid,group,shell,home_dir,required_packages\n' \
+        > "${EXERCISE_ROOT}/new_hires.csv"
+
+    # 2. packages_database.txt with the required inventory lines
+    cat > "${EXERCISE_ROOT}/packages_database.txt" <<'EOF'
+bash,5.1-2
+coreutils,8.32-4
+nano,5.4-2
+curl,7.74.0-1
+python3,3.9.2-1
+EOF
+
+    # Ensure correct, writable permissions for the non-root runtime user
+    chmod -R 0777 "${EXERCISE_ROOT}"
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special needed; keep the default HOME binding.
+    export PYTHONIOENCODING="utf-8"
+
+%labels
+    Author      example_builder
+    Description "Container for the site_admin preparation task (pytest pre-state included)."
+
+%runscript
+    echo "This container is intended for automated testing of the site_admin task."
+    echo "Use 'apptainer exec' to enter the environment."

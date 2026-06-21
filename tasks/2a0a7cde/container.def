@@ -1,0 +1,70 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python, pip, locales, and iconv (in libc-bin)
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        locales
+
+    # Generate a UTF-8 locale so Python/pytest work nicely
+    locale-gen en_US.UTF-8
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial project directory structure and seed data
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/project/docs
+
+    #
+    # Create the documentation files in UTF-8 first, then convert them
+    # to ISO-8859-1 so that the initial state matches the exercise
+    #
+    cat > /tmp/readme_utf8.txt <<'EOF'
+Curaçao project documentation
+=============================
+Version 1.0 - août 2023
+...
+EOF
+
+    cat > /tmp/changelog_utf8.txt <<'EOF'
+Changelog
+---------
+* 2023-08-15 : Première version publiée
+* 2023-09-01 : Corrections mineures
+EOF
+
+    cat > /tmp/license_utf8.txt <<'EOF'
+Licence MIT
+------------
+Copyright © 2023 ACME Corp.
+Permission est accordée, gratuitement, à toute personne obtenant une copie...
+EOF
+
+    # Convert the files to ISO-8859-1 encoding
+    for name in readme changelog license; do
+        iconv -f UTF-8 -t ISO-8859-1 /tmp/${name}_utf8.txt -o /home/user/project/docs/${name}.txt
+    done
+
+    # Clean up temporary files
+    rm /tmp/*_utf8.txt
+
+    # Ensure appropriate permissions (non-root agents need read/write access)
+    chmod -R 755 /home/user
+    find /home/user -type f -exec chmod 644 {} \;
+
+    # Reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    LC_ALL=en_US.UTF-8
+    LANG=en_US.UTF-8

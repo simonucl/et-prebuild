@@ -1,0 +1,75 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author CloudMigrationSetup
+    Description "Environment for cloud-migration task with proper initial state and pytest installed."
+
+%post
+    set -e
+
+    # Ensure required packages are present
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial filesystem state expected by the tests
+    # ------------------------------------------------------------------
+    # Home hierarchy
+    mkdir -p /home/user
+
+    # 1. legacy_service directory with strict permissions
+    mkdir -p /home/user/legacy_service
+    chmod 700 /home/user/legacy_service
+
+    # 2. Populate config.ini with EXACT required contents (4 lines)
+    cat > /home/user/legacy_service/config.ini <<'EOF'
+[server]
+host = 127.0.0.1
+port = 5000
+
+EOF
+
+    # 3. Ensure sentinel file does NOT exist (do nothing)
+
+    # 4. Create writable migration.log (leave empty)
+    touch /home/user/migration.log
+    chmod 666 /home/user/migration.log   # world-writable so any UID can append
+
+    # ------------------------------------------------------------------
+    # Dynamically fix ownership at run time so the invoking (host) user
+    # can still access /home/user/legacy_service even though permissions
+    # are 0700.  We achieve this via an environment hook executed by
+    # Apptainer on every `exec` / `run`.
+    # ------------------------------------------------------------------
+    mkdir -p /.singularity.d/env
+    cat > /.singularity.d/env/99-fix-perms.sh <<'EOSH'
+#!/bin/sh
+# Make sure the current user owns the critical paths so that 0700 works.
+# Suppress errors if chown/chmod fail (e.g., already owned).
+chown "$(id -u)":"$(id -g)" /home/user/legacy_service 2>/dev/null || true
+chown "$(id -u)":"$(id -g)" /home/user/migration.log 2>/dev/null || true
+chmod 700 /home/user/legacy_service 2>/dev/null || true
+EOSH
+    chmod 755 /.singularity.d/env/99-fix-perms.sh
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python binaries from pip are on the PATH
+    export PATH="/usr/local/bin:$PATH"
+
+%runscript
+    # Default runscript: open an interactive shell
+    exec /bin/bash "$@"
+
+%help
+    This container sets up the initial state for the “cloud-migration”
+    exercise and includes pytest for the automated grader.

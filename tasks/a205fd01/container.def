@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update apt index and install Python tooling
+    apt-get update -qq
+    apt-get install -y --no-install-recommends python3-pip
+    pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial exercise state
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/k8s-manifests
+    cd /home/user/k8s-manifests
+
+    # Create the three manifest files with exact byte-sizes
+    # deployment.yaml -> 25 bytes
+    printf 'apiVersion: v1\nkind: Pod\n' > deployment.yaml
+
+    # service.yaml -> 29 bytes
+    printf 'apiVersion: v1\nkind: Service\n' > service.yaml
+
+    # configmap.yaml -> 31 bytes
+    printf 'apiVersion: v1\nkind: ConfigMap\n' > configmap.yaml
+
+    # Ensure the directory is writable by any non-root user who runs the
+    # container (Apptainer maps the caller’s UID/GID).
+    chmod -R a+rwX /home/user/k8s-manifests
+
+    # Clean up package lists to keep image size small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # No HOME override; Apptainer will bind the caller's $HOME automatically
+    export LC_ALL=C
+    export LANG=C
+
+%runscript
+    # Default action: start an interactive shell
+    exec /bin/bash "$@"
+
+%labels
+    Author="Apptainer Task Prep Bot"
+    Description="Environment for Kubernetes manifest disk-usage report task"

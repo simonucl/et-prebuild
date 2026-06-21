@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Installing Python tooling..."
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Creating initial backup directory structure..."
+    mkdir -p /home/user/backup/2023-09-15
+
+    # Directory permissions ---------------------------------------------------
+    chmod 0755 /home/user
+    chmod 0777 /home/user/backup              # Learner needs write access here
+    chmod 0755 /home/user/backup/2023-09-15   # Read-only is sufficient inside
+
+    # Required files ----------------------------------------------------------
+    printf 'a'   > /home/user/backup/2023-09-15/original1.txt
+    printf 'abc' > /home/user/backup/2023-09-15/original2.txt
+    :            > /home/user/backup/2023-09-15/original3.txt  # empty file
+
+    cat > /home/user/backup/2023-09-15/checksums.sha256 <<'EOF'
+ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb  original1.txt
+ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad  original2.txt
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  original3.txt
+EOF
+
+    # File permissions --------------------------------------------------------
+    chmod 0644 /home/user/backup/2023-09-15/original1.txt
+    chmod 0644 /home/user/backup/2023-09-15/original2.txt
+    chmod 0644 /home/user/backup/2023-09-15/original3.txt
+    chmod 0644 /home/user/backup/2023-09-15/checksums.sha256
+
+    echo "Setup complete."
+
+%environment
+    chmod 755 /home/user
+
+    # Keep HOME unchanged; just ensure UTF-8 I/O
+    export PYTHONIOENCODING=utf-8
+
+%labels
+    Author backup-integrity-scenario

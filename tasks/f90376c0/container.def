@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python3, pip, and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # Create the demo project directory structure and sample .conf files
+    mkdir -p /home/user/projects/myapp/config
+
+    cat >/home/user/projects/myapp/config/app.conf <<'EOF'
+APP_ENV=production
+EOF
+
+    cat >/home/user/projects/myapp/config/db.conf <<'EOF'
+DB_HOST=localhost
+EOF
+
+    cat >/home/user/projects/myapp/config/secrets.conf <<'EOF'
+API_KEY=demo123
+EOF
+
+    # Ensure sensible permissions
+    chmod 755 /home/user /home/user/projects /home/user/projects/myapp /home/user/projects/myapp/config
+    chmod 644 /home/user/projects/myapp/config/*.conf
+
+    # Clean up apt caches to keep image size small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Ensure Python and pip are in PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"

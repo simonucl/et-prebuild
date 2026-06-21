@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+AUTHOR Clean-up Exercise Prep
+DESCRIPTION Container prepared for the “component metadata clean-up” task.
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial project directory and input TSV files expected
+    # by the learner’s task and by the autograder’s *initial-state* tests.
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/project
+
+    cat > /home/user/project/component_a.tsv <<'EOF'
+comp_login	v1.2	alice
+comp_payments	v2.0	bob
+comp_notifications	v1.4	carol
+comp_search	v1.8	dave
+EOF
+
+    cat > /home/user/project/component_b.tsv <<'EOF'
+comp_login	stable
+comp_payments	deprecated
+comp_notifications	beta
+comp_search	stable
+EOF
+
+    # Ensure the agent (non-root runtime user) can read/write in the project dir
+    chmod -R a+rwX /home/user/project
+
+%help
+    chmod 755 /home/user
+
+This image provides the starting state for the “component metadata clean-up”
+exercise:
+
+  • /home/user/project/component_a.tsv   (3 columns)
+  • /home/user/project/component_b.tsv   (2 columns)
+
+Python 3 and pytest are installed for automated grading.

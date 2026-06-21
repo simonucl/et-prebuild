@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # 1. Basic tools and Python + pytest
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 python3-pip tar
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # 2. Create the initial exercise snapshot
+    mkdir -p /home/user/restore_test
+    chmod 755 /home/user
+
+    # Build the directory structure in a temporary location
+    mkdir -p /tmp/build_restore/restore_snapshot/etc
+
+    printf "UTC\n" > /tmp/build_restore/restore_snapshot/etc/timezone
+    printf "LANG=fr_FR.UTF-8\n" > /tmp/build_restore/restore_snapshot/etc/locale.conf
+
+    # Pack it into the required gzip-compressed tar archive
+    tar -C /tmp/build_restore -czf /home/user/restore_test/backup_config.tar.gz restore_snapshot
+
+    # Clean up the temporary build directory
+    rm -rf /tmp/build_restore
+
+    # Ensure reasonable, non-world-writable permissions
+    chmod -R u=rwX,go=rX /home/user/restore_test
+
+%labels
+    Author restore-config exercise setup
+
+%help
+    This container image provides the pristine starting state for the
+    “restore-config” exercise.  It contains the compressed configuration
+    snapshot at /home/user/restore_test/backup_config.tar.gz and has
+    pytest pre-installed for automated grading.

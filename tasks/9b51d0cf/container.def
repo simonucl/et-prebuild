@@ -1,0 +1,67 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author benchmark-preparation
+    Description "Environment with reference data and tools for sort benchmark task"
+
+%post
+    set -e
+
+    echo "Updating package lists and installing required packages ..."
+    apt-get update -qq
+    # coreutils is already present, but install 'time' and Python tooling explicitly
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        time python3 python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    echo "Creating unprivileged user 'user' ..."
+    useradd -m -u 1000 -s /bin/bash user
+
+    echo "Installing pytest for the agent ..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Preparing benchmark directories and reference data ..."
+    BENCH_DIR="/home/user/benchmarks"
+    DATA_DIR="/home/user/benchmark_data"
+    mkdir -p "${BENCH_DIR}" "${DATA_DIR}"
+
+    # ---- small.txt (≈1 KiB) ----
+    cat > "${DATA_DIR}/small.txt" <<'EOF'
+357
+91
+782
+14
+601
+274
+439
+208
+901
+58
+66
+132
+475
+820
+7
+510
+334
+699
+244
+123
+EOF
+
+    # ---- large.txt (generate 1000 numeric lines; size > small.txt) ----
+    seq 1 1000 > "${DATA_DIR}/large.txt"
+
+    echo "Fixing permissions so that the unprivileged user owns the data ..."
+    chown -R 1000:1000 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Do not override $HOME, but ensure standard paths are available.
+    export PATH="/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
+
+%runscript
+    echo "Container for sort benchmark task. Switch to user with:  su - user"

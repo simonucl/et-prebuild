@@ -1,0 +1,72 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic tools and Python/pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Directory layout expected by the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/research_logs
+    mkdir -p /home/user/analysis
+
+    # ------------------------------------------------------------------
+    # Pre-existing log files
+    # ------------------------------------------------------------------
+    cat > /home/user/research_logs/experiment_A.log <<'EOF'
+[2023-04-12 09:55:03] INFO  DataLoad: Starting batch 17
+[2023-04-12 10:05:11] WARN  DataLoad: Incomplete record encountered
+[2023-04-12 10:17:45] ERROR DataLoad: Null pointer exception
+[2023-04-12 11:02:33] INFO  PreProcess: Normalization done
+[2023-04-12 11:45:12] WARN  DataLoad: Timeout on socket 3
+[2023-04-12 12:05:35] ERROR Model: Overflow in layer 9
+[2023-04-12 12:15:07] INFO  DataLoad: Batch finished
+EOF
+
+    cat > /home/user/research_logs/experiment_B.log <<'EOF'
+[2023-04-12 09:40:10] INFO  DataLoad: Starting batch 02
+[2023-04-12 10:12:21] WARN  DataLoad: Missing value filled
+[2023-04-12 10:55:09] ERROR DataLoad: Index out of range
+[2023-04-12 11:12:41] INFO  Train: Epoch 1 done
+[2023-04-12 11:59:59] WARN  DataLoad: Disk read latency high
+[2023-04-12 12:08:10] ERROR Optimizer: Divergence detected
+EOF
+
+    cat > /home/user/research_logs/experiment_control.log <<'EOF'
+[2023-04-12 10:01:01] INFO  Monitor: checksum validated
+[2023-04-12 10:31:18] INFO  Monitor: checksum validated
+[2023-04-12 11:05:22] INFO  Monitor: heartbeat ok
+[2023-04-12 11:46:45] INFO  Monitor: checksum validated
+[2023-04-12 12:02:32] INFO  Monitor: shutdown
+EOF
+
+    # ------------------------------------------------------------------
+    # Permissions
+    # ------------------------------------------------------------------
+    # Log files: readable by everyone
+    chmod 644 /home/user/research_logs/*.log
+
+    # research_logs directory: read/execute for all
+    chmod 755 /home/user/research_logs
+
+    # analysis directory must be writable by the unprivileged user
+    chmod 777 /home/user/analysis
+
+    # Parent /home/user directory accessible
+    chmod 755 /home/user
+
+%environment
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author alert-digest-setup
+    Description "Environment for the alert-digest bio-informatics log exercise"

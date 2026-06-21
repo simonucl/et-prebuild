@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python + pip
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the automated tests
+    # ------------------------------------------------------------------
+
+    # Create the base home directory for the non-root user that will run
+    # inside the container.  Make it world-writable so whichever UID is
+    # mapped in by Apptainer can freely create further files/directories.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Create the sample_payloads directory and the two JSON files with
+    # the exact contents and trailing newlines required by the tests.
+    mkdir -p /home/user/sample_payloads
+
+    printf '{"user":{"id":0,"name":"Alice"}}\n' \
+        > /home/user/sample_payloads/user_create.json
+
+    printf '{"order":{"id":0,"item":"Widget","quantity":3}}\n' \
+        > /home/user/sample_payloads/order_create.json
+
+    # Set conservative read permissions on the sample payload files.
+    chmod 644 /home/user/sample_payloads/*.json
+
+%labels
+    chmod 755 /home/user
+
+    Author chatbot
+    Description Container for API test-organising exercise – provides initial state and pytest

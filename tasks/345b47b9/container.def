@@ -1,0 +1,67 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install required packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        curl \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare directory structure and initial files for the exercise
+    # ------------------------------------------------------------------
+
+    # Ensure /home/user exists and is writable by any non-root user
+    mkdir -p /home/user
+    chmod 777 /home/user
+
+    # 1. Create the web page that lists the targets
+    mkdir -p /home/user/web
+    cat <<'EOF' > /home/user/web/targets.html
+<!DOCTYPE html>
+<html>
+  <head><title>Permission Targets</title></head>
+  <body>
+    <h1>Files to Audit</h1>
+    <ul>
+      <li>/home/user/test_data/file_public.txt</li>
+      <li>/home/user/test_data/file_secure.txt</li>
+      <li>/home/user/test_data/exec.sh</li>
+    </ul>
+  </body>
+</html>
+EOF
+    chmod 644 /home/user/web/targets.html
+
+    # 2. Create the target files with the specified permissions
+    mkdir -p /home/user/test_data
+
+    # file_public.txt  – octal 644
+    echo "Public test file" > /home/user/test_data/file_public.txt
+    chmod 644 /home/user/test_data/file_public.txt
+
+    # file_secure.txt – octal 750
+    echo "Secure test file" > /home/user/test_data/file_secure.txt
+    chmod 750 /home/user/test_data/file_secure.txt
+
+    # exec.sh         – octal 755
+    cat <<'EOF' > /home/user/test_data/exec.sh
+#!/bin/bash
+echo "Executable test file"
+EOF
+    chmod 755 /home/user/test_data/exec.sh
+
+    # 3. Make sure the /home/user/audit directory does NOT exist
+    rm -rf /home/user/audit
+
+%environment
+    export LANG=C
+    export LC_ALL=C
+
+%labels
+    Author "ChatGPT"
+    Description "Environment for UNIX permission auditing task"

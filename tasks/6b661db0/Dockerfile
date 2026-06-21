@@ -1,0 +1,45 @@
+# syntax=docker/dockerfile:1
+FROM ubuntu:22.04
+
+# Labels from Apptainer definition
+LABEL Author="ssh-log-task" \
+      Description="Base container for SSH failed-login incident-response exercise"
+
+# Install Python, pip, pytest, and dependencies
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked --mount=type=cache,target=/var/lib/apt,sharing=locked --mount=type=cache,target=/root/.cache/pip set -e && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip ca-certificates && \
+    pip3 install --no-cache-dir --upgrade pip && \
+    pip3 install --no-cache-dir pytest && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create required directory structure and set permissions
+RUN mkdir -p /home/user/logs && \
+    chmod 777 /home/user && \
+    chmod 777 /home/user/logs
+
+# Populate the canonical 10-line sample log (must end with a single LF)
+RUN cat > /home/user/logs/auth_sample.log <<'EOF'
+Jun 10 12:34:56 server sshd[1234]: Failed password for invalid user admin from 192.168.1.10 port 54321 ssh2
+Jun 10 12:35:01 server sshd[1235]: Failed password for root from 203.0.113.5 port 54322 ssh2
+Jun 10 12:35:05 server sshd[1236]: Failed password for invalid user guest from 192.168.1.10 port 54323 ssh2
+Jun 10 12:35:10 server sshd[1237]: Failed password for invalid user test from 198.51.100.25 port 54324 ssh2
+Jun 10 12:35:15 server sshd[1238]: Failed password for root from 203.0.113.5 port 54325 ssh2
+Jun 10 12:35:20 server sshd[1239]: Failed password for invalid user admin from 198.51.100.25 port 54326 ssh2
+Jun 10 12:35:25 server sshd[1240]: Failed password for invalid user admin from 192.168.1.10 port 54327 ssh2
+Jun 10 12:35:30 server sshd[1241]: Failed password for root from 203.0.113.5 port 54328 ssh2
+Jun 10 12:35:35 server sshd[1242]: Failed password for invalid user admin from 192.168.1.10 port 54329 ssh2
+Jun 10 12:35:40 server sshd[1243]: Failed password for invalid user guest from 192.0.2.44 port 54330 ssh2
+EOF
+
+RUN chmod 644 /home/user/logs/auth_sample.log
+
+# Environment setup
+ENV LC_ALL=C.UTF-8 \
+    PYTHONDONTWRITEBYTECODE=1
+
+RUN chmod 755 /home/user
+
+# Default run behavior (equivalent to %runscript)
+CMD echo "SSH log-analysis practice container. Start working in /home/user." && exec "$@"

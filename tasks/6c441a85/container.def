@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author core-dump-task-generator
+    Description "Environment for core-dump compression exercise"
+
+%post
+    set -e
+
+    # Update package lists and install required tooling
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        gzip \
+        findutils \
+        ca-certificates
+
+    # Clean up apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/app_dumps
+
+    # Create the three .core files with exact contents / sizes
+    printf 'CORE_DUMP_1\n'           > /home/user/app_dumps/crash1.core   # 12 bytes
+    printf 'CORE_DUMP_2\n'           > /home/user/app_dumps/crash2.core   # 12 bytes
+    printf 'CORRUPTED_CORE_DUMP\n'   > /home/user/app_dumps/crash3.core   # 20 bytes
+
+    # Ensure the student (non-root runtime user) can modify everything
+    chmod 777 /home/user
+    chmod 777 /home/user/app_dumps
+    chmod 666 /home/user/app_dumps/*.core
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure predictable locale for byte-wise sorting checks
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for the core-dump compression exercise."
+    echo "Enter the shell to begin:"
+    exec /bin/bash

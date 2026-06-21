@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial repository state expected by the automated tests
+    # ------------------------------------------------------------------
+
+    # Create directory structure
+    mkdir -p /home/user/mobile_pipelines
+
+    # Populate build_targets.txt with the required six lines
+    cat > /home/user/mobile_pipelines/build_targets.txt <<'EOF'
+android-29
+android-30
+ios-13
+ios-14
+android-31
+ios-15
+EOF
+
+    # Ensure world-readable permissions (the unprivileged test runner needs this)
+    chmod 755 /home/user
+    chmod 755 /home/user/mobile_pipelines
+    chmod 644 /home/user/mobile_pipelines/build_targets.txt
+
+%environment
+    # Nothing to override; keep default HOME binding behaviour.
+
+%runscript
+    exec "$@"
+
+%labels
+    Author Mobile-Pipeline-Setup
+    Description Base image with initial state and pytest installed.

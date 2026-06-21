@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        --no-install-recommends
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Seed data required by the assignment’s initial state
+    # ------------------------------------------------------------------
+    # Create the /home/user hierarchy (no user creation needed)
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Create the single-byte firmware seed file (contains ASCII “a” only)
+    printf 'a' > /home/user/sample_firmware_v1.2.bin
+    chmod 644 /home/user/sample_firmware_v1.2.bin
+
+%environment
+    # Keep environment minimal; just ensure predictable Python buffering
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author IoT-Edge-Prep
+    Description "Container providing the initial state for the IoT firmware bundling task"
+
+%help
+    This container includes:
+      • Ubuntu 22.04 base system
+      • pytest for automated grading
+      • A seed file at /home/user/sample_firmware_v1.2.bin (1 byte, “a”)
+    Students will perform actions inside this filesystem to complete the task.

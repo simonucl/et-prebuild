@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT metadata and install required packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get -y install \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the regular (non-root) account expected by the grader
+    # ------------------------------------------------------------------
+    # UID/GID 1000 is the conventional first user on Ubuntu systems.
+    # We ensure that this account owns /home/user and has write access.
+    useradd -m -u 1000 -s /bin/bash user
+
+    # Make absolutely sure the home directory exists and is writable
+    mkdir -p /home/user
+    chown -R 1000:1000 /home/user
+    chmod 0755 /home/user   # owner can write; others have read+exec
+
+    # Guarantee /tmp has the expected world-writable + sticky permissions
+    chmod 1777 /tmp
+
+%environment
+    chmod 755 /home/user
+
+    # Preserve the standard PATH while ensuring /usr/local/bin is searched first
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%labels
+    Author      "Apptainer build script"
+    Description "Baseline container for the storage-administrator task"
+
+%runscript
+    echo "Apptainer container for the storage-administrator task."
+    # Pass through to any command supplied by the runner
+    exec "$@"

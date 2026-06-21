@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # ------------------------------------------------------------------
+    # Basic tooling
+    # ------------------------------------------------------------------
+    apt-get update -y
+    apt-get install -y python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the tests
+    # ------------------------------------------------------------------
+    # Create the canonical /home/user tree
+    mkdir -p /home/user/temp
+
+    # Give write-access to any (non-root) user so the learner can create
+    # new sub-directories such as /home/user/cloud_reports later on.
+    chmod 0777 /home/user
+
+    # Directory that must exist before the learner starts
+    chmod 0755 /home/user/temp
+
+    # CSV file with the exact required contents
+    cat > /home/user/temp/cost_report_Q42023.csv <<'EOF'
+month,total_spend_usd
+Oct,12345.67
+Nov,11001.22
+Dec,12999.00
+EOF
+
+    # Ensure correct permissions
+    chmod 0644 /home/user/temp/cost_report_Q42023.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Inherit the invoking user's HOME (Apptainer binds it automatically)
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=utf-8
+
+%runscript
+    # Default entrypoint: open an interactive shell
+    exec /bin/bash -l
+
+%help
+    This container supplies the initial environment for the FinOps
+    consolidation exercise.  It already contains:
+
+      • /home/user/temp/
+      • /home/user/temp/cost_report_Q42023.csv
+
+    Use standard Unix commands to move and rename the CSV, create the
+    symlink, and write the audit log as described in the task instructions.

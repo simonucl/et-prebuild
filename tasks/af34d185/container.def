@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing prerequisites..."
+    apt-get update -y
+    apt-get install -y --no-install-recommends python3-pip
+
+    echo "Installing pytest..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating directory structure for artifact inventory..."
+    # Ensure the base home directory exists and is writable so any user can
+    # later create /home/user/logs.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Create the repository path with the required permissions.
+    mkdir -p /home/user/repos/artifacts
+    chmod 0755 /home/user/repos
+    chmod 0755 /home/user/repos/artifacts
+
+    echo "Populating inventory.csv with expected contents..."
+    cat > /home/user/repos/artifacts/inventory.csv <<'EOF'
+filename,size_bytes
+core-1.2.3.jar,2048
+utils-4.5.6.jar,4096
+plugin-0.9.1.zip,1024
+readme.txt,512
+cli-2.0.0.tar.gz,3072
+EOF
+
+    # Set permissions as specified (0644 for file, 0755 for directory).
+    chmod 0644 /home/user/repos/artifacts/inventory.csv
+
+    # Ensure no pre-existing /home/user/logs directory is present.
+    rm -rf /home/user/logs
+
+%environment
+    chmod 755 /home/user
+
+    # No special environment variables required.
+
+%runscript
+    echo "Container for the 'artifact summary' task."
+    echo "The initial inventory is located at /home/user/repos/artifacts/inventory.csv"
+    echo "Create /home/user/logs/artifact_summary.log as specified to complete the task."

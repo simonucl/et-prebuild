@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python tooling for pytest
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the evaluation framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the exercise
+    # ------------------------------------------------------------------
+    # Create the data directory hierarchy
+    mkdir -p /home/user/data
+
+    # Q1 data
+    cat >/home/user/data/raw_sales_2023_Q1.csv <<'EOF'
+product,quantity,price
+Laptop,10,1200
+Phone,25,800
+Tablet,14,600
+EOF
+
+    # Q2 data
+    cat >/home/user/data/raw_sales_2023_Q2.csv <<'EOF'
+product,quantity,price
+Laptop,8,1150
+Phone,30,780
+Headphones,40,150
+EOF
+
+    # Ensure non-root users can read the files and write into /home/user
+    chmod -R 0755 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Apptainer container for the sales aggregation exercise."

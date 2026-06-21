@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic utilities and Python tooling for pytest
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial exercise data
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/monitoring/logs
+
+    cat > /home/user/monitoring/logs/cpu_stats.csv <<'EOF'
+timestamp,host,cpu_usage,proc_run
+2023-08-01T00:00:00Z,web01,25,120
+2023-08-01T00:05:00Z,db01,45,87
+2023-08-01T00:10:00Z,web01,27,122
+2023-08-01T00:15:00Z,db01,46,90
+EOF
+
+    cat > /home/user/monitoring/logs/mem_stats.csv <<'EOF'
+timestamp,host,mem_free,swap_used
+2023-08-01T00:00:00Z,web01,1024,128
+2023-08-01T00:05:00Z,db01,512,256
+2023-08-01T00:10:00Z,web01,1000,130
+2023-08-01T00:15:00Z,db01,500,260
+EOF
+
+    # Ensure correct read permissions on the CSV source files
+    chmod 644 /home/user/monitoring/logs/*.csv
+
+    # Learner must be able to create /home/user/monitoring/alerts later,
+    # so make the parent directory writable.
+    chmod 777 /home/user/monitoring
+
+    # Also make sure /home and /home/user are traversable by all users.
+    chmod 755 /home
+    chmod 755 /home/user
+
+%environment
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%runscript
+    # Default action when the container is executed without arguments
+    exec /bin/bash "$@"

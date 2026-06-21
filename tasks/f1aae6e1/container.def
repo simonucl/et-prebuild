@@ -1,0 +1,86 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install required software
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip \
+        jq \
+        curl \
+        ca-certificates
+
+    # Install pytest for the automated grading
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state expected by the tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/cloud_costs/raw
+    mkdir -p /home/user/cloud_costs/schema
+
+    # Raw weekly cost data
+    cat > /home/user/cloud_costs/raw/weekly_costs.json <<'EOF'
+[
+  {
+    "account_id": "acc-001",
+    "service": "EC2",
+    "cost": 800,
+    "currency": "USD",
+    "week": "2023-W25"
+  },
+  {
+    "account_id": "acc-002",
+    "service": "S3",
+    "cost": 1200,
+    "currency": "USD",
+    "week": "2023-W25"
+  },
+  {
+    "account_id": "acc-003",
+    "service": "RDS",
+    "cost": 1500,
+    "currency": "USD",
+    "week": "2023-W25"
+  },
+  {
+    "account_id": "acc-004",
+    "service": "Lambda",
+    "cost": 400,
+    "currency": "USD",
+    "week": "2023-W25"
+  }
+]
+EOF
+
+    # JSON-Schema for cloud cost reports
+    cat > /home/user/cloud_costs/schema/cloud_cost_report.schema.json <<'EOF'
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["account_id", "service", "cost", "currency", "week"],
+    "properties": {
+      "account_id": { "type": "string" },
+      "service":     { "type": "string" },
+      "cost":        { "type": "number" },
+      "currency":    { "type": "string" },
+      "week":        { "type": "string" }
+    }
+  }
+}
+EOF
+
+    # Make sure everything is world-readable
+    chmod -R a+rX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and local binaries are on PATH
+    export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:$PATH

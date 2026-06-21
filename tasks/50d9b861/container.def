@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial repository state expected by the grading tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/db-backup
+
+    # version.txt with trailing newline
+    echo '1.2.3' > /home/user/db-backup/version.txt
+
+    # CHANGELOG.md with trailing newline
+    cat <<'EOF' > /home/user/db-backup/CHANGELOG.md
+## [1.2.3] - 2023-09-10
+### Fixed
+- Corrected cron schedule for nightly backups
+EOF
+    echo >> /home/user/db-backup/CHANGELOG.md
+
+    # Make sure the student (non-root) user can modify everything
+    chmod a+rwx /home/user
+    chmod -R a+rwX /home/user/db-backup
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+    export PYTHONUNBUFFERED=1

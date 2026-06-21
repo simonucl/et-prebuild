@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install Python & pip
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    #############
+    # Task setup
+    #############
+
+    # Create required directory structure
+    mkdir -p /home/user/app/config
+
+    # Create settings.yaml with the exact initial content
+    cat > /home/user/app/config/settings.yaml <<'EOF'
+---
+server:
+  host: "0.0.0.0"
+  port: 8080
+debug: false
+---
+EOF
+
+    # Ensure an empty changes.log file exists
+    : > /home/user/app/config/changes.log
+
+    # Set permissions so the unprivileged agent can modify the files
+    chmod 777 /home/user/app /home/user/app/config
+    chmod 666 /home/user/app/config/settings.yaml /home/user/app/config/changes.log
+
+%runscript
+    chmod 755 /home/user
+
+    exec /bin/bash

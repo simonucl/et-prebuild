@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the directory structure and initial CSV data for the task
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/data
+    mkdir -p /home/user/output
+
+    # Create the CSV file with the required content (header + 10 lines)
+    cat > /home/user/data/support_tickets.csv <<'EOF'
+ticket_id,created_date,assignee,status
+TCK-1001,01/13/2022,alice,OPEN
+TCK-1002,01/20/2022,bob,CLOSED
+TCK-1003,02/05/2022,charlie,OPEN
+TCK-1004,03/14/2022,dan,CLOSED
+TCK-1005,03/18/2022,alice,CLOSED
+TCK-1006,04/07/2023,bob,OPEN
+TCK-1007,05/11/2023,charlie,CLOSED
+TCK-1008,06/22/2023,dan,OPEN
+TCK-1009,07/19/2023,alice,CLOSED
+TCK-1010,08/01/2023,bob,OPEN
+EOF
+
+    # Permissions: CSV read-only, output dir writable by the non-root user
+    chmod 644 /home/user/data/support_tickets.csv
+    chmod 777 /home/user/output
+
+    # Make sure the entire /home/user tree is accessible
+    chmod -R a+rX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author example
+    Description Container for awk/sed text-processing task (support tickets)
+
+%help
+This Apptainer image provides the initial environment for the help-desk
+CSV processing assignment.  It contains:
+  • /home/user/data/support_tickets.csv  (read-only input file)
+  • /home/user/output/                   (writeable output directory)
+Python and pytest are installed for automated grading.

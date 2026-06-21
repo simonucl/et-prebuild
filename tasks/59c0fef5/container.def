@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update package index and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare non-root user and required base directory structure
+    # ------------------------------------------------------------------
+    # Create a regular user `user` (UID/GID 1000) with home /home/user
+    groupadd -g 1000 user
+    useradd  -m -d /home/user -u 1000 -g 1000 user
+
+    # Create the base application directory expected by the tests
+    mkdir -p /home/user/app
+    chown -R 1000:1000 /home/user
+
+    # Clean up APT cache to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export PATH=/home/user/.local/bin:$PATH
+
+%runscript
+    # Default action when the container is executed with `apptainer run`
+    exec /bin/bash "$@"

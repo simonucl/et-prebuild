@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic utilities and Python tooling
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the backup task
+    # ------------------------------------------------------------------
+    # 1. Create the required data directory and ensure it is writable.
+    mkdir -p /home/user/data
+    chmod -R 0777 /home/user   # Allow the non-root runtime user to write here.
+
+    # 2. Create the initial dump.sql file with the exact expected content.
+    printf 'This is a sample PostgreSQL dump\n' > /home/user/data/dump.sql
+    chmod 0666 /home/user/data/dump.sql   # Read/write for any user.
+
+%labels
+    chmod 755 /home/user
+
+    Author backup-task-setup
+    Description "Container prepared for the SQL backup reliability task."
+
+%help
+    This Apptainer image contains the initial state and dependencies
+    required to run the backup task along with pytest for validation.

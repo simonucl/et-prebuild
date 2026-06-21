@@ -1,0 +1,66 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author AI-Prep
+    Description "Environment for the release-audit task with pre-populated releases and pytest installed."
+
+%post
+    set -e
+
+    echo "Updating package lists and installing required packages..."
+    apt-get update -y
+    # Python3 is present, but ensure pip and pytest are available
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating base directory layout under /home/user ..."
+    mkdir -p /home/user
+    # Give write permission to any unprivileged user that will execute inside the container.
+    chmod 0777 /home/user
+
+    RELEASES=/home/user/releases
+    mkdir -p "${RELEASES}"
+
+    # Helper function for making files of an exact size in bytes
+    _mkfile() {
+        dest="$1"; size="$2"
+        mkdir -p "$(dirname "${dest}")"
+        # Create file with requested size; contents are irrelevant.
+        truncate -s "${size}" "${dest}"
+        chmod 0644 "${dest}"
+    }
+
+    echo "Populating release directories with exact-sized files..."
+
+    # === app_v1.0 ===
+    _mkfile "${RELEASES}/app_v1.0/README.txt"         512
+    _mkfile "${RELEASES}/app_v1.0/bin/app.bin"        1536
+
+    # === app_v1.1 ===
+    _mkfile "${RELEASES}/app_v1.1/README.txt"         1024
+    _mkfile "${RELEASES}/app_v1.1/bin/app.bin"        2048
+    _mkfile "${RELEASES}/app_v1.1/docs/CHANGELOG.md"  3072
+
+    # === app_v2.0 ===
+    _mkfile "${RELEASES}/app_v2.0/README.txt"         2048
+    _mkfile "${RELEASES}/app_v2.0/bin/app.bin"        3072
+    _mkfile "${RELEASES}/app_v2.0/scripts/migrate.sh" 2048
+
+    # Ensure directory permissions allow traversal & reading
+    find "${RELEASES}" -type d -exec chmod 0755 {} \;
+
+    echo "Initial state successfully prepared."
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are on PATH (they normally are, but be explicit)
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    exec "$@"
+
+%test
+    # No runtime validation here; the grading harness will run its own tests.
+    echo "Container built successfully and basic commands run."

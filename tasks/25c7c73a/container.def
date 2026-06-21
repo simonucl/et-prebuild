@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic utilities and Python tooling
+    apt-get update && \
+        apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial file-system state required by the assignment
+    # Create the /home/user hierarchy with permissive permissions so that
+    # the non-root runtime user can write the required output files later.
+    mkdir -p /home/user/dataset
+    mkdir -p /home/user/benchmark
+
+    chmod 0777 /home/user
+    chmod 0777 /home/user/dataset
+    chmod 0777 /home/user/benchmark
+
+    # Create the raw CSV with the exact required contents (35 bytes)
+    printf 'id,value\n3,apple\n1,orange\n2,banana\n' > /home/user/dataset/raw.csv
+
+    # Make sure the raw CSV is readable by everyone; write-protected so the
+    # student does not inadvertently modify it.
+    chmod 0644 /home/user/dataset/raw.csv
+
+%environment
+    chmod 755 /home/user
+
+    # Keep the default HOME; nothing to adjust here
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

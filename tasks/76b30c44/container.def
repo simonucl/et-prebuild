@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ## 1. Install Python tooling and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    ## 2. Create initial filesystem state expected by the tests
+    mkdir -p /home/user/db_backup
+
+    cat > /home/user/db_backup/backup_config.yaml <<'EOF'
+schedule:
+  frequency: daily
+  window: "00:00-06:00"
+  compression: false
+database:
+  host: localhost
+  port: 5432
+EOF
+
+    cat > /home/user/db_backup/storage.conf.toml <<'EOF'
+storage_mode = "s3"
+bucket = "prod-backups"
+retention_days = 7
+
+[network]
+timeout_secs = 30
+EOF
+
+    ## 3. Make sure any runtime user can read/write the task files
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author      "Container preparation script"
+    Description "Sets up initial state for the database-reliability engineer task (pytest included)"

@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package lists..."
+    apt-get update -y
+
+    echo "Installing required packages..."
+    # make: required by the exercise
+    # python3 & pip: needed to run pytest (pre-installed python3 on ubuntu, but ensure pip)
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        make \
+        python3 \
+        python3-pip
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating expected home directory..."
+    mkdir -p /home/user
+    # Give broad write permissions so whatever UID/GID the agent uses can modify it.
+    chmod 0777 /home/user
+
+    # Clean up apt caches to keep image slim
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure /usr/local/bin (used by pip) is in PATH
+    export PATH="/usr/local/bin:$PATH"
+
+%labels
+    Author="Apptainer Build Automation"
+    Description="Environment prepared for compliance Makefile exercise, with pytest pre-installed."

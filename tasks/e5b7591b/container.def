@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author platform-engineer
+    Description Base image for operator-test assignment.  Provides Python,
+    pytest, curl, and a non-root “user” account with home directory
+    /home/user.  No solution artefacts are present.
+
+%post
+    set -e
+
+    echo "Updating apt repositories and installing system packages..."
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 python3-pip curl ca-certificates
+
+    echo "Creating non-root user 'user' ..."
+    useradd -m -s /bin/bash user
+
+    echo "Upgrading pip and installing pytest..."
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # Clean up apt caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are on PATH for the default user environment
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    # Default runscript simply executes the passed command
+    exec "$@"
+
+%test
+    # Basic smoke test to ensure pytest is available
+    python3 - <<'PY'
+import subprocess, sys, json, pkg_resources, textwrap
+try:
+    import pytest
+    print("pytest version:", pytest.__version__)
+except ImportError:
+    sys.exit("pytest is not installed!")
+PY

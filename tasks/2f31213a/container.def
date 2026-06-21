@@ -1,0 +1,68 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    apt-get update
+    # Basic runtime tools plus Python & pip
+    apt-get install -y --no-install-recommends \
+        python3 python3-pip \
+        ca-certificates gnupg dirmngr
+
+    # Install pytest for the grading suite
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Populate initial directory & log-file layout required by the task
+    # ------------------------------------------------------------------
+    install -d -m 0755 /home/user/cloud_migration/logs
+
+    # Day 1 log
+    cat > /home/user/cloud_migration/logs/2023-10-01.log <<'EOF'
+2023-10-01T12:00:00Z serviceA MIGRATE START
+2023-10-01T12:05:00Z serviceA MIGRATE SUCCESS
+2023-10-01T13:00:00Z serviceB MIGRATE START
+2023-10-01T13:03:00Z serviceB MIGRATE FAIL Error: Disk quota exceeded
+2023-10-01T14:00:00Z serviceC MIGRATE START
+2023-10-01T14:04:00Z serviceC MIGRATE SUCCESS
+EOF
+
+    # Day 2 log
+    cat > /home/user/cloud_migration/logs/2023-10-02.log <<'EOF'
+2023-10-02T09:00:00Z serviceA MIGRATE START
+2023-10-02T09:04:30Z serviceA MIGRATE SUCCESS
+2023-10-02T10:00:10Z serviceB MIGRATE START
+2023-10-02T10:05:00Z serviceB MIGRATE FAIL Error: Network unreachable
+2023-10-02T11:00:00Z serviceC MIGRATE START
+2023-10-02T11:05:40Z serviceC MIGRATE SUCCESS
+EOF
+
+    # Day 3 log
+    cat > /home/user/cloud_migration/logs/2023-10-03.log <<'EOF'
+2023-10-03T15:00:00Z serviceA MIGRATE START
+2023-10-03T15:07:00Z serviceA MIGRATE SUCCESS
+2023-10-03T16:00:00Z serviceB MIGRATE START
+2023-10-03T16:09:15Z serviceB MIGRATE SUCCESS
+2023-10-03T17:00:00Z serviceC MIGRATE START
+2023-10-03T17:08:50Z serviceC MIGRATE FAIL Error: Timeout contacting datastore
+EOF
+
+    # Set appropriate permissions (readable by all users in container)
+    chmod 0644 /home/user/cloud_migration/logs/*.log
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to override here; keep default HOME handling.
+
+%labels
+    Author  example-builder
+    Description "Environment for cloud-migration log summarization exercise"
+
+%help
+    This container provides the initial filesystem state and tools
+    required for the “cloud migration” awk/sed summarization task.
+    Key locations:
+      /home/user/cloud_migration/logs/*.log   – Input data for the exercise

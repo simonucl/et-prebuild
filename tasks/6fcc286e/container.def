@@ -1,0 +1,70 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    #--------------------------------------------------
+    # Base OS packages
+    #--------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        openssl \
+        ca-certificates \
+        tini
+
+    #--------------------------------------------------
+    # Python tooling for the grader
+    #--------------------------------------------------
+    pip3 install --no-cache-dir --upgrade pip
+    pip3 install --no-cache-dir pytest
+
+    #--------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    #--------------------------------------------------
+    # Create user home and exercise root (but NOT the certs directory)
+    mkdir -p /home/user/observability
+
+    # Ensure the unprivileged runtime user can write later
+    chmod 0777 /home/user
+    chmod 0777 /home/user/observability
+
+    # Provide a baseline Grafana configuration that lacks the required HTTPS block
+    cat >/home/user/observability/grafana.ini <<'EOF'
+###############################################
+# Baseline Grafana configuration (HTTP only)  #
+###############################################
+
+[paths]
+data = /var/lib/grafana
+logs = /var/log/grafana
+plugins = /var/lib/grafana/plugins
+
+#-------------------------------------------------
+# NOTE: The mandatory HTTPS [server] block that
+# the student must add is intentionally absent.
+#-------------------------------------------------
+EOF
+
+    # Make the file writable for the student/agent
+    chmod 0666 /home/user/observability/grafana.ini
+
+%labels
+    chmod 755 /home/user
+
+    Author      "Apptainer Exercise Generator"
+    Description "Base container for Grafana HTTPS enablement task"
+
+%runscript
+    echo "Container for Grafana HTTPS enablement exercise."
+    echo "No entrypoint action defined."
+
+%help
+    This container provides the starting environment for the
+    “Enable HTTPS for a local Grafana instance” hands-on task.
+    The required directories and an initial Grafana configuration
+    are present, while the certificate artefacts the student must
+    create are deliberately absent. pytest is installed for grading.

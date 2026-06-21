@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update base system and install Python & pytest
+    apt-get update -y
+    apt-get install -y python3 python3-pip --no-install-recommends
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------ #
+    # Prepare initial project documentation under /home/user/docs
+    # ------------------------------------------------------------------ #
+    mkdir -p /home/user/docs
+
+    # setup.md
+    cat > /home/user/docs/setup.md <<'EOF'
+# Project Setup
+Please set the API_KEY environment variable before running.
+EOF
+
+    # credentials.md
+    cat > /home/user/docs/credentials.md <<'EOF'
+# Credentials
+Do not hardcode passwords in source code.
+Store secrets in environment variables.
+EOF
+
+    # readme.md
+    cat > /home/user/docs/readme.md <<'EOF'
+# Welcome
+This project uses open data.
+EOF
+
+    # Ensure non-root users can read the docs
+    chmod -R 755 /home/user
+    find /home/user/docs -type f -exec chmod 644 {} \;
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure pip-installed tools are on PATH
+    export PATH="$PATH:~/.local/bin"
+
+%runscript
+    echo "Container for security-scan task. Run your commands inside an interactive shell."
+    exec "${@:-/bin/bash}"
+
+%labels
+    Author="AI Generated"
+    Description="Environment for security-phrase scan task with pytest pre-installed."

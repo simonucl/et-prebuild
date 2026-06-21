@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install Python tooling
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        locales
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the task
+    # ------------------------------------------------------------------
+    # Create base user directory tree
+    mkdir -p /home/user/downloads/alpha_assets
+    mkdir -p /home/user/dev
+
+    # Make the relevant directories world-writable so the unprivileged
+    # learner can freely create, move, and delete content.
+    chmod -R 777 /home/user
+
+    # Populate the downloads/alpha_assets directory with the exact eight
+    # regular files required by the task.  File content is irrelevant for
+    # the grading rubric—only their existence and type matter.
+    touch /home/user/downloads/alpha_assets/app.py
+    touch /home/user/downloads/alpha_assets/helpers.py
+    touch /home/user/downloads/alpha_assets/test_app.py
+    touch /home/user/downloads/alpha_assets/test_helpers.py
+    touch /home/user/downloads/alpha_assets/overview.md
+    touch /home/user/downloads/alpha_assets/CHANGELOG.md
+    touch /home/user/downloads/alpha_assets/Dockerfile
+    touch /home/user/downloads/alpha_assets/LICENSE
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is in PATH for the agent
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+
+%labels
+    Author task-prep-script
+    Description "Container image that sets up the initial state for the alpha_app migration exercise."

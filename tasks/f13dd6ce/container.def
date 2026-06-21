@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Install required system packages and Python tooling
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get -y install \
+        cron \
+        python3-pip
+
+    # pytest is required by the grading infrastructure
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare filesystem skeleton expected by the tests
+    # ------------------------------------------------------------------
+    # Create user-level directories
+    mkdir -p /home/user/scripts
+    mkdir -p /home/user/logs
+
+    # Dummy build script that the future cron job will call
+    cat > /home/user/scripts/build_docs.sh <<'EOF'
+#!/bin/bash
+#
+# Placeholder documentation build script.
+# Emits a timestamped message so that log appends are visible.
+echo "[`date +'%Y-%m-%d %H:%M:%S'`] docs build stub executed"
+EOF
+    chmod 755 /home/user/scripts/build_docs.sh
+
+    # Pre-existing log file that the cron job will append to
+    touch /home/user/logs/build_docs.log
+    chmod 666 /home/user/logs/build_docs.log
+
+    # Directory permissions: make sure the unprivileged test runner can write.
+    chmod 777 /home/user/logs
+    chmod 755 /home/user/scripts
+    chmod 755 /home/user
+
+    # Clean up APT caches to keep image size small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # No special environment variables are required.
+
+%labels
+    Author  Automated Setup
+    Description  Base image for “weekday docs build” cron-job task.
+
+%runscript
+    # Default entrypoint: open an interactive shell.
+    exec /bin/bash "$@"

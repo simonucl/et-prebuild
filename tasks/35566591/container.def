@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    #!/bin/bash
+    set -eux
+
+    # Install Python, pip and essential utilities
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        tar \
+        gzip \
+        coreutils
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare required initial filesystem state
+    # ------------------------------------------------------------------
+
+    # Create source data directories
+    mkdir -p /home/user/data_alpha \
+             /home/user/data_bravo \
+             /home/user/data_charlie
+
+    # Populate the files with the exact contents
+    printf "alpha one\n"  > /home/user/data_alpha/file1.txt
+    printf "alpha two\n"  > /home/user/data_alpha/file2.txt
+
+    printf "bravo three\n" > /home/user/data_bravo/file3.txt
+    printf "bravo four\n"  > /home/user/data_bravo/file4.txt
+
+    printf "# Charlie Data\nSome content.\n" > /home/user/data_charlie/readme.md
+
+    # Ensure the /home/user tree is writable by any unprivileged user that
+    # will run inside the container.
+    chmod -R 0777 /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author          backup-admin
+    Description     "Container for the daily backup exercise – initial state only (pytest included)."

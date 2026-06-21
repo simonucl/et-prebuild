@@ -1,0 +1,68 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Use non-interactive Debian frontend
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update package lists and install required utilities
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        sqlite3 \
+        ca-certificates \
+        sudo
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create a non-root user ‘user’ whose home is /home/user
+    # The tests and the agent will run as this account.
+    # ------------------------------------------------------------------
+    groupadd -g 1000 user || true
+    useradd  -m -u 1000 -g 1000 user || true
+
+    # ------------------------------------------------------------------
+    # Prepare the initial exercise state
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/edge_staging
+
+    cat > /home/user/edge_staging/devices.csv <<'EOF'
+id,hw_rev,location
+1,A1,rack-01
+2,B2,rack-02
+3,A1,rack-03
+EOF
+
+    # Set ownership and permissions
+    chown -R 1000:1000 /home/user
+    chmod 0755 /home/user/edge_staging
+    chmod 0644 /home/user/edge_staging/devices.csv
+
+    # Ensure the deployment directory does NOT exist at build time
+    if [ -d /home/user/edge_deploy ]; then
+        rm -rf /home/user/edge_deploy
+    fi
+
+    # Clean up package lists to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Default to UTF-8 locale
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    # By default just drop into a shell as the non-root user
+    exec sudo -u user -E /bin/bash "$@"
+
+%help
+    Container providing the initial state for the “edge-computing deployment”
+    exercise. Includes Python3, pytest, sqlite3, and a prepared staging CSV at
+    /home/user/edge_staging/devices.csv.

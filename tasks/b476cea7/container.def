@@ -1,0 +1,44 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update apt repositories and install dependencies
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        jq \
+        python3-pip
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # Create the CI directory structure
+    mkdir -p /home/user/ci
+
+    # Write the exact JSON payload (including final newline)
+    cat > /home/user/ci/pipeline_payload.json <<'EOF'
+{
+  "pipeline": {
+    "id": 42,
+    "status": "succeeded",
+    "stages": ["build", "test", "deploy"],
+    "commit": {
+      "hash": "a1b2c3d4",
+      "author": "devops"
+    }
+  }
+}
+EOF
+
+    # Ensure the directory tree is writable by any user executing the container
+    chmod -R 777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # No modifications to HOME; keep the default behavior.
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

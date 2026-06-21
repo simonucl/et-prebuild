@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # ------------------------------------------------------------------
+    # Basic tooling required by the exercise and the test harness
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial directory tree under /home/user/projects
+    # ------------------------------------------------------------------
+    # Ensure /home/user exists and is writable by whoever runs the container.
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Create the project structure.
+    mkdir -p /home/user/projects/site1
+    mkdir -p /home/user/projects/site2/data
+
+    # Set directory permissions (0755 as required).
+    chmod 0755 /home/user/projects
+    chmod 0755 /home/user/projects/site1
+    chmod 0755 /home/user/projects/site2
+    chmod 0755 /home/user/projects/site2/data
+
+    # Create files with exact contents and sizes.
+    printf "<html>Site1</html>\n" > /home/user/projects/site1/index.html
+    printf "theme: minimal\n"      > /home/user/projects/site1/config.yml
+    printf "# Site2\n"             > /home/user/projects/site2/README.md
+    printf "Info\n"                > /home/user/projects/site2/data/info.txt
+
+    # Ensure file permissions (0644).
+    chmod 0644 /home/user/projects/site1/index.html
+    chmod 0644 /home/user/projects/site1/config.yml
+    chmod 0644 /home/user/projects/site2/README.md
+    chmod 0644 /home/user/projects/site2/data/info.txt
+
+%environment
+    chmod 755 /home/user
+
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%labels
+    Author      backup-admin-exercise
+    Description Initial state for the backup administrator task

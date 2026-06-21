@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating APT and installing required packages..."
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        rsync \
+        ca-certificates
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Creating initial directory structure and seed files for the rsync exercise..."
+    # Source configuration directory
+    mkdir -p /home/user/source_configs
+    chmod 0777 /home/user/source_configs
+
+    # Remote (simulated “server”) configuration directory
+    mkdir -p /home/user/remote_server/configs
+    chmod 0777 /home/user/remote_server
+    chmod 0777 /home/user/remote_server/configs
+
+    # Populate source configuration files
+    cat <<'EOF' > /home/user/source_configs/app.conf
+APP_ENV=production
+MAX_CLIENTS=200
+EOF
+
+    cat <<'EOF' > /home/user/source_configs/db.conf
+DB_HOST=postgres.internal
+DB_PORT=5432
+EOF
+
+    # Populate legacy file on the remote side
+    cat <<'EOF' > /home/user/remote_server/configs/old.conf
+legacy=true
+EOF
+
+    # Ensure permissions allow the unprivileged runtime user to read/write
+    chmod -R 0666 /home/user/source_configs/*.conf
+    chmod 0666 /home/user/remote_server/configs/old.conf
+    chmod 0777 /home/user
+
+    echo "Cleaning up apt caches..."
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are on the PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

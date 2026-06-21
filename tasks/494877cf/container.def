@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python tooling and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the assignment tests
+    # ------------------------------------------------------------------
+    # 1. Ensure /home/user exists and is writable by the eventual
+    #    non-root runtime user so they can create new files/directories.
+    mkdir -p /home/user
+    chmod 1777 /home/user      # world-writable with sticky bit
+
+    # 2. Create the mandated sample file containing exactly the bytes
+    #    "abc" (no trailing newline)
+    printf 'abc' > /home/user/sample_data.txt
+    chmod 0644 /home/user/sample_data.txt
+
+%environment
+    chmod 755 /home/user
+
+    # Minimal PATH; do not override HOME so Apptainer will pass the host's
+    # $HOME through as usual.
+    export PATH=/usr/local/bin:/usr/bin:/bin
+
+%labels
+    Author Backup-Integrity Exercise Builder
+
+%help
+    Container image for the “backup integrity” programming assignment.
+    Pre-installs pytest and ships the required /home/user/sample_data.txt
+    file so that the student can focus solely on writing their solution.

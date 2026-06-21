@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating APT and installing Python tooling..."
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/*
+
+    echo "Installing pytest..."
+    pip3 install --no-cache-dir --upgrade pip setuptools pytest
+
+    echo "Creating initial raw data directory and file structure..."
+    mkdir -p /home/user/raw_data
+
+    cat > /home/user/raw_data/raw_events_20240315.jsonl <<'EOF'
+{"event_id": 1001, "user_id": 55, "ts": "2024-05-28T12:34:56Z", "meta": "foo"}
+{"event_id": 1002, "user_id": 56, "ts": "2024-05-28T12:35:56Z", "meta": "bar"}
+{"event_id": 1003, "user_id": 57, "ts": "2024-05-28T12:36:56Z", "meta": "baz"}
+{"event_id": 1004, "user_id": 58, "ts": "2024-05-28T12:37:56Z", "meta": "bat"}
+EOF
+
+    # Ensure correct permissions (directories 755, file 644)
+    chmod 755 /home/user
+    chmod 755 /home/user/raw_data
+    chmod 644 /home/user/raw_data/raw_events_20240315.jsonl
+
+%labels
+    Author      "Apptainer Task Prep Bot"
+    Description "Container providing the initial state for the click-stream ETL exercise."
+
+%environment
+    # No HOME override; rely on Apptainer defaults
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8

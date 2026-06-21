@@ -1,0 +1,33 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Create the required raw data file with exact contents and permissions
+    mkdir -p /home/user/data
+    cat > /home/user/data/server_capacity.raw << 'EOF'
+MemTotal: 16384
+MemFree: 8192
+DiskTotal: 200G
+DiskUsed: 120G
+EOF
+    chmod 0644 /home/user/data/server_capacity.raw
+    chmod 0755 /home/user
+    chmod 0755 /home/user/data
+
+%labels
+    chmod 755 /home/user
+
+    Author    Capacity-Planning Exercise Container
+    Description   Provides initial state for capacity CSV extraction task.
+
+%environment
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH

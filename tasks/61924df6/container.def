@@ -1,0 +1,74 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update -y && \
+    apt-get install -y python3 python3-pip && \
+    pip3 install --no-cache-dir pytest
+
+    # Provide `python` alias for convenience
+    ln -sf /usr/bin/python3 /usr/bin/python
+
+    # ------------------------------------------------------------------
+    # Create initial project structure expected by the grading tests
+    # ------------------------------------------------------------------
+    PROJECT_ROOT="/home/user/project"
+    SRC_DIR="${PROJECT_ROOT}/src"
+    LOGS_DIR="${PROJECT_ROOT}/logs"
+
+    mkdir -p "${SRC_DIR}"
+    mkdir -p "${LOGS_DIR}"
+
+    # ------------------------------------------------------------------
+    # Create source files with the required metadata and TAB characters
+    # ------------------------------------------------------------------
+
+    # main.py ----------------------------------------------------------
+    cat > "${SRC_DIR}/main.py" <<'PYMAIN'
+"""
+Author: John Doe
+Last Modified: 2023-05-12
+"""
+
+def main():	# contains one literal TAB before the comment
+	print("Hello World")	# line begins with one literal TAB
+PYMAIN
+
+    # utils.py ---------------------------------------------------------
+    cat > "${SRC_DIR}/utils.py" <<'PYUTILS'
+"""
+Author: Jane Smith
+Last Modified: 2023-05-11
+"""
+
+def helper():	# contains one literal TAB before the comment
+	print("Utility")	# line begins with one literal TAB
+PYUTILS
+
+    # db.py ------------------------------------------------------------
+    cat > "${SRC_DIR}/db.py" <<'PYDB'
+"""
+Author: Alice Brown
+Last Modified: 2023-05-10
+"""
+
+def connect():	# contains one literal TAB before the comment
+	print("DB connect")	# line begins with one literal TAB
+PYDB
+
+    # ------------------------------------------------------------------
+    # Ensure permissions allow the non-root runtime user to modify files
+    # ------------------------------------------------------------------
+    chmod -R a+rwx /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to override; default HOME is fine
+    export PYTHONIOENCODING="utf-8"
+
+%runscript
+    echo "Container for the text-processing task. Use this image to run your solution."

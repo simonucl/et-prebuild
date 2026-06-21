@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update apt repositories and install required packages
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial directory structure and seed data for the exercise
+    # ------------------------------------------------------------------
+    # Ensure /home and /home/user exist
+    mkdir -p /home/user/db_backups
+
+    # Create the SQL backup file with the exact required contents
+    cat >/home/user/db_backups/backup_2023_09_01.sql <<'EOF'
+SELECT 1;
+EOF
+
+    # Set sensible permissions so any unprivileged runtime user can read
+    chmod 755 /home/user
+    chmod 755 /home/user/db_backups
+    chmod 644 /home/user/db_backups/backup_2023_09_01.sql
+
+%files
+
+%environment
+    # Guarantee that Python and pip are on the PATH
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for the backup web-server exercise."
+    echo "Use an interactive shell to proceed:  apptainer exec <image>.sif /bin/bash"
+
+%help
+    This container sets up the initial environment for the “backup web-server”
+    task.  It pre-creates:
+      • /home/user/db_backups/
+      • /home/user/db_backups/backup_2023_09_01.sql  (with content: 'SELECT 1;')
+
+    pytest is installed for the automated grading suite.

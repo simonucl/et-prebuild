@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Update apt repositories and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        ca-certificates \
+        build-essential
+
+    # Install pytest (required by the grader)
+    pip3 install --no-cache-dir pytest
+
+    # Create a non-root user `user` with UID/GID 1000 and home directory /home/user
+    groupadd -g 1000 user || true
+    useradd  -m -u 1000 -g 1000 -s /bin/bash user
+
+    # Prepare the initial exercise file in the user's home directory
+    mkdir -p /home/user
+    cat > /home/user/cost_report_june_2023.csv <<'EOF'
+Service,Resource,Cost
+EC2,i-1234567890abcdef0,123.45
+S3,my-bucket,10.00
+EOF
+
+    # Ensure ownership and sane permissions
+    chown -R 1000:1000 /home/user
+    chmod 644 /home/user/cost_report_june_2023.csv
+
+    # Clean up apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure Python and pip are on the PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%runscript
+    exec "$@"
+
+%labels
+    Author "FinOps Exercise Container"
+    Description "Environment for the FinOps cost report archiving exercise."

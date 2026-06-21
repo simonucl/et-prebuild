@@ -1,0 +1,129 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # ---------------------------------------------------------------------
+    # Base tools
+    # ---------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ---------------------------------------------------------------------
+    # Directory hierarchy
+    # ---------------------------------------------------------------------
+    install -d -m 0777 \
+        /home/user/artifacts/releases \
+        /home/user/artifacts/snapshots \
+        /home/user/artifacts/thirdparty \
+        /home/user/bin \
+        /home/user/logs
+
+    # ---------------------------------------------------------------------
+    # cleanup_artifacts.sh
+    # ---------------------------------------------------------------------
+    cat > /home/user/bin/cleanup_artifacts.sh << 'EOF'
+#!/bin/bash
+# POSIX-compatible cleanup script for release artifacts.
+# Usage: cleanup_artifacts.sh [AGE_IN_DAYS]
+set -euo pipefail
+
+AGE_THRESHOLD="${1:-30}"
+TARGET_DIR="/home/user/artifacts/releases"
+LOG_FILE="/home/user/logs/artifact_cleanup.log"
+
+now_epoch=$(date +%s)
+deleted_files=0
+deleted_bytes=0
+
+find "$TARGET_DIR" -type f 2>/dev/null | while read -r file; do
+    [ -f "$file" ] || continue
+    mtime=$(stat -c %Y "$file")
+    file_age_days=$(( ( now_epoch - mtime ) / 86400 ))
+    if [ "$file_age_days" -gt "$AGE_THRESHOLD" ]; then
+        size=$(stat -c %s "$file")
+        abs_path=$(readlink -f "$file")
+        rm -f -- "$file"
+        ts=$(date +"%F %T")
+        echo "$ts - deleted $abs_path ($size bytes)" >> "$LOG_FILE"
+        deleted_files=$((deleted_files + 1))
+        deleted_bytes=$((deleted_bytes + size))
+    fi
+done
+
+ts=$(date +"%F %T")
+echo "$ts - summary: deleted $deleted_files files occupying $deleted_bytes bytes" >> "$LOG_FILE"
+exit 0
+EOF
+    chmod 755 /home/user/bin/cleanup_artifacts.sh
+
+    # ---------------------------------------------------------------------
+    # rotate_cleanup_log.sh
+    # ---------------------------------------------------------------------
+    cat > /home/user/bin/rotate_cleanup_log.sh << 'EOF'
+#!/bin/bash
+# Rotates artifact_cleanup.log when it exceeds 5 MiB.
+set -euo pipefail
+
+LOG_DIR="/home/user/logs"
+LOG_FILE="${LOG_DIR}/artifact_cleanup.log"
+AUDIT_LOG="${LOG_DIR}/rotation_audit.log"
+MAX_SIZE=$((5 * 1024 * 1024))    # 5 MiB
+
+if [ -f "$LOG_FILE" ]; then
+    current_size=$(stat -c %s "$LOG_FILE")
+    if [ "$current_size" -gt "$MAX_SIZE" ]; then
+        stamp=$(date +"%Y%m%d_%H%M%S")
+        gz_file="${LOG_DIR}/artifact_cleanup.log.${stamp}.gz"
+        gzip -c "$LOG_FILE" > "$gz_file"
+        : > "$LOG_FILE"
+        gz_size=$(stat -c %s "$gz_file")
+        ts=$(date +"%F %T")
+        echo "$ts - rotated artifact_cleanup.log into $(basename "$gz_file") ($gz_size bytes)" >> "$AUDIT_LOG"
+    fi
+fi
+exit 0
+EOF
+    chmod 755 /home/user/bin/rotate_cleanup_log.sh
+
+    # ---------------------------------------------------------------------
+    # Initial log state (one summary line, no deletions)
+    # ---------------------------------------------------------------------
+    date +"%F %T - summary: deleted 0 files occupying 0 bytes" \
+        > /home/user/logs/artifact_cleanup.log
+
+    # ---------------------------------------------------------------------
+    # Minimal crontab wrapper so that `crontab -l` works without root
+    # ---------------------------------------------------------------------
+    mkdir -p /usr/local/bin
+    cat > /usr/local/bin/crontab << 'EOF'
+#!/bin/bash
+# Lightweight wrapper providing the required `crontab -l` output.
+if [[ "$1" == "-l" ]]; then
+cat <<'CRONTAB'
+17 3 * * * /home/user/bin/cleanup_artifacts.sh 45
+10 4 * * 0 /home/user/bin/rotate_cleanup_log.sh
+CRONTAB
+exit 0
+fi
+
+# For any other invocation just defer (if available)
+exec /usr/bin/crontab "$@"
+EOF
+    chmod 755 /usr/local/bin/crontab
+
+    # ---------------------------------------------------------------------
+    # Final permissions: ensure writability by any user
+    # ---------------------------------------------------------------------
+    chmod -R 0777 /home/user/artifacts /home/user/logs /home/user/bin
+
+%environment
+    export PATH="/usr/local/bin:${PATH}"
+
+%labels
+    Author  Binary-Artifact-Manager Setup
+    Description "Container prepared for the housekeeping automation task"

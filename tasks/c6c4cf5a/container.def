@@ -1,0 +1,62 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Prevent interactive prompts during package installation
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Basic tooling
+    apt-get update && \
+        apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip && \
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Python packages required for testing
+    pip3 install --no-cache-dir pytest
+
+    ###########################################################################
+    # Prepare initial filesystem state for the exercise
+    ###########################################################################
+
+    # Directory layout
+    mkdir -p /home/user/release/config
+    mkdir -p /home/user/release/static
+    mkdir -p /home/user/release/tmp
+
+    # /home/user/release/app.py
+    cat > /home/user/release/app.py <<'EOF'
+# Application entry
+def main():
+    pass  # TODO Update database credentials
+EOF
+    chmod 0644 /home/user/release/app.py
+
+    # /home/user/release/config/settings.conf
+    echo "# sample settings" > /home/user/release/config/settings.conf
+    chmod 0600 /home/user/release/config/settings.conf
+
+    # /home/user/release/static/logo.png  (placeholder content)
+    echo "PNG" > /home/user/release/static/logo.png
+    chmod 0666 /home/user/release/static/logo.png
+
+    # /home/user/release/tmp/debug.log
+    echo "TODO remove debug statements before production" > /home/user/release/tmp/debug.log
+    chmod 0777 /home/user/release/tmp/debug.log
+
+    # Directory where the agent will store the report
+    mkdir -p /home/user/security_scans
+    chmod 0755 /home/user/security_scans
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is on the PATH
+    export PATH="/usr/bin:$PATH"
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Environment for security scan exercise with pytest pre-installed."

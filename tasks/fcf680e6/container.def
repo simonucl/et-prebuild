@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic utilities and Python tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        time \
+        ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Initialise the filesystem state expected by the assessment engine
+    # ------------------------------------------------------------------
+
+    # 1. Ensure the application directory exists
+    mkdir -p /home/user/app
+
+    # 2. Create the compute.sh script with correct contents and permissions
+    cat >/home/user/app/compute.sh <<"EOF"
+#!/bin/bash
+# Simple compute-intensive script
+sum=0
+for i in $(seq 1 100000); do
+  sum=$((sum + i))
+done
+echo $sum
+EOF
+    chmod 0755 /home/user/app/compute.sh
+
+    # 3. Make sure /home/user itself has sensible permissions
+    chmod 0755 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep PATH sane for both root and non-root execution
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author      Performance-Tuning Demo
+    Description "Base image with compute.sh and pytest installed for timing task"

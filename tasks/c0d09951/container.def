@@ -1,0 +1,30 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python with pip
+    apt-get update -y
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3 \
+        python3-pip
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the automated checker
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected regular, non-privileged user and its home directory
+    # (the build might already contain UID 1000; ignore errors if so)
+    useradd -m -s /bin/bash user || true
+    mkdir -p /home/user
+    chown -R 1000:1000 /home/user || true
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure user-level Python packages are found first
+    export PATH="/home/user/.local/bin:${PATH}"
+
+%labels
+    Maintainer="Container prepared for rsync firewall rule task (pytest included)"

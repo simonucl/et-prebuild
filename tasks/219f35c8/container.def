@@ -1,0 +1,38 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+
+    # Create the required application directory and files
+    mkdir -p /home/user/app
+
+    # index.html (must end with a single LF)
+    printf '<html>Hello World</html>\n' > /home/user/app/index.html
+
+    # config.yaml (must end with a single LF)
+    printf 'port: 8080\n' > /home/user/app/config.yaml
+
+    # Make /home/user writable so the non-root agent can create /home/user/backups
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author task-preparer
+    Description "Environment for backup-creation task"
+
+%help
+This container provides the initial state for the backup creation task.
+Pytest is pre-installed, and /home/user/app contains the two source files
+(index.html and config.yaml).  The /home/user/backups directory is intentionally
+absent so the agent can create it during the exercise.

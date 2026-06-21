@@ -1,0 +1,47 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ## Update APT and install Python + pip
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    ## Install pytest for the future test-suite
+    pip3 install --no-cache-dir pytest
+
+    ## Create non-root working user
+    useradd -m -s /bin/bash user
+
+    ## Prepare initial dataset directory and file
+    mkdir -p /home/user/data
+
+    cat > /home/user/data/server_access.log <<'EOF'
+2023-12-02 08:15:43 INFO user1 192.168.1.10 SUCCESS LOGIN
+2023-12-02 08:16:10 WARN user2 10.0.0.5 FAILED LOGIN
+2023-12-02 09:00:01 WARN user5 172.16.0.3 FAILED LOGIN
+2023-11-30 18:12:00 WARN user9 10.0.0.5 FAILED LOGIN
+2023-12-15 12:22:17 WARN user6 192.168.1.10 FAILED LOGIN
+2023-12-20 10:55:00 INFO user3 10.0.0.5 SUCCESS LOGIN
+2023-12-20 11:00:14 WARN user2 10.0.0.5 FAILED LOGIN
+2023-12-31 23:59:59 WARN user7 203.0.113.1 FAILED LOGIN
+EOF
+
+    ## Ensure ownership belongs to the non-root user
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing special needed here; keep default HOME handling.
+
+%labels
+    Author "Exercise Builder"
+    Description "Container image providing the initial state for the 'Failed Login IP extraction' task."
+
+%runscript
+    echo "Container for audit-log exercise. Execute your commands inside a shell:"
+    exec /bin/bash "$@"

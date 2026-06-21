@@ -1,0 +1,40 @@
+FROM ubuntu:22.04
+
+# Labels
+LABEL Author="task-preparation"
+LABEL Description="Environment for rotate-sensitive-credentials task"
+
+RUN set -e && \
+    # Install Python and pytest
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    # Base directory
+    mkdir -p /home/user/secure-app/config
+
+# VERSION file (exact content + trailing newline)
+RUN printf '3.2.0\n' > /home/user/secure-app/VERSION
+
+# Initial CHANGELOG.md (exact content + trailing newline)
+RUN cat > /home/user/secure-app/CHANGELOG.md <<'EOF'
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [3.2.0] - 2024-01-15
+### Added
+- Initial public release.
+EOF
+
+# credentials.json with exactly one trailing newline
+RUN cat > /home/user/secure-app/config/credentials.json <<'EOF'
+{
+  "api_key": "OLD_SECRET_KEY",
+  "db_password": "unchanged"
+}
+EOF
+
+# Ensure files and directories are readable/writable by the unprivileged user
+RUN chmod -R a+rwX /home/user
+
+ENV PYTHONPATH=/home/user

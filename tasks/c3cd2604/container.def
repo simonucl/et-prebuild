@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install Python and pytest (required by the automated checker)
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # 2. Prepare the initial filesystem layout expected by the tests
+    # ------------------------------------------------------------------
+    # Base directories
+    mkdir -p /home/user/projects/datasets/raw
+    mkdir -p /home/user/projects/datasets/links
+
+    # CSV source data (dummy content is sufficient)
+    printf "id,value\n1,100\n" > /home/user/projects/datasets/raw/sales_2020.csv
+    printf "id,value\n1,200\n" > /home/user/projects/datasets/raw/sales_2021.csv
+    printf "id,value\n1,300\n" > /home/user/projects/datasets/raw/customers_2020.csv
+
+    # Symlinks (one valid, one intentionally broken)
+    ln -s ../raw/sales_2019.csv        /home/user/projects/datasets/links/old_sales
+    ln -s ../raw/customers_2020.csv    /home/user/projects/datasets/links/cust_link
+
+    # Permissions: make sure the future non-root user can read/write everything
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author symlink-cleanup-task-builder

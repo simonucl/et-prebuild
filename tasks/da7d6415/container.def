@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update APT index and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Upgrade pip itself and install pytest for the test-harness
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # Prepare a writable home directory for the student/user.
+    mkdir -p /home/user
+    chmod 0777 /home/user   # world-writable so the non-root runtime user can write
+
+    # Intentionally DO NOT create /home/user/archives or any backup file.
+    # These are to be created by the learner during the exercise.
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard paths are available
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author "ChatGPT – Apptainer build script"
+    Description "Ubuntu 22.04 image with Python, pip, and pytest for the package snapshot task."
+
+%help
+    This container is prepared for the "pip freeze snapshot" exercise.
+    It provides Python 3, pip, and pytest.  No backup directory or file
+    has been created so the learner can perform the required steps.

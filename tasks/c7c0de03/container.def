@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # ------------------------------------------------------------------
+    # 1. Install Python tooling and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # 2. Prepare the “incoming” directory tree expected by the tests
+    # ------------------------------------------------------------------
+    INCOMING_DIR="/home/user/etl_workspace/incoming"
+    mkdir -p "${INCOMING_DIR}/extras"
+
+    # Create the CSV / TXT files with the exact contents specified
+    printf "month,visits\nJan,1023\n"                             > "${INCOMING_DIR}/january.csv"
+    printf "month,visits\nFeb,1107\n"                             > "${INCOMING_DIR}/february.csv"
+    printf "Raw CSV dump received from upstream."                 > "${INCOMING_DIR}/readme.txt"
+    printf "note_id,text\n1,'late arrival'\n"                     > "${INCOMING_DIR}/extras/notes.csv"
+
+    # ------------------------------------------------------------------
+    # 3. Permissions
+    #    Grant read-write access to all users so that the non-privileged
+    #    agent running inside the container can create the backup later.
+    # ------------------------------------------------------------------
+    chmod -R a+rwX /home/user/etl_workspace
+
+    # ------------------------------------------------------------------
+    # 4. IMPORTANT: Do NOT create the “backups” directory here.
+    #    The agent must create it during its single-command task.
+    # ------------------------------------------------------------------
+    :
+%environment
+    chmod 755 /home/user
+
+    # Nothing to declare; defer to container defaults.
+    :

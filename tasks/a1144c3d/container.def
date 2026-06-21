@@ -1,0 +1,50 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package index and install Python along with pytest
+    apt-get update -y && \
+    apt-get install -y python3 python3-pip && \
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Set up the initial directory structure and Markdown documentation
+    # ------------------------------------------------------------------
+    # Create the documentation directory
+    mkdir -p /home/user/documentation
+
+    # Ensure the future backup location can be created by an unprivileged user
+    # (grant write permission on /home/user)
+    chmod 777 /home/user
+
+    # ------------------------------------------------------------------
+    # Populate the three required Markdown files with exact content
+    # ------------------------------------------------------------------
+    cat > /home/user/documentation/overview.md <<'EOF'
+# Project Overview
+This document provides a bird-eye summary of the project.
+EOF
+
+    cat > /home/user/documentation/getting_started.md <<'EOF'
+# Getting Started
+Step-by-step guide to install and configure the project.
+EOF
+
+    cat > /home/user/documentation/api_reference.md <<'EOF'
+# API Reference
+Exhaustive list of endpoints, parameters and response formats.
+EOF
+
+    # ------------------------------------------------------------------
+    # Set sensible permissions
+    # ------------------------------------------------------------------
+    chmod 755 /home/user/documentation
+    chmod 644 /home/user/documentation/*.md
+
+%labels
+    Author backup-exercise
+    Description "Environment prepared for Markdown documentation backup exercise"
+
+%help
+This container provides the starting filesystem layout for the
+“version-locked Markdown backup” task.

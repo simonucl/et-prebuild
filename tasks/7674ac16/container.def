@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python & PyPI
+    apt-get update
+    apt-get install -y python3 python3-pip
+
+    # Install pytest for the test suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state required by the exercise
+    # ------------------------------------------------------------------
+    # Create the directory structure
+    mkdir -p /home/user/admin_data
+
+    # Populate /home/user/admin_data/accounts.ini with the exact content
+    cat > /home/user/admin_data/accounts.ini <<'EOF'
+[alice]
+status = active
+role   = editor
+
+[bob]
+status = disabled
+role   = admin
+
+[carol]
+status = active
+role   = viewer
+
+[dave]
+status = pending
+role   = contributor
+
+[eve]
+status = active
+role   = admin
+EOF
+
+    # Set safe permissions
+    chmod 0755 /home/user
+    chmod 0755 /home/user/admin_data
+    chmod 0644 /home/user/admin_data/accounts.ini
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard paths are available
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author      "Prepared by ChatGPT"
+    Description "Environment for the Active Users Report task with pytest pre-installed."

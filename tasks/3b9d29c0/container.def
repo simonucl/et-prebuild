@@ -1,0 +1,53 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic development tools
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the exercise harness
+    pip3 install --no-cache-dir pytest
+
+    # Create a conventional non-root account so that /home/user exists
+    # (tests refer to this path explicitly).
+    if ! id -u user >/dev/null 2>&1; then
+        # Re-use UID 1000 if free; otherwise fall back to automatic UID.
+        USER_UID=1000
+        if getent passwd 1000 >/dev/null 2>&1; then
+            useradd -m -s /bin/bash user          # UID auto-assigned
+        else
+            useradd -m -u "${USER_UID}" -s /bin/bash user
+        fi
+    fi
+
+    # Ensure the home directory is present with safe permissions.
+    mkdir -p /home/user
+    chmod 755 /home/user
+
+    # Clean up to keep image slim
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    # Make sure user-installed Python tools (if any) are found first.
+    export PATH="/home/user/.local/bin:${PATH}"
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author "Generated for DNS sanity-check task"
+    Description "Base container with pytest installed and clean initial state (no alerts directory)."
+
+%runscript
+    exec "$@"
+
+%help
+    This Apptainer image provides a clean environment for the “DNS status log”
+    exercise.  Pytest is pre-installed, and a writable /home/user directory is
+    available.  The expected output artefacts (/home/user/alerts and its log
+    file) are intentionally absent at build time so that the learner can create
+    them during the session.

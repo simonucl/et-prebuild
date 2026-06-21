@@ -1,0 +1,82 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #-----------------------------------------------------------------
+    # 1. Base packages and Python tooling
+    #-----------------------------------------------------------------
+    apt-get update && \
+        apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            file \
+            ca-certificates && \
+        rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    #-----------------------------------------------------------------
+    # 2. Prepare initial exercise data
+    #    /home/user/support/incoming/  with three Latin-1 files
+    #-----------------------------------------------------------------
+    mkdir -p /home/user/support/incoming
+
+    # Make sure the student (non-root uid at runtime) can create
+    # new files/directories inside /home/user/support/
+    chmod 0777 /home/user
+    chmod 0777 /home/user/support
+
+    # Create UTF-8 source texts, then convert to ISO-8859-1
+    tmpdir="$(mktemp -d)"
+
+    cat > "${tmpdir}/clients_es.utf8" <<'EOF'
+ID,Nombre,País
+1,Ana,Costa Rica
+2,José,México
+3,María,España
+EOF
+
+    cat > "${tmpdir}/résumé_fr.utf8" <<'EOF'
+ID;Nom;Poste
+1;Zoé;Développeuse
+2;André;Analyste
+3;Hélène;Gestionnaire
+EOF
+
+    cat > "${tmpdir}/daten_de.utf8" <<'EOF'
+ArtikelID|Name|Beschreibung
+1001|Käse|Frischer Gouda
+1002|Würstchen|Brühwurst aus Bayern
+1003|Apfel|Süßer Elstar
+EOF
+
+    # Convert the UTF-8 files to Latin-1 and place them where needed
+    for src in "${tmpdir}"/*.utf8; do
+        base="$(basename "${src}" .utf8)"
+        iconv -f UTF-8 -t ISO-8859-1 "${src}" \
+            > "/home/user/support/incoming/${base}.txt"
+    done
+
+    # Clean up the temporary directory
+    rm -rf "${tmpdir}"
+
+    # Set sane permissions
+    chmod 0755 /home/user/support/incoming
+    chmod 0644 /home/user/support/incoming/*.txt
+
+%labels
+    chmod 755 /home/user
+
+    Author      "Container build script for encoding exercise"
+    Description "Provides initial state with three Latin-1 text files for students"
+    Version     "1.0"
+
+%help
+    This container delivers the starting environment for the
+    “encoding conversion” exercise.  It pre-installs pytest for
+    automated grading and populates
+      /home/user/support/incoming/
+    with the required ISO-8859-1 encoded files.

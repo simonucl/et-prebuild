@@ -1,0 +1,55 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python plus build tools
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+
+    # Install pytest for the assessment framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial configuration files for the student to refactor
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/configs
+
+    # 1. /home/user/configs/app.yml
+    cat > /home/user/configs/app.yml <<'YAML'
+app_name: SampleApp
+debug: true
+version: 2.0.3
+database:
+  host: localhost
+  port: 5432
+YAML
+
+    # 2. /home/user/configs/db.toml
+    cat > /home/user/configs/db.toml <<'TOML'
+[connection]
+host = "localhost"
+port = 5432
+user = "appuser"
+
+[settings]
+max_connections = 150
+TOML
+
+    # Ensure the non-privileged runtime user can read/write the configs
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Standard locale settings
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+    # Guarantee that `python` maps to Python 3 if it's absent
+    if ! command -v python >/dev/null 2>&1; then
+        alias python=python3
+    fi

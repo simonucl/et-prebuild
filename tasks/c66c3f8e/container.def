@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    ## Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    ## Prepare writable skeleton so an unprivileged user can initialise the task
+    mkdir -p /home/user
+    chmod 0777 /home/user      # allow the runtime (non-root) user to create content
+
+%environment
+    chmod 755 /home/user
+
+    # The code below is executed for every container run (before the
+    # user command).  It creates the initial state required by the
+    # autograder, making sure files are owned by the **invoking** user.
+
+    if [ ! -d /home/user ]; then
+        mkdir -p /home/user
+        chmod 0777 /home/user
+    fi
+
+    # ------------------------------------------------------------------
+    # Create /home/user/logs/ and seed system.log exactly once
+    # ------------------------------------------------------------------
+    if [ ! -d /home/user/logs ]; then
+        mkdir -p /home/user/logs
+        chmod 0755 /home/user/logs
+    fi
+
+    if [ ! -f /home/user/logs/system.log ]; then
+        cat > /home/user/logs/system.log <<'EOF'
+2023-07-01 12:00:01 FAILED LOGIN user=root
+2023-07-01 12:01:15 ERROR Disk quota exceeded
+2023-07-01 12:02:45 WARNING High memory usage detected
+2023-07-01 12:03:00 FAILED LOGIN user=admin
+2023-07-01 12:03:30 ERROR Cannot open configuration file
+2023-07-01 12:04:05 WARNING CPU temperature high
+2023-07-01 12:05:20 ERROR Invalid user input
+2023-07-01 12:06:10 FAILED LOGIN user=test
+2023-07-01 12:07:55 ERROR Service unavailable
+2023-07-01 12:08:30 ERROR Timeout while connecting to DB
+EOF
+        chmod 0644 /home/user/logs/system.log
+    fi
+
+    # Export standard locale variables (optional quality-of-life)
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author Security-Log Task Setup
+    Description "Base image providing initial state and pytest for automated grading."

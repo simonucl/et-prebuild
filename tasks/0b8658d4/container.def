@@ -1,0 +1,36 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python & tooling
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel \
+        ca-certificates
+
+    # Upgrade pip and install pytest for the grader
+    python3 -m pip install --no-cache-dir --upgrade pip
+    python3 -m pip install --no-cache-dir pytest
+
+    # Ensure the required home directory exists and is writable
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+    # Clean up apt cache to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Make sure standard binary locations are in PATH
+    export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+
+%runscript
+    # Default entrypoint simply opens a shell
+    exec /bin/bash "$@"

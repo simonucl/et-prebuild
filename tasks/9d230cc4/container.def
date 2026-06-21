@@ -1,0 +1,24 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python + pip
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grading framework
+    pip3 install --no-cache-dir pytest
+
+    # Create a writable home directory for the non-root user that will run the tasks
+    mkdir -p /home/user
+    chmod 0777 /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author cloud-migration-container
+    Description "Clean environment for cloud-migration task with pytest installed."
+
+%runscript
+    exec "$@"

@@ -1,0 +1,26 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install Python + pytest
+    apt-get update
+    apt-get install -y python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the required directory hierarchy for the task
+    mkdir -p /home/user/backup/weekly
+
+    # Ensure the weekly directory is writable by any user running the container
+    chmod 0777 /home/user/backup/weekly
+
+    # Create the empty backup file
+    : > /home/user/backup/weekly/full_backup.tar.gz
+    chmod 0644 /home/user/backup/weekly/full_backup.tar.gz
+
+%environment
+    chmod 755 /home/user
+
+    # Add the default user-base install location for pip to PATH (if used)
+    export PATH="${PATH}:${HOME}/.local/bin"

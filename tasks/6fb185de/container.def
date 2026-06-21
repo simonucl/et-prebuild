@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update apt and install Python plus pip
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    python3 -m pip install --no-cache-dir pytest==7.1.2
+
+    # ------------------------------------------------------------------
+    # Create the initial state required by the exercise
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/ci
+
+    # Initial contents of /home/user/ci/pipeline.yml
+    cat <<'EOF' > /home/user/ci/pipeline.yml
+version: 1
+python_packages:
+  - pytest==7.1.2
+EOF
+
+    # Ensure the learner (non-root) can modify the repo
+    chmod -R a+rwX /home/user/ci
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and user-installed packages are on PATH
+    export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"
+
+%labels
+    Author  example
+    Description  Container with initial CI configuration for buildozer task.
+
+%runscript
+    echo "This container sets up the initial state for the buildozer dependency task."

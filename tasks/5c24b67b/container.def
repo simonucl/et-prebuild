@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author AI-Generated
+    Description "Starter container for Makefile-authoring assignment"
+
+%post
+    set -e
+
+    # Basic development tool-chain and Python/pytest
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        time \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Create the starter project skeleton:
+    #   • only one file must exist:  /home/user/project/src/main.c
+    #   • Makefile, bin/, results/  MUST NOT exist yet
+    #   • ensure the student (non-root uid) can add files later
+    # -----------------------------------------------------------------
+    mkdir -p /home/user/project/src
+
+cat <<'EOF' > /home/user/project/src/main.c
+#include <stdio.h>
+
+int main(void)
+{
+    puts("Hello, performance world!");
+    return 0;
+}
+EOF
+
+    # Give write permission to anyone so the unprivileged agent can work.
+    chmod -R 777 /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep whatever $HOME the runtime gives us; no override.
+
+%runscript
+    # Default action when container is executed without arguments.
+    # Just drop into an interactive shell in the project root.
+    cd /home/user/project
+    exec /bin/bash
+
+%help
+    This container supplies the minimal starter state for the Makefile
+    assignment.  Only the file
+
+        /home/user/project/src/main.c
+
+    exists at build time.  The student is expected to author a Makefile
+    and create further artefacts during the assessment workflow.
+
+%test
+    # Quick self-check: ensure the single source file exists.
+    test -f /home/user/project/src/main.c

@@ -1,0 +1,34 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    echo "Updating package index and installing prerequisites..."
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        rsync \
+        ca-certificates
+
+    echo "Installing pytest via pip..."
+    pip3 install --no-cache-dir pytest
+
+    echo "Preparing writable /home/user workspace (blank slate)..."
+    mkdir -p /home/user
+    # Make it writable for whichever unprivileged UID runs inside the container
+    chmod 0777 /home/user
+
+    echo "Cleaning up apt caches..."
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure standard binary paths are available
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%labels
+    Author          "AI Assistant"
+    Description     "Starter container for documentation-sync exercise. Provides pytest and rsync; leaves /home/user otherwise empty so tests can verify initial state."

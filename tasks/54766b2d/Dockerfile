@@ -1,0 +1,42 @@
+FROM ubuntu:22.04
+
+# Author: On-Call DevOps Task
+# Description: Base image prepared for SSH-log parsing exercise
+
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+
+RUN set -e && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        bash && \
+    pip3 install --no-cache-dir pytest
+
+RUN set -e && \
+    if ! id -u 1000 >/dev/null 2>&1; then \
+        useradd -m -u 1000 -s /bin/bash user; \
+    else \
+        useradd -m -s /bin/bash user; \
+    fi
+
+RUN mkdir -p /home/user/app/logs
+
+RUN cat > /home/user/app/logs/access.log <<'EOF'
+Aug 11 15:12:32 server sshd[1234]: Failed password for invalid user admin from 192.0.2.10 port 51158 ssh2
+Aug 11 15:13:00 server sshd[1235]: Failed password for root from 198.51.100.23 port 51234 ssh2
+Aug 11 15:13:15 server sshd[1236]: Failed password for invalid user test from 192.0.2.10 port 51376 ssh2
+Aug 11 15:14:22 server sshd[1237]: Failed password for root from 203.0.113.7 port 51455 ssh2
+Aug 11 15:14:50 server sshd[1238]: Accepted password for alice from 198.51.100.34 port 51477 ssh2
+Aug 11 15:15:05 server sshd[1239]: Connection closed by authenticating user bob 203.0.113.8 port 51501 [preauth]
+EOF
+
+RUN chmod 755 /home/user && \
+    chmod 755 /home/user/app && \
+    chmod 755 /home/user/app/logs && \
+    chmod 644 /home/user/app/logs/access.log && \
+    chown -R user:user /home/user
+
+CMD ["bash"]

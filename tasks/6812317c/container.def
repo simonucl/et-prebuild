@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected UNIX user (optional for runtime but keeps /home/user sane)
+    useradd -m -s /bin/bash user || true
+
+    # ------------------------------------------------------------------
+    # Prepare the initial experiment directory and its exact contents
+    # ------------------------------------------------------------------
+    EXP_DIR="/home/user/experiments/run_03"
+    mkdir -p "${EXP_DIR}"
+
+    # Make the directory writable so the student can add the report later
+    chmod 777 "${EXP_DIR}"
+
+    # 1. model.pt  (20 bytes)
+    printf 'DUMMY_MODEL_CONTENT\n' > "${EXP_DIR}/model.pt"
+
+    # 2. metrics.json  (33 bytes)
+    printf '{"accuracy": 0.92, "loss": 0.15}\n' > "${EXP_DIR}/metrics.json"
+
+    # 3. config.yaml  (36 bytes)
+    printf 'batch_size: 32\nlearning_rate: 0.001\n' > "${EXP_DIR}/config.yaml"
+
+    # 4. training.log  (56 bytes)
+    printf 'Epoch,Loss,Accuracy\n1,0.45,0.78\n2,0.32,0.84\n3,0.21,0.88\n' > "${EXP_DIR}/training.log"
+
+    # Ensure predictable permissions on the initial artifacts
+    chmod 644 "${EXP_DIR}"/*
+
+%environment
+    chmod 755 /home/user
+
+    # Keep python in PATH and make stdout/stderr unbuffered
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author "Container prepared for artifact size summarization task"

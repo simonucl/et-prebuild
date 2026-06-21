@@ -1,0 +1,39 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Refresh package list and install required system packages
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        curl \
+        ca-certificates \
+        build-essential
+
+    # Install pytest for the grading harness
+    pip3 install --no-cache-dir pytest
+
+    # Create a generic home directory that will be writable by the unprivileged
+    # user when the container is run.  This will be over-mounted by Apptainer’s
+    # default $HOME bind if present, but guarantees the path exists either way.
+    mkdir -p /home/user
+    chmod 0755 /home/user
+
+    # Clean up apt caches to keep the image lean
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Basic locale and Python settings
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author="Apptainer Task Setup"
+    Description="Base image with Python3, curl, and pytest for the metadata snapshot automation challenge."

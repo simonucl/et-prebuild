@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic tooling
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel \
+        ca-certificates \
+        wget
+
+    # Install pytest for use by the grader/agent
+    python3 -m pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the user’s working area and supply the offline wheel
+    # ------------------------------------------------------------------
+    # 1. Create the expected home directory skeleton
+    mkdir -p /home/user/prebuilt_wheels
+
+    # 2. Download exactly the required wheel into the directory
+    #    No source dists or additional dependencies are fetched.
+    python3 -m pip download --no-deps --only-binary=:all: \
+        --dest /home/user/prebuilt_wheels \
+        sqlparse==0.4.4
+
+    # 3. Ensure only the wheel remains (defensive clean-up)
+    find /home/user/prebuilt_wheels -type f ! -name 'sqlparse-0.4.4-py3-none-any.whl' -delete
+
+    # 4. Make everything inside /home/user world-readable so the
+    #    non-privileged runtime user can access it.
+    chmod -R a+rX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to override; keep default HOME handling
+    :
+
+%files
+    # (no external files to copy)
+
+%runscript
+    # Default entrypoint: drop to an interactive shell
+    exec /bin/bash
+
+%help
+    This container supplies:
+      • pytest (pre-installed)
+      • An offline wheel for sqlparse 0.4.4 in /home/user/prebuilt_wheels
+
+    The wheel is intended for user-level installation via:
+        pip install --user --no-index --find-links=/home/user/prebuilt_wheels sqlparse==0.4.4

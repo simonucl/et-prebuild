@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare the required directory structure and initial log file
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/logs
+    mkdir -p /home/user/output
+
+    # Permissions: 755 for directories
+    chmod 755 /home/user
+    chmod 755 /home/user/logs
+    chmod 755 /home/user/output
+
+    # Create the app.log with exact contents (LF endings)
+    cat > /home/user/logs/app.log <<'EOF'
+{"timestamp":"2023-10-01T12:00:00Z","level":"INFO","message":"Service started"}
+{"timestamp":"2023-10-01T12:05:00Z","level":"ERROR","message":"Failed to connect to DB","error_code":"ERR001"}
+{"timestamp":"2023-10-01T12:06:00Z","level":"ERROR","message":"Null pointer exception","error_code":"ERR002"}
+{"timestamp":"2023-10-01T12:07:00Z","level":"ERROR","message":"Invalid input data"}
+{"timestamp":"2023-10-01T12:08:00Z","level":"WARN","message":"High memory usage"}
+EOF
+
+    # Permissions: 644 for the log file
+    chmod 644 /home/user/logs/app.log
+
+    # (Optional) create a non-root user named 'user' with matching home
+    if ! id -u user >/dev/null 2>&1; then
+        useradd -m -d /home/user user
+    fi
+
+%environment
+    # Keep PATH sane; do not override $HOME
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Auto-generated for log-analysis task"
+    Description="Container providing initial state for log validation challenge"

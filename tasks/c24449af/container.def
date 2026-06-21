@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Basic packages and Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 python3-pip python3-setuptools ca-certificates \
+        coreutils grep sed gawk
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the testing framework
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create a regular (non-root) user called “user” with home directory
+    # /home/user.  Give it a fixed UID/GID so permissions are predictable
+    # during testing.
+    # ------------------------------------------------------------------
+    groupadd -g 1000 user
+    useradd  -m -u 1000 -g 1000 -s /bin/bash user
+
+    # ------------------------------------------------------------------
+    # Prepare initial log directory and sample audit log file
+    # ------------------------------------------------------------------
+    LOG_DIR="/home/user/logs"
+    mkdir -p "${LOG_DIR}"
+
+    # Create the site_admin.log file with exactly the required 10 lines,
+    # each ending in a newline (including the final one).
+    cat > "${LOG_DIR}/site_admin.log" <<'EOF'
+2024-05-25 09:12:30 useradd alice
+2024-05-25 09:15:02 useradd bob
+2024-05-25 09:16:45 passwd alice SUCCESS
+2024-05-25 09:18:07 passwd alice SUCCESS
+2024-05-25 09:20:13 passwd bob FAILURE: password too short
+2024-05-25 09:22:50 passwd bob SUCCESS
+2024-05-25 09:30:00 userdel dave
+2024-05-25 09:35:12 passwd dave FAILURE: user not found
+2024-05-25 10:00:00 useradd eve
+2024-05-25 10:05:52 passwd eve SUCCESS
+EOF
+
+    # Permissions: directory 755, log file 644, ownership -> user
+    chmod 755 "${LOG_DIR}"
+    chmod 644 "${LOG_DIR}/site_admin.log"
+    chown -R user:user /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python and pip are in PATH for both root and the unprivileged user
+    export PATH="$PATH:/usr/local/bin"
+
+%labels
+    Author account-summary exercise container
+
+%runscript
+    echo "This container is prepared for the 'account summary' exercise."
+    echo "Switch to the 'user' account to begin:  su - user"

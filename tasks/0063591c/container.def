@@ -1,0 +1,57 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install required packages
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        file \
+        locales
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the task & tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/configs
+    mkdir -p /home/user/change_logs
+
+    chmod 0777 /home/user/configs
+    chmod 0777 /home/user/change_logs
+
+    # Create the legacy.conf file encoded in ISO-8859-1 (latin-1)
+    python3 - << 'PYTHON_EOF'
+import os, codecs, textwrap, stat
+
+content = textwrap.dedent("""\
+    # Sample Legacy Configuration
+    database_host=localhost
+    database_user=administrador
+    welcome_message=Bem-vindo ao café!
+    """)
+
+os.makedirs("/home/user/configs", exist_ok=True)
+with codecs.open("/home/user/configs/legacy.conf", "w", "latin-1") as fh:
+    fh.write(content)
+
+# Ensure permissions: readable by everyone
+os.chmod("/home/user/configs/legacy.conf", 0o644)
+PYTHON_EOF
+
+%environment
+    chmod 755 /home/user
+
+    # No HOME override – Apptainer will bind host $HOME automatically
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    echo "Container for encoding-migration task. Execute your commands as needed."

@@ -1,0 +1,42 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install Python tooling
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the verification test-suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial workspace expected by the exercise’s test harness
+    # ------------------------------------------------------------------
+    # Create the dedicated home sub-directory
+    mkdir -p /home/user
+    # Make it writable by any unprivileged runtime user
+    chmod 0777 /home/user
+
+    # Create the firewall manifest with exactly one newline-terminated line
+    printf "# ETL Pipeline Firewall Rules\n" > /home/user/etl_firewall_rules.conf
+    # Ensure the file is writable by any user so the student can append to it
+    chmod 0666 /home/user/etl_firewall_rules.conf
+
+    # Do NOT create /home/user/etl_firewall_apply.log; the student must make it
+    :
+
+%labels
+    chmod 755 /home/user
+
+    Author firewall-task-setup
+    Description "Container for firewall manifest task – includes initial state and pytest"
+
+%help
+This Apptainer image provides the initial filesystem state for the
+“firewall manifest” exercise.  
+It already contains:
+  • /home/user/etl_firewall_rules.conf  (one specific line, writable)
+Pytest is installed so the evaluation harness can run.

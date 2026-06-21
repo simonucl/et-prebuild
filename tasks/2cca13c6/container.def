@@ -1,0 +1,46 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    #--------------------------------------------------
+    # Install Python 3 and pytest
+    #--------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    #--------------------------------------------------
+    # Create the initial project directory structure
+    #--------------------------------------------------
+    mkdir -p /home/user/project/utils
+
+    # main.py
+    printf 'print("Hello from main")\n' > /home/user/project/main.py
+
+    # README.md
+    printf '# Project Sample\nA tiny project used for compression-task testing.\n' \
+        > /home/user/project/README.md
+
+    # utils/helper.py
+    printf 'def helper():\n    return "helping"\n' \
+        > /home/user/project/utils/helper.py
+
+    #--------------------------------------------------
+    # Set permissions so the non-root runtime user can work
+    #--------------------------------------------------
+    chmod 0777 /home/user               # writable for the agent
+    chmod -R a+rX,u+w /home/user/project
+
+%environment
+    chmod 755 /home/user
+
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export PYTHONUNBUFFERED=1
+
+%labels
+    Author          OpenAI_Assistant
+    Description     Initial state for the compression task – Ubuntu 22.04 with pytest installed

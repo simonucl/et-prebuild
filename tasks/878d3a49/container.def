@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # Set up documentation workspace
+    mkdir -p /home/user/docs
+
+    cat >/home/user/docs/intro.md <<'EOF'
+# Introduction
+Placeholder text.
+EOF
+
+    cat >/home/user/docs/usage.md <<'EOF'
+# Usage Guide
+Placeholder text.
+EOF
+
+    cat >/home/user/docs/faq.md <<'EOF'
+# FAQ
+Placeholder text.
+EOF
+
+    # Ensure the docs directory is writable by any user so that new files can be created
+    chmod 777 /home/user/docs
+
+%labels
+    chmod 755 /home/user
+
+    Author documentation-setup
+
+%environment
+    # Ensure Python is available as `python`
+    export PYTHONIOENCODING="utf-8"
+    if ! command -v python >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1 ; then
+        alias python=python3
+    fi

@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    # Update package lists and install Python & pip
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Seed the required directory structure and the services.ini file
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/sre_monitor/config
+
+    cat > /home/user/sre_monitor/config/services.ini <<'EOF'
+[web]
+name = frontend
+host = 127.0.0.1
+port = 80
+
+[db]
+name = database
+host = 127.0.0.1
+port = 5432
+
+[external_dns]
+name = google_dns
+host = 8.8.8.8
+port = 53
+EOF
+
+    # Set appropriate permissions (directories: 755, file: 644)
+    chmod -R 755 /home/user/sre_monitor
+    chmod 644 /home/user/sre_monitor/config/services.ini
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python points to python3
+    export PYTHONIOENCODING=utf-8
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author="Apptainer Task Preparer"
+    Description="Container image pre-seeded for the SRE monitor JSON conversion exercise"
+
+%help
+    This image contains:
+      • Python 3 and pytest installed system-wide.
+      • Pre-seeded INI configuration at /home/user/sre_monitor/config/services.ini
+    Students will read this INI file and generate the required JSON output.

@@ -1,0 +1,28 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package index and install required utilities
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-pip \
+        iputils-ping \
+        ca-certificates
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the test harness
+    pip3 install --no-cache-dir pytest
+
+    # Create the expected user directory and helper file
+    mkdir -p /home/user
+    echo "198.51.100.42" > /home/user/iot_gateway_ip.txt
+
+    # Ensure non-root users can read the helper file
+    chmod 755 /home/user
+    chmod 644 /home/user/iot_gateway_ip.txt
+
+%labels
+    Author  IoT-Gateway Task Prep
+    Description  Base image for edge-computing health-check exercise

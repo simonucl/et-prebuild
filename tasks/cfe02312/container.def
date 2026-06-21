@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel
+    pip install --no-cache-dir pytest
+
+    # Create a non-root user `user`
+    useradd -m -u 1000 -s /bin/bash user
+
+    # Set up initial directory and CSV file
+    install -d -m 755 /home/user/tickets
+
+    cat > /home/user/tickets/tickets.csv <<'EOF'
+TicketID,User,Issue,Status,Priority
+TCK-1001,alice,Cannot login,Open,High
+TCK-1002,bob,Printer offline,In Progress,Medium
+TCK-1003,charlie,VPN issue,Resolved,Low
+TCK-1004,dana,Email bounce,Open,Medium
+TCK-1005,ed,Password reset,Resolved,Low
+EOF
+    chmod 644 /home/user/tickets/tickets.csv
+
+    # Ensure ownership belongs to the non-root user
+    chown -R user:user /home/user
+
+    # Clean up APT caches to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+%help
+    This container provides the initial environment for the ticket-processing task.
+    It contains:
+      • A non-root user named "user" (UID 1000) with home directory /home/user
+      • The CSV register at /home/user/tickets/tickets.csv
+      • pytest installed for automated grading

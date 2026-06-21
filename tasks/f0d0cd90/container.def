@@ -1,0 +1,45 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update and install Python plus supporting tools
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        tar \
+        gzip \
+        ca-certificates
+
+    # Install pytest for the automated grading suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the grading tests
+    # ------------------------------------------------------------------
+
+    # Create the user’s home directory hierarchy
+    mkdir -p /home/user/db_scripts
+    mkdir -p /home/user/backups
+    mkdir -p /home/user/backup_logs
+
+    # Populate placeholder SQL files
+    printf -- "-- Schema definition placeholder\n" > /home/user/db_scripts/schema.sql
+    printf -- "-- Query optimization placeholder\n" > /home/user/db_scripts/optimize_queries.sql
+
+    # Ensure correct permissions:
+    # - db_scripts: readable (and modifiable) by everyone, but no need for world-writable
+    # - backups and backup_logs: world-writable so the unprivileged runtime user can create files
+    chmod 755 /home/user/db_scripts
+    chmod 755 /home/user/db_scripts/schema.sql /home/user/db_scripts/optimize_queries.sql
+    chmod 777 /home/user/backups /home/user/backup_logs
+
+%environment
+    # Ensure python and pip are accessible as 'python3' and 'pip3'
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="ChatGPT"
+    Description="Container for query-tuning backup task; provides initial state and pytest."

@@ -1,0 +1,57 @@
+BootStrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1) Install Python and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # 2) Prepare directory structure and initial files
+    # ------------------------------------------------------------------
+    # Create the base directory
+    mkdir -p /home/user/it_support/firewall
+    mkdir -p /home/user/it_support/logs
+
+    # Create the initial firewall rules file with the required content
+    cat > /home/user/it_support/firewall/allow_rules.list <<'EOF'
+# Firewall Allow Rules
+ALLOW_TCP 22
+ALLOW_TCP 443
+EOF
+
+    # ------------------------------------------------------------------
+    # 3) Ensure write permissions for non-root users (the agent)
+    # ------------------------------------------------------------------
+    chmod 0777 /home/user
+    chmod -R 0777 /home/user/it_support
+    chmod 0666 /home/user/it_support/firewall/allow_rules.list
+
+    # Clean up apt caches to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    # Ensure Python is in PATH (usually already true, but be explicit)
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%labels
+    Author="Auto-generated for INC10234 task setup"
+    Description="Apptainer image with initial state for firewall rule editing task"
+
+%help
+    This Apptainer image provides the initial file-system layout required for
+    ticket “INC10234”. Users will modify:
+      /home/user/it_support/firewall/allow_rules.list
+    and create:
+      /home/user/it_support/logs/INC10234_action.log
+    Pytest is pre-installed so automated grading can run inside the container.

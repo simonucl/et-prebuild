@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest for the grader
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state for the exercise
+    # ------------------------------------------------------------------
+    BASE_DIR="/home/user/site_users"
+    mkdir -p "${BASE_DIR}"
+
+    # users.db
+    cat > "${BASE_DIR}/users.db" <<'EOF'
+alice:active:alice@example.com
+bob:active:bob@example.com
+carol:disabled:carol@oldmail.com
+dave:active:dave@example.com
+EOF
+
+    # pending_additions.txt
+    cat > "${BASE_DIR}/pending_additions.txt" <<'EOF'
+eve eve@example.com
+frank frank@example.com
+carol carol@newmail.com
+EOF
+
+    # pending_deactivations.txt
+    cat > "${BASE_DIR}/pending_deactivations.txt" <<'EOF'
+bob
+frank
+EOF
+
+    # pending_email_updates.txt
+    cat > "${BASE_DIR}/pending_email_updates.txt" <<'EOF'
+alice alice@newdomain.com
+carol carol@newdomain.com
+EOF
+
+    # Ensure the directory and its contents are writable by any user
+    chmod -R a+rwX "${BASE_DIR}"
+
+%environment
+    chmod 755 /home/user
+
+    # Nothing to override; keep default HOME binding
+
+%labels
+    Author your_name_here
+    Description "Environment for flat-text user database exercise with pytest pre-installed."
+
+%help
+    This container provides the initial filesystem state and Python tooling
+    required for the “flat-text user database” task.

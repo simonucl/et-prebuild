@@ -1,0 +1,51 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update APT and install Python + pip
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # Create project directory structure
+    mkdir -p /home/user/microservices/service-a
+    mkdir -p /home/user/microservices/service-b
+    mkdir -p /home/user/microservices/service-c
+
+    # service-a/Dockerfile
+    cat <<'EOF' > /home/user/microservices/service-a/Dockerfile
+FROM python:3.9-slim
+# Simple API service
+EOF
+
+    # service-b/Dockerfile
+    cat <<'EOF' > /home/user/microservices/service-b/Dockerfile
+FROM ubuntu:latest
+RUN apt-get update && apt-get install -y curl
+EOF
+
+    # service-c/Dockerfile
+    cat <<'EOF' > /home/user/microservices/service-c/Dockerfile
+FROM node:14
+WORKDIR /usr/src/app
+EOF
+
+    # Create scan directory and make it world-writable
+    mkdir -p /home/user/scan
+    chmod 0777 /home/user/scan
+
+%labels
+    chmod 755 /home/user
+
+    Author ContainerPrepBot
+    Description Base environment for micro-services Dockerfile security scan task
+
+%help
+    This container image provides the initial filesystem state and pytest
+    installation required for the micro-services Dockerfile scanning task.
+
+%runscript
+    echo "Container for Dockerfile scanning task. Launch a shell to begin."
+    exec /bin/bash

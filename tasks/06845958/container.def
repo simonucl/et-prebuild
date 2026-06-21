@@ -1,0 +1,61 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # Basic tools
+    # ------------------------------------------------------------------
+    apt-get update && \
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            python3-pip \
+            ca-certificates \
+            && \
+        rm -rf /var/lib/apt/lists/*
+
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create the initial filesystem layout for the exercise
+    # ------------------------------------------------------------------
+    # Create required directories
+    mkdir -p /home/user/network_configs/siteA_v1
+    mkdir -p /home/user/network_configs/siteA_v2
+    mkdir -p /home/user/bin
+    mkdir -p /home/user/tools
+
+    # network_configs/active -> siteA_v1   (relative link)
+    ln -s siteA_v1 /home/user/network_configs/active
+
+    # Create empty change-log file
+    : > /home/user/network_configs/symlink_changes.log
+
+    # /home/user/bin links
+    ln -s ../scripts/ping-test.sh /home/user/bin/ping-test   # valid link
+    ln -s ../scripts/ip-test.sh  /home/user/bin/ip-test      # broken link (intentionally)
+
+    # Helper script that will become the new ip-test target
+    cat >/home/user/tools/ip-test.sh <<'EOF'
+#!/bin/bash
+echo 'ip test'
+EOF
+    chmod +x /home/user/tools/ip-test.sh
+
+    # ------------------------------------------------------------------
+    # Make sure the student (non-root) user can modify everything under /home/user
+    # ------------------------------------------------------------------
+    chmod -R a+rwX /home/user
+
+%labels
+    chmod 755 /home/user
+
+    Author OpenAI ChatGPT
+    Description Container for the “symlink correction” exercise
+
+%help
+This container provides the starting environment for the symlink-fixing
+exercise.  All initial directories, files, and (intentionally incorrect)
+symbolic links are pre-created under /home/user.  The student’s task is
+to correct those links and update the associated log once the container
+is running.

@@ -1,0 +1,64 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # ------------------------------------------------------------------
+    # 1. Install Python and pytest
+    # ------------------------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # 2. Build the required initial filesystem state
+    # ------------------------------------------------------------------
+    # Directories
+    mkdir -p /home/user/app/config
+    chmod 0777 /home/user
+    chmod 0777 /home/user/app
+    chmod 0777 /home/user/app/config
+
+    # settings.yaml (permissions 0644)
+    cat >/home/user/app/config/settings.yaml <<'EOF'
+service:
+  enabled: false
+  version: "1.4.3"
+  port: 8080
+logging:
+  level: "DEBUG"
+  format: "text"
+EOF
+
+    # database.toml (permissions 0644)
+    cat >/home/user/app/config/database.toml <<'EOF'
+[database]
+name = "test_db"
+user = "dev"
+password = "devpass"
+host = "localhost"
+port = 5432
+pool_size = 5
+EOF
+
+    chmod 0644 /home/user/app/config/settings.yaml /home/user/app/config/database.toml
+
+    # Make everything world-readable/executable where appropriate
+    chmod -R a+rX /home/user
+
+    # Attempt to hand ownership of /home/user tree to uid 1000 (common host user);
+    # ignore failure if uid 1000 does not exist inside the build environment.
+    chown -R 1000:1000 /home/user || true
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export PYTHONIOENCODING=UTF-8
+
+%labels
+    Author "AI-generated definition file"
+    Description "Sets up the pristine initial state for the configuration-patching task and installs pytest."

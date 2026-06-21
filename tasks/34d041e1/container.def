@@ -1,0 +1,56 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # 1. Install Python and pytest
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip
+    pip3 install --no-cache-dir pytest
+
+    # 2. Build the project’s initial directory structure
+    PROJECT_ROOT="/home/user/devops-demo"
+    mkdir -p "${PROJECT_ROOT}/bin" \
+             "${PROJECT_ROOT}/config" \
+             "${PROJECT_ROOT}/logs"
+
+    # 3. Populate bin/run.sh (placeholder executable)
+cat > "${PROJECT_ROOT}/bin/run.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "Run script placeholder"
+EOF
+    chmod +x "${PROJECT_ROOT}/bin/run.sh"
+
+    # 4. Create the ORIGINAL logging configuration file
+cat > "${PROJECT_ROOT}/config/service.conf" <<'EOF'
+[logging]
+log_level = INFO
+log_file  = ./logs/app.log
+EOF
+
+    # 5. Seed the shipping application log with ground-truth lines
+cat > "${PROJECT_ROOT}/logs/app.log" <<'EOF'
+2023-07-01 12:00:00,001 - root - INFO  - Service started
+2023-07-01 12:00:05,123 - root - DEBUG - Loaded config
+2023-07-01 12:00:10,999 - root - ERROR - Connection failed
+2023-07-01 12:00:15,456 - root - DEBUG - Retrying connection
+2023-07-01 12:00:20,321 - root - DEBUG - Connection established
+2023-07-01 12:00:25,888 - root - INFO  - Service running
+2023-07-01 12:00:30,777 - root - ERROR - Timeout occurred
+EOF
+
+    # 6. Make everything writable so the non-root agent can modify files
+    chmod -R a+rwX /home/user/devops-demo
+
+%environment
+    chmod 755 /home/user
+
+    export PROJECT_ROOT=/home/user/devops-demo
+
+%labels
+    Author  devops-task
+    Purpose "Baseline image for DevOps logging configuration exercise"
+
+%runscript
+    exec /bin/bash "$@"

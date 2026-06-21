@@ -1,0 +1,65 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install system packages
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        rsync \
+        ca-certificates \
+        curl \
+        gnupg \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the evaluation harness
+    pip3 install --no-cache-dir pytest
+
+    # -----------------------------------------------------------------
+    # Create directory structure and populate initial dataset contents
+    # -----------------------------------------------------------------
+    mkdir -p /home/user/workspace/datasets
+    mkdir -p /home/user/remote_share/datasets
+
+    # ---- Local authoritative copies ---------------------------------
+    cat >/home/user/workspace/datasets/sample1.csv <<'EOF'
+id,value
+1,10
+2,20
+EOF
+
+    cat >/home/user/workspace/datasets/sample2.csv <<'EOF'
+id,value
+3,30
+4,40
+EOF
+
+    cat >/home/user/workspace/datasets/sample3.csv <<'EOF'
+id,value
+5,50
+6,60
+EOF
+
+    # ---- Remote (simulated server) copies ---------------------------
+    # Only sample1.csv and sample3.csv exist remotely at start
+    cp /home/user/workspace/datasets/sample1.csv /home/user/remote_share/datasets/sample1.csv
+    cp /home/user/workspace/datasets/sample3.csv /home/user/remote_share/datasets/sample3.csv
+
+    # -----------------------------------------------------------------
+    # Ensure non-root users can write to the working directories
+    # -----------------------------------------------------------------
+    chmod -R a+rwX /home/user
+
+%environment
+    chmod 755 /home/user
+
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%help
+Container image for the “dataset sync” exercise.
+Provides the initial folder structure and files for the task and includes
+Python with pytest plus rsync for the student’s solution.

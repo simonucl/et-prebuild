@@ -1,0 +1,54 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Update package lists and install required tools
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        jq \
+        python3-pip \
+        ca-certificates
+
+    # Clean up apt cache to keep the image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Install pytest for the grader’s test-suite
+    pip3 install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Prepare the initial filesystem state for the IoT-rollout exercise
+    # ------------------------------------------------------------------
+
+    # Ensure the target directory exists and is writable by any user
+    mkdir -p /home/user/deployment
+    chmod 0777 /home/user/deployment
+
+    # Create the JSON configuration file with exact, specified contents
+    cat > /home/user/deployment/edge_device_config.json <<'EOF'
+[
+  {"id":"dev-001","location":"NYC","status":"active"},
+  {"id":"dev-002","location":"Berlin","status":"inactive"},
+  {"id":"dev-003","location":"London","status":"active"},
+  {"location":"Tokyo","status":"inactive"},
+  {"id":"dev-005","location":"Paris","status":"inactive"}
+]
+EOF
+
+    # Set permissions so the file is readable by all users
+    chmod 0644 /home/user/deployment/edge_device_config.json
+
+%labels
+    chmod 755 /home/user
+
+    Author="Container prepared for IoT rollout validation task"
+
+%help
+    This Apptainer image provides the initial environment for the
+    edge-computing JSON validation exercise.  It contains:
+      • jq
+      • pytest
+      • The pre-populated /home/user/deployment/edge_device_config.json file
+    Students will generate validation_report.txt inside the same directory.

@@ -1,0 +1,58 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Basic utilities
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    #######################################################################
+    # Create a skeleton documentation tree that will be copied to the
+    # real /home/user/ location at run-time (after $HOME is bind-mounted).
+    #######################################################################
+    mkdir -p /opt/skel_docs/articles
+    mkdir -p /opt/skel_docs/tutorials
+
+    echo '# Introduction' > /opt/skel_docs/articles/intro.md
+    echo '# Setup'         > /opt/skel_docs/articles/setup.md
+    echo '# Overview'      > /opt/skel_docs/tutorials/overview.md
+
+    # Minimal pre-existing TOML configuration (content is not important)
+    echo '# Initial site configuration' > /opt/skel_docs/site_config.toml
+
+    # Ensure world-readable permissions; write permission will be granted
+    # after the tree is copied to the user’s home directory at run-time.
+    find /opt/skel_docs -type d -exec chmod 755 {} \;
+    find /opt/skel_docs -type f -exec chmod 644 {} \;
+
+%environment
+    chmod 755 /home/user
+
+    # Automatically provision the expected docs directory in /home/user
+    # the first time the container is executed on a new host system.
+    DOCS_ROOT="/home/user/docs"
+
+    if [ ! -f "${DOCS_ROOT}/articles/intro.md" ]; then
+        mkdir -p "${DOCS_ROOT}"
+        # Copy skeleton tree created at build time
+        cp -R /opt/skel_docs/* "${DOCS_ROOT}/"
+
+        # Give broad rights so the non-root user (the agent) can modify files
+        find "${DOCS_ROOT}" -type d -exec chmod 777 {} \;
+        find "${DOCS_ROOT}" -type f -exec chmod 666 {} \;
+    fi
+
+%labels
+    Author: Container Build Script
+    Description: Environment for the documentation-inventory task
+    Version: 1.0
+
+%help
+This container sets up the initial file system state for the
+documentation-inventory automation exercise and provides pytest
+for the embedded grading suite.

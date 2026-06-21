@@ -1,0 +1,41 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+    Author backup-operator exercise setup
+    Description Base container ensuring correct initial state and pytest availability.
+
+%post
+    set -e
+
+    # Update and install required packages
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        time \
+        ca-certificates
+
+    # Install pytest for the grader/agent
+    pip3 install --no-cache-dir pytest
+
+    # Create the mandatory directory structure
+    mkdir -p /home/user/backups
+
+    # Make sure the agent (unprivileged runtime UID) can write here
+    chmod 0777 /home/user
+    chmod 0777 /home/user/backups
+
+    # Clean up apt caches to keep image small
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    chmod 755 /home/user
+
+    export PYTHONIOENCODING=UTF-8
+    export LC_ALL=C.UTF-8
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    echo "Container for backup-operator exercise.  Use this as a base — nothing to run directly."

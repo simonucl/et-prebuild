@@ -1,0 +1,48 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -eux
+
+    # Install Python tooling and pytest
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem state expected by the grader
+    # ------------------------------------------------------------------
+    # Create the non-privileged user and its home directory
+    if ! id -u user >/dev/null 2>&1; then
+        echo "user:x:1000:1000:User,,,:/home/user:/bin/bash" >> /etc/passwd
+        echo "user:x:1000:" >> /etc/group
+    fi
+    mkdir -p /home/user
+    chown 1000:1000 /home/user
+
+    # Create the policy directory and reference policy script
+    mkdir -p /home/user/policy
+    cat >/home/user/policy/check_policy.sh <<'EOF'
+#!/bin/bash
+sleep 0.05
+echo "Policy PASSED"
+EOF
+    chmod 755 /home/user/policy
+    chmod 755 /home/user/policy/check_policy.sh
+    chown -R 1000:1000 /home/user/policy
+
+%environment
+    # Do not overwrite HOME; only augment PATH
+    export PATH="/home/user/policy:${PATH}"
+
+%labels
+    Author "Apptainer Task Preparer"
+    Description "Initial state for DevSecOps policy benchmark exercise"
+
+%help
+This container seeds the filesystem with:
+  • /home/user/policy/check_policy.sh  – a reference policy script
+Pytest is pre-installed so automated grading can run.

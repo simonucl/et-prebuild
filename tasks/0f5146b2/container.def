@@ -1,0 +1,104 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # --------------------------------------------------------------------- #
+    # Base packages and pytest                                              #
+    # --------------------------------------------------------------------- #
+    apt-get update
+    apt-get install -y --no-install-recommends python3-pip ca-certificates
+    pip3 install --no-cache-dir pytest
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # --------------------------------------------------------------------- #
+    # Pre-populate Kubernetes manifest directory                            #
+    # --------------------------------------------------------------------- #
+    mkdir -p /home/user/k8s-configs
+    cd /home/user/k8s-configs
+
+    cat > backend-deploy.yaml <<'EOF'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 2
+EOF
+
+    cat > backend-service.yaml <<'EOF'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  type: ClusterIP
+EOF
+
+    cat > cache-configmap.yaml <<'EOF'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cache-config
+data:
+  config.json: "{}"
+EOF
+
+    cat > frontend-deploy.yaml <<'EOF'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 3
+EOF
+
+    cat > frontend-service.yaml <<'EOF'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  type: LoadBalancer
+EOF
+
+    cat > redis-service.yaml <<'EOF'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  type: ClusterIP
+EOF
+
+    cat > redis-stateful.yaml <<'EOF'
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+spec:
+  serviceName: redis
+EOF
+
+    # --------------------------------------------------------------------- #
+    # Permissions                                                           #
+    # --------------------------------------------------------------------- #
+    chmod 755 /home/user
+    chmod 755 /home/user/k8s-configs
+    chmod 644 /home/user/k8s-configs/*.yaml
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%labels
+    Author Kubernetes Kind Counter Prep Container

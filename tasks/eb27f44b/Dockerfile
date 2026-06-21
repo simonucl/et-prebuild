@@ -1,0 +1,47 @@
+FROM ubuntu:22.04
+
+# Basic packages
+RUN set -e && \
+    apt-get update -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3 \
+        python3-pip \
+        ca-certificates \
+        locales && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Ensure UTF-8 locale is generated for predictable tooling behaviour
+RUN sed -i 's/# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    locale-gen
+
+# Prepare initial repository for the exercise
+RUN mkdir -p /home/user/local_repo && \
+    chmod 0777 /home/user && \
+    chmod 0755 /home/user/local_repo
+
+RUN cat > /home/user/local_repo/packages.tsv <<'EOF'
+absl-py	1.4.0	4428
+numpy	1.26.4	167232
+pandas	2.1.4	284096
+pytest	7.4.4	2920
+yappi	1.4.0	188
+memory-profiler	0.60.0	104
+psutil	5.9.8	3520
+cProfile	5.0	320
+line-profiler	4.1.2	540
+perf-tools	4.17.0	12400
+EOF
+
+RUN chmod 0644 /home/user/local_repo/packages.tsv
+
+# Environment variables
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+
+# Container for the "largest Python packages" profiling-preparation exercise.
+# Includes:
+#   • Python 3 and pytest
+#   • Pre-populated /home/user/local_repo/packages.tsv data set
+#   • /home/user with write permissions for unprivileged container users

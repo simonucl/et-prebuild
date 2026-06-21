@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%post
+    set -e
+
+    # Install Python and pytest
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-pip && \
+    pip3 install --no-cache-dir pytest && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+    # ------------------------------------------------------------------
+    # Prepare initial filesystem layout for the “symlink migration” task
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/app1/logs
+    mkdir -p /home/user/app2/logs
+    mkdir -p /home/user/app3/logs
+
+    # Create stub log files with exact required contents
+    printf 'app1 access log stub\n'   > /home/user/app1/logs/access.log
+    printf 'app1 error log stub\n'    > /home/user/app1/logs/error.log
+
+    printf '2024-06-01 stub log\n'    > /home/user/app2/logs/2024-06-01.log
+    printf '2024-06-02 stub log\n'    > /home/user/app2/logs/2024-06-02.log
+
+    printf 'runtime stub log\n'       > /home/user/app3/logs/runtime.log
+
+    # Ensure the learner (non-root) can modify everything under /home/user
+    chmod -R a+rwx /home/user
+
+%environment
+    chmod 755 /home/user
+
+    # Keep default HOME; just ensure pip’s default install path is on PATH
+    export PATH=$PATH:/usr/local/bin

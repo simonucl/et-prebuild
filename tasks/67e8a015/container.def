@@ -1,0 +1,49 @@
+Bootstrap: localimage
+From: ./ubuntu_22.04.sif
+
+%labels
+Author localization-task-setup
+Description "Base image for localization task with initial template and pytest installed."
+
+%post
+    set -e
+
+    # Ensure apt is non-interactive
+    export DEBIAN_FRONTEND=noninteractive
+
+    apt-get update
+    apt-get install -y --no-install-recommends python3 python3-pip
+
+    # Install pytest for the test harness
+    pip install --no-cache-dir pytest
+
+    # ------------------------------------------------------------------
+    # Create initial workspace expected by the tests
+    # ------------------------------------------------------------------
+    mkdir -p /home/user/localization/templates
+
+    cat > /home/user/localization/templates/messages.pot <<'EOF'
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.2\n"
+"Report-Msgid-Bugs-To: you@example.com\n"
+"POT-Creation-Date: 2023-06-30 09:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+EOF
+
+    # Ensure correct permissions (directories 755, files 644)
+    chmod 755 /home/user /home/user/localization /home/user/localization/templates
+    chmod 644 /home/user/localization/templates/messages.pot
+
+%environment
+    # Make sure Python uses UTF-8 by default
+    export PYTHONIOENCODING=UTF-8
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+
+%runscript
+    echo "This container is set up for the localization engineering task."
