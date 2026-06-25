@@ -1,0 +1,21 @@
+{
+  "name": "@acme/stream-redactor",
+  "version": "1.2.2",
+  "description": "Small stdin/stdout redactor for edge telemetry streams.",
+  "main": "src/index.js",
+  "bin": {
+    "stream-redactor": "bin/stream-redactor.js"
+  },
+  "files": [
+    "index.js",
+    "cli.js",
+    "rules/dev.json",
+    "README.md",
+    "LICENSE",
+    "test/fixture.txt"
+  ],
+  "scripts": {
+    "test": "node test/smoke.test.js"
+  },
+  "license": "MIT"
+}

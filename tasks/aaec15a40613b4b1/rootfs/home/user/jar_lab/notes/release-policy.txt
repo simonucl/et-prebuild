@@ -1,0 +1,5 @@
+Release artifact: /home/user/jar_lab/dist/diag-probe-1.2.0.jar
+Package type: executable Java multi-release JAR
+Base classes: Java 8 bytecode
+Versioned classes under META-INF/versions/11: Java 11 bytecode
+Archive timestamp: 2024-01-01T00:00:00Z for every member

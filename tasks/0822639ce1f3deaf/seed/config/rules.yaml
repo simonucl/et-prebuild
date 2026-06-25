@@ -1,0 +1,4 @@
+rules:
+  - name: redact-secrets
+    pattern: '(token|password)=\S+'
+    replacement: '\1=REDACTED'

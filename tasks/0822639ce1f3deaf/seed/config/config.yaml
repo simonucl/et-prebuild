@@ -1,0 +1,3 @@
+endpoint: https://logs.internal.example/ingest
+spool_dir: /var/lib/acme-logshipper/spool
+batch_size: 250

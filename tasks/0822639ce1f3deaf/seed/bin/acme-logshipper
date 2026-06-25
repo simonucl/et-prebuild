@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+import pathlib
+import sys
+
+CONFIG = pathlib.Path("/etc/acme-logshipper/config.yaml")
+
+def main() -> int:
+    if "--version" in sys.argv:
+        print("acme-logshipper 1.6.0")
+        return 0
+    print(f"loading {CONFIG}")
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())

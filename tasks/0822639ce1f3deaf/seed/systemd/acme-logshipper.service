@@ -1,0 +1,14 @@
+[Unit]
+Description=ACME log shipping worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/acme-logshipper
+Restart=on-failure
+DynamicUser=yes
+StateDirectory=acme-logshipper
+
+[Install]
+WantedBy=multi-user.target
