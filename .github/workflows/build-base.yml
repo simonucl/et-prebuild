@@ -1,0 +1,18 @@
+name: build-trsi-base
+on:
+  workflow_dispatch:
+  push:
+    paths: ["base/**", ".github/workflows/build-base.yml"]
+permissions:
+  contents: read
+  packages: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - run: |
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          docker build -t ghcr.io/$owner/trsi-base:v1 base
+          docker push ghcr.io/$owner/trsi-base:v1
