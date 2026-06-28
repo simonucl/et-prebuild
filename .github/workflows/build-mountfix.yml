@@ -11,7 +11,7 @@ jobs:
       - run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - run: |
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          for h in $(ls tasks | grep '^mountfix-'); do
+          for h in $(ls tasks | grep -E '^(mountfix|nrtest)-'); do
             echo "=== build $h ==="
             docker build -t ghcr.io/$owner/et-envs:$h "tasks/$h" && docker push ghcr.io/$owner/et-envs:$h || echo "FAIL $h"
           done
